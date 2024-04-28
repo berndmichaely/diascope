@@ -1,4 +1,3 @@
 # jem
 
-// TODO…
-
+// [work in progress…]
