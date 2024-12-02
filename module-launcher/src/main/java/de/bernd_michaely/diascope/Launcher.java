@@ -26,6 +26,7 @@ import de.bernd_michaely.diascope.app.PreferencesUtil;
 import java.io.PrintStream;
 import java.lang.System.Logger;
 import java.util.List;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.lang.System.Logger.Level.*;
 
@@ -44,7 +45,7 @@ public class Launcher
 
 	private static boolean helpMode, developmentMode, exportPrefsMode, clearPrefsMode;
 
-	private static void handleArguments(String longOption, String param)
+	private static void handleArguments(String longOption, @Nullable String param)
 	{
 		switch (longOption)
 		{
