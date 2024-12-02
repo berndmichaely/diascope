@@ -1,5 +1,3 @@
-# Diascope
+# [Diascope](https://github.com/berndmichaely/diascope)
 
-(formerly jem)
-
-// [work in progress…]
+![version](doc/shields/version.svg "version")
