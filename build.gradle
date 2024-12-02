@@ -1,0 +1,190 @@
+plugins {
+	id 'java'
+	id 'application'
+	id 'jacoco'
+	id 'org.openjfx.javafxplugin' version '0.1.0' apply false
+	
+	// auto create automatic modules:
+	//id 'extra-java-module-info' apply false
+	// see:
+	// https://docs.gradle.org/7.0.2/samples/sample_java_modules_with_transform.html
+}
+
+//apply plugin: 'extra-java-module-info'
+
+wrapper {
+	gradleVersion '8.7'
+}
+
+final def javaLangVersion = JavaLanguageVersion.of(22)
+final def javaSrcVersion = JavaVersion.VERSION_22
+
+java {
+	toolchain {
+		languageVersion = javaLangVersion
+	}
+	sourceCompatibility = javaSrcVersion
+}
+
+final String fileNameSemVer = 'src/main/resources/de/bernd_michaely/diascope/app/semantic_version.txt'
+final def fileSemVer = project(':module-gui-fx').file(fileNameSemVer)
+
+final String propReadSvnRevision = 'diascope.isReadingSvnRevision'
+ext.isReadingSvnRevision = project.hasProperty(propReadSvnRevision) ? Boolean.valueOf(project.getProperty(propReadSvnRevision)) : false
+logger.lifecycle "-> Getting semantic version build number from subversion revision (user property »${propReadSvnRevision}«) = " + isReadingSvnRevision
+
+def String readSvnRevision()
+{
+	def svnRev = ''
+	if (isReadingSvnRevision) {
+		final def process = [ 'svn', 'info', '--show-item', 'repos-root-url', '--no-newline' ].execute(null, projectDir)
+		if (process.waitFor()) {
+			logger.lifecycle "   -> Can't get subversion revision"
+		}
+		else {
+			final String urlSvnRepos = process.text.trim()
+			logger.lifecycle "Reading subversion revision (repos-root-url: »${urlSvnRepos}«)"
+			final def process2 = [ 'svn', 'info', '--show-item', 'revision', '--no-newline', urlSvnRepos ].execute()
+			if (process2.waitFor()) {
+				logger.lifecycle " -> Can't get head revision from subversion server" +
+				        " -> fallback to reading local working copy revision"
+				final def process3 = [ 'svnversion', '-n' ].execute(null, projectDir)
+				if (process3.waitFor()) {
+					logger.lifecycle " -> Can't get subversion revision"
+					svnRev = ''
+				}
+				else {
+					svnRev = process3.text.trim().replaceAll('[^0-9a-zA-Z]+' , '.')
+					svnRev = svnRev.endsWith('.') ? svnRev.substring(0, svnRev.length()-1) : svnRev
+				}
+			} else {
+				svnRev = process2.text.trim()
+				svnRev = ((svnRev as Integer) + 1) as String
+			}
+			logger.lifecycle "     -> subversion revision is »${svnRev}«)"
+		}
+	}
+	return svnRev
+}
+
+final String versionBase = '0.1.0-ea'
+
+final String build_nr = readSvnRevision()
+final String semVer = build_nr ? "${versionBase}+r${build_nr}" : versionBase
+		
+allprojects {
+	group = 'de.bernd_michaely'
+	version = semVer
+	
+	ext.versionJUnit = '5.9.2'
+	ext.versionCheckerFramework = '3.48.0'
+	ext.versionCheckerFrameworkPlugin = '0.6.45'
+	
+	repositories {
+		mavenCentral()
+		mavenLocal()
+	}
+
+	if (project == rootProject || name.equals("module-launcher") || name.endsWith('-fx')) {
+		apply plugin: 'org.openjfx.javafxplugin'
+		javafx {
+			//version = "21.0.4"
+			version = "23"
+		}
+		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
+	}
+}
+
+logger.lifecycle "Running Gradle $project.gradle.gradleVersion"
+logger.lifecycle "Java source level           : ${java.sourceCompatibility}"
+logger.lifecycle "Compile      -> Debug-Level : ${compileJava.options.debug}"
+logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}"
+logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"
+logger.lifecycle "==> Root project »$name ($version)«"
+logger.lifecycle " -> Base dir is »${file('.')}«"
+logger.lifecycle " -> Using »JUnit $versionJUnit«"
+logger.lifecycle " -> Using »JaCoCo ${jacoco.toolVersion}«"
+logger.lifecycle " -> Using »Checker Framework        $versionCheckerFramework«"
+logger.lifecycle " -> Using »Checker Framework Plugin $versionCheckerFrameworkPlugin«"
+logger.lifecycle " -> Included child projects : »${childProjects.keySet()}«"
+logger.lifecycle " -> Maven coordinates »${group}:${name}:${version}«"
+
+subprojects {
+	java {
+		toolchain {
+			languageVersion = javaLangVersion
+		}
+		sourceCompatibility = javaSrcVersion
+	}
+	logger.lifecycle "==> Configuring sub-project »$name ($version)«"
+	logger.lifecycle "Running Gradle $project.gradle.gradleVersion"
+	logger.lifecycle "Java source level           : ${java.sourceCompatibility}"
+
+	tasks.withType(JavaCompile) {
+		logger.lifecycle "=> Configuring task »$name«"
+		options.compilerArgs += '-Xlint:unchecked'
+		options.compilerArgs += '-Xlint:deprecation'
+		options.compilerArgs += '-Xdiags:verbose'
+		logger.lifecycle "   -> compiler args : ${options.compilerArgs}"
+	}
+}
+
+/*
+extraJavaModuleInfo {
+automaticModule('batik-all-1.17.jar', 'batik')	
+}
+ */
+
+dependencies {
+	implementation project (':module-launcher')
+	//	implementation 'com.github.weisj:jsvg:1.5.0'
+	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
+	//implementation 'xml-apis:xml-apis:1.4.01'
+	//implementation 'xml-apis:xml-apis-ext:1.3.04'
+	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
+}
+
+task writeSemVer {
+	description "write application semantic version to resource file »${fileSemVer}«"
+	group processResources.group
+	doFirst {
+		if (isReadingSvnRevision) {
+			final def process = [ 'svn', 'status' ].execute(null, projectDir)
+			// only write new version if svn status is NOT clean:
+			if (!process.waitFor() && process.text) fileSemVer.write(semVer)
+		}
+	}
+}
+processResources.dependsOn writeSemVer
+
+application {
+	mainModule = 'de.bernd_michaely.diascope'
+	mainClass  = 'de.bernd_michaely.diascope.Launcher'
+}
+
+jar {
+	javafx {
+		//	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
+		modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls' ]
+	}
+
+	manifest {
+		attributes ( 'Main-Class' : "${application.mainModule.get()}/${application.mainClass.get()}" )
+	}
+}
+		
+run {
+	logger.lifecycle " -> run task modularity : ${modularity.inferModulePath.get()}"
+	//args = [ '--development', 'running from within gradle' ]
+	
+	systemProperty 'java.util.logging.config.file', file('logging.properties')
+	
+	def propertyNameDiascopeArgs = 'diascope.arg'
+	int i = 0
+	while (project.hasProperty("${propertyNameDiascopeArgs}.${i}")) {
+		args += project.getProperty("${propertyNameDiascopeArgs}.${i++}")
+	}
+	logger.lifecycle " -> Running with args :"
+	int k = 0
+	for (def arg: args) logger.lifecycle "    [${k++}] : »${arg}«"
+}

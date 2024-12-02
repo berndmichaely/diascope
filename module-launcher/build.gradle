@@ -1,0 +1,30 @@
+plugins {
+	id 'java'
+	id 'java-library'
+	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}" apply false
+}
+
+apply plugin: 'org.checkerframework'
+
+final boolean deactivateCheckerFramework = false
+
+logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
+
+dependencies {
+	implementation 'de.bernd_michaely:common-cli-parser:1.1'
+	implementation project (':module-gui-fx')
+	
+	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
+	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
+}
+
+checkerFramework {
+	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
+	skipCheckerFramework = deactivateCheckerFramework
+	excludeTests = true
+}
+
+javafx {
+  //	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
+  modules = [ 'javafx.base', 'javafx.graphics' ]
+}

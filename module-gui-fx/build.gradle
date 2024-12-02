@@ -1,0 +1,57 @@
+plugins {
+	id 'java'
+	id 'java-library'
+	id 'jacoco'
+	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}" apply false
+}
+
+apply plugin: 'org.checkerframework'
+//apply plugin: 'extra-java-module-info'
+
+final boolean deactivateCheckerFramework = false
+final def fstv_version = '0.9.4'
+
+logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
+logger.lifecycle "   -> Using common-filesystem-view version »${fstv_version}«"
+
+dependencies {
+	implementation "de.bernd_michaely:common-filesystem-view-base:${fstv_version}"
+	implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"
+	
+	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
+	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
+}
+
+checkerFramework {
+	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
+	skipCheckerFramework = deactivateCheckerFramework
+	excludeTests = true
+}
+	
+testing {
+	suites {
+		test {
+			useJUnitJupiter(versionJUnit)
+		}
+	}
+}
+
+tasks.named('test') {
+	logger.lifecycle "=> Configuring task »${name}« for JUnit"
+	systemProperty 'java.util.logging.config.file', rootProject.file('logging.properties')
+	//logger.lifecycle "   -> JVM args : $jvmArgs"
+}
+
+jacocoTestReport {
+	dependsOn test
+	doLast {
+		final File jacocoReportsDir = reports.html.outputLocation.asFile.get()
+		final URL jacocoReportsUrl = new URL("file", null, "${jacocoReportsDir}/index.html")
+		logger.lifecycle " -> JaCoCo reports in »${jacocoReportsUrl}«"
+	}
+}
+
+javafx {
+  //	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
+  modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls' ]
+}

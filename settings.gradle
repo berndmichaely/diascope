@@ -1,0 +1,8 @@
+rootProject.name = 'Diascope'
+
+file('.').eachDir { dir ->
+	def d = dir.name
+	if (d.startsWith('module-') || d.startsWith('lib-') ) {
+		include d
+	}
+}
