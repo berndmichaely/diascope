@@ -1,0 +1,28 @@
+plugins {
+	id 'java'
+	id 'java-library'
+	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}"
+}
+
+final boolean deactivateCheckerFramework = false
+
+logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
+
+dependencies {
+	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
+	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
+
+	testCompileOnly "junit:junit:${versionJUnitVintage}"
+	testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${versionJUnit}"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+checkerFramework {
+	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
+	skipCheckerFramework = deactivateCheckerFramework
+	excludeTests = true
+}
+
+test {
+	useJUnitPlatform()
+}
