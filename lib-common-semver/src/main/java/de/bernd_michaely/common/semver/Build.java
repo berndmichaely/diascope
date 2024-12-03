@@ -14,18 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package de.bernd_michaely.common.semver;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Main launcher module of the Diascope application.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
+ * Class to handle a semantic version build.
  */
-module de.bernd_michaely.diascope
+public class Build extends DotSeparatedVersionPart
 {
-	requires org.checkerframework.checker.qual;
-	requires de.bernd_michaely.common.cli.parser;
-	requires de.bernd_michaely.common.semver;
-	requires de.bernd_michaely.diascope.gui.fx;
+	Build()
+	{
+		super();
+	}
 
-	exports de.bernd_michaely.diascope;
+	Build(String build)
+	{
+		super(build);
+	}
+
+	@Override
+	public boolean equals(@Nullable Object object)
+	{
+		if (object instanceof Build other)
+		{
+			return this.getVersionPart().equals(other.getVersionPart());
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return getVersionPart().hashCode();
+	}
 }

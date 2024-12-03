@@ -16,16 +16,13 @@
  */
 
 /**
- * Main launcher module of the Diascope application.
+ * Module implementing semantic versioning.
  *
+ * @see <a href="https://semver.org">semver.org</a>
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
-module de.bernd_michaely.diascope
+module de.bernd_michaely.common.semver
 {
 	requires org.checkerframework.checker.qual;
-	requires de.bernd_michaely.common.cli.parser;
-	requires de.bernd_michaely.common.semver;
-	requires de.bernd_michaely.diascope.gui.fx;
-
-	exports de.bernd_michaely.diascope;
+	exports de.bernd_michaely.common.semver;
 }

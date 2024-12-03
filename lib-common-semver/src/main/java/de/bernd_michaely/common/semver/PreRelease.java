@@ -14,18 +14,47 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+package de.bernd_michaely.common.semver;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Main launcher module of the Diascope application.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
+ * Class to handle a semantic version pre-release.
  */
-module de.bernd_michaely.diascope
+public class PreRelease extends DotSeparatedVersionPart implements Comparable<PreRelease>
 {
-	requires org.checkerframework.checker.qual;
-	requires de.bernd_michaely.common.cli.parser;
-	requires de.bernd_michaely.common.semver;
-	requires de.bernd_michaely.diascope.gui.fx;
+	PreRelease()
+	{
+		super();
+	}
 
-	exports de.bernd_michaely.diascope;
+	PreRelease(String preRelease)
+	{
+		super(preRelease);
+	}
+
+	@Override
+	public int compareTo(PreRelease other)
+	{
+		return super.compareTo(other);
+	}
+
+	@Override
+	public boolean equals(@Nullable Object object)
+	{
+		if (object instanceof PreRelease other)
+		{
+			return this.compareTo(other) == 0;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return getVersionPart().hashCode();
+	}
 }
