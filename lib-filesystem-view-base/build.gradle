@@ -13,7 +13,6 @@ dependencies {
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
 
 	testCompileOnly "junit:junit:${versionJUnitVintage}"
-	testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${versionJUnit}"
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
@@ -22,7 +21,7 @@ checkerFramework {
 	skipCheckerFramework = deactivateCheckerFramework
 	excludeTests = true
 }
-
+	
 testing {
 	suites {
 		test {

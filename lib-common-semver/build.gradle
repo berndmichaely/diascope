@@ -26,3 +26,9 @@ testing {
 		}
 	}
 }
+
+tasks.named('test') {
+	logger.lifecycle "=> Configuring task »${name}« for JUnit"
+	systemProperty 'java.util.logging.config.file', rootProject.file('logging.properties')
+	//logger.lifecycle "   -> JVM args : $jvmArgs"
+}

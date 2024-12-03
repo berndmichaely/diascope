@@ -9,13 +9,16 @@ final boolean deactivateCheckerFramework = false
 final def fstv_version = '0.9.4'
 
 logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
-logger.lifecycle "   -> Using common-filesystem-view version »${fstv_version}«"
+//logger.lifecycle "   -> Using common-filesystem-view version »${fstv_version}«"
+logger.lifecycle "   -> Using common-filesystem-view internal snapshot (v${fstv_version})"
 
 dependencies {
 	implementation project (':lib-common-semver')
 	
-	implementation "de.bernd_michaely:common-filesystem-view-base:${fstv_version}"
-	implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"
+	//implementation "de.bernd_michaely:common-filesystem-view-base:${fstv_version}"
+	//implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"
+	implementation project (':lib-filesystem-view-base')
+	implementation project (':lib-filesystem-view-fx')
 	
 	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"

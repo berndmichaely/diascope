@@ -9,12 +9,10 @@ final boolean deactivateCheckerFramework = false
 logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
 
 dependencies {
+	implementation project (':lib-filesystem-view-base')
+	
 	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
-
-	testCompileOnly "junit:junit:${versionJUnitVintage}"
-	testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${versionJUnit}"
-	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 checkerFramework {
@@ -22,7 +20,7 @@ checkerFramework {
 	skipCheckerFramework = deactivateCheckerFramework
 	excludeTests = true
 }
-
+	
 testing {
 	suites {
 		test {
@@ -35,4 +33,9 @@ tasks.named('test') {
 	logger.lifecycle "=> Configuring task »${name}« for JUnit"
 	systemProperty 'java.util.logging.config.file', rootProject.file('logging.properties')
 	//logger.lifecycle "   -> JVM args : $jvmArgs"
+}
+
+javafx {
+  //	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
+  modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls' ]
 }
