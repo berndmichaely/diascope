@@ -13,7 +13,8 @@ dependencies {
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
 
 	testCompileOnly "junit:junit:${versionJUnitVintage}"
-	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'com.google.jimfs:jimfs:1.2'
 }
 
 checkerFramework {
