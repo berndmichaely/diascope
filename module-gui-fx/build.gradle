@@ -2,11 +2,8 @@ plugins {
 	id 'java'
 	id 'java-library'
 	id 'jacoco'
-	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}" apply false
+	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}"
 }
-
-apply plugin: 'org.checkerframework'
-//apply plugin: 'extra-java-module-info'
 
 final boolean deactivateCheckerFramework = false
 final def fstv_version = '0.9.4'
@@ -15,13 +12,15 @@ logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEA
 logger.lifecycle "   -> Using common-filesystem-view version »${fstv_version}«"
 
 dependencies {
+	implementation project (':lib-common-semver')
+	
 	implementation "de.bernd_michaely:common-filesystem-view-base:${fstv_version}"
 	implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"
 	
 	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
 }
-
+	
 checkerFramework {
 	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
 	skipCheckerFramework = deactivateCheckerFramework

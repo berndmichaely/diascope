@@ -16,14 +16,13 @@
  */
 package de.bernd_michaely.diascope.app;
 
-import de.bernd_michaely.diascope.app.version.SemanticVersion;
+import de.bernd_michaely.common.semver.SemanticVersion;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.System.Logger;
 import java.util.Optional;
 
-import static de.bernd_michaely.diascope.app.version.SemanticVersion.parseSemanticVersion;
 import static java.lang.System.Logger.Level.*;
 import static java.util.function.Predicate.not;
 
@@ -40,7 +39,14 @@ class ApplicationVersion
 
 	private static void setInstance(String version)
 	{
-		instance = parseSemanticVersion(version);
+		try
+		{
+			instance = Optional.of(new SemanticVersion(version));
+		}
+		catch (IllegalArgumentException ex)
+		{
+			instance = Optional.empty();
+		}
 	}
 
 	/**

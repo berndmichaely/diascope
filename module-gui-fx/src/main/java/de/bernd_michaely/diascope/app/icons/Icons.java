@@ -31,9 +31,16 @@ import static java.lang.System.Logger.Level.*;
  */
 public enum Icons
 {
-	ShowSidePane, FileOpen,
+	// File:
+	FileOpen,
+	// Edit:
 	SelectAll, SelectInvert, SelectNone,
-	ViewFullscreen, ViewFullscreenPane,
+	// View:
+	ShowThumbs,
+	ViewFullscreen, ViewFullscreenPane, ShowSidePane,
+	ZoomFitWindow, ZoomFillWindow, Zoom100,
+	ViewRotateByExif, ViewDisplayMetaData,
+	// Navigation
 	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());

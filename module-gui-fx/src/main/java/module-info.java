@@ -24,12 +24,12 @@ module de.bernd_michaely.diascope.gui.fx
 {
 	requires de.bernd_michaely.common.filesystem.view.base;
 	requires de.bernd_michaely.common.filesystem.view.fx;
+	requires de.bernd_michaely.common.semver;
 	requires java.prefs;
 	requires javafx.controls;
 	requires javafx.graphics;
 	requires org.checkerframework.checker.qual;
 
 	exports de.bernd_michaely.diascope.app;
-	exports de.bernd_michaely.diascope.app.version;
 	opens de.bernd_michaely.diascope.app.application to javafx.graphics;
 }

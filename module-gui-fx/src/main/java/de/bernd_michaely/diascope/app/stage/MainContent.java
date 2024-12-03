@@ -18,6 +18,10 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.PreferencesUtil;
+import de.bernd_michaely.diascope.app.icons.Icons;
+import de.bernd_michaely.diascope.app.image.ImageDescriptor;
+import de.bernd_michaely.diascope.app.image.MultiImageView;
+import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameters;
 import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
@@ -25,27 +29,34 @@ import java.lang.System.Logger;
 import java.nio.file.Path;
 import java.util.prefs.Preferences;
 import javafx.application.Platform;
-import javafx.beans.binding.ListBinding;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyListProperty;
+import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.ObservableList;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Slider;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.ToolBar;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -57,6 +68,8 @@ import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_IMAG
 import static de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.RequestType.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static java.lang.System.Logger.Level.*;
+import static javafx.beans.binding.Bindings.not;
+import static javafx.beans.binding.Bindings.when;
 import static javafx.geometry.Pos.*;
 
 /**
@@ -70,17 +83,16 @@ class MainContent
 	private static final int INDEX_NO_SELECTION = -1;
 	private static final String MSG_FMT_LOADING_IMG = "%s ← loading…";
 	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
-	private final BorderPane borderPane = new BorderPane();
+	private final BorderPane borderPane;
 	private final SplitPane splitPane;
-	private final ImageView imageView = new ImageView();
-	private final BorderPane paneImage = new BorderPane(imageView);
-	private final BorderPane imageContainer = new BorderPane(paneImage);
+	private final MultiImageView multiImageView;
+	private final BorderPane imageContainer;
 	private final BorderPane statusLine;
-	private final Label labelStatus = new Label();
-	private final Label labelStatusIndex = new Label();
+	private final Label labelStatus;
+	private final Label labelStatusIndex;
 	private final ProgressControl progressControl;
 	private final ListView<ImageGroupDescriptor> listView;
-	private @MonotonicNonNull ListBinding<ImageGroupDescriptor> listBinding;
+	private final ReadOnlyListWrapper<ImageGroupDescriptor> listViewProperty;
 	private final ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty;
 	private final ImageDirectoryReader imageDirectoryReader;
 	private final ChangeListener<@Nullable Path> pathChangeListener;
@@ -88,24 +100,27 @@ class MainContent
 	private final Cursor cursorDefault;
 	private @MonotonicNonNull Paint paintDefaultText;
 	private int indexSelectedPrevious = INDEX_NO_SELECTION;
-	private @Nullable Stage stageFullscreen;
+	private @Nullable Stage stageFullScreen;
 	private @Nullable Region detachedComponent;
+	private final ToolBar toolBarImage;
+	private final BooleanProperty toolBarFullscreenProperty;
 
 	MainContent(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
 		ReadOnlyBooleanProperty propertyShowStatusLine)
 	{
 		this.selectedPathProperty = selectedPathProperty;
 		this.listView = new ListView<>();
+		this.listViewProperty = new ReadOnlyListWrapper<>(listView.getItems());
 		this.listView.setCellFactory(ImageListCell::new);
+		this.labelStatus = new Label();
 		this.statusLine = new BorderPane(labelStatus);
 		this.statusLine.setPrefHeight(new ProgressBar(0).getHeight());
 		BorderPane.setAlignment(labelStatus, CENTER_LEFT);
+		this.labelStatusIndex = new Label();
 		this.statusLine.setRight(labelStatusIndex);
-		paneImage.setBackground(Background.fill(Color.BLACK));
-		paneImage.setMinSize(0, 0);
-		this.imageView.fitWidthProperty().bind(paneImage.widthProperty());
-		this.imageView.fitHeightProperty().bind(paneImage.heightProperty());
-		paneImage.setOnScroll((ScrollEvent event) ->
+		this.multiImageView = new MultiImageView();
+		multiImageView.addLayer();
+		multiImageView.getRegion().setOnScroll((ScrollEvent event) ->
 		{
 			final double deltaY = event.getDeltaY();
 			final boolean forward = deltaY < 0.0;
@@ -134,10 +149,97 @@ class MainContent
 				}
 			}
 		});
-		this.imageView.setPreserveRatio(true);
+		this.imageContainer = new BorderPane(multiImageView.getRegion());
 		this.splitPane = new SplitPane(this.imageContainer, this.listView);
 		SplitPane.setResizableWithParent(this.listView, false);
+		this.borderPane = new BorderPane();
+		// ToolBar:
+		final var buttonZoomFitWindow = new Button();
+		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
+		if (iconZoomFitWindow != null)
+		{
+			buttonZoomFitWindow.setGraphic(new ImageView(iconZoomFitWindow));
+		}
+		else
+		{
+			buttonZoomFitWindow.setText("Fit");
+		}
+		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
+		buttonZoomFitWindow.setOnAction(event -> multiImageView.zoomModeProperty().set(ZoomMode.FIT));
+		final var buttonZoomFillWindow = new Button();
+		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
+		if (iconZoomFillWindow != null)
+		{
+			buttonZoomFillWindow.setGraphic(new ImageView(iconZoomFillWindow));
+		}
+		else
+		{
+			buttonZoomFillWindow.setText("Fill");
+		}
+		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
+		buttonZoomFillWindow.setOnAction(event -> multiImageView.zoomModeProperty().set(ZoomMode.FILL));
+		final var buttonZoom100 = new Button();
+		final Image iconZoom100 = Icons.Zoom100.getIconImage();
+		if (iconZoom100 != null)
+		{
+			buttonZoom100.setGraphic(new ImageView(iconZoom100));
+		}
+		else
+		{
+			buttonZoom100.setText("100%");
+		}
+		buttonZoom100.setTooltip(new Tooltip("Zoom image to 100%"));
+		final var sliderZoom = new Slider(0.01, 4, 1);
+		buttonZoom100.setOnAction(event ->
+		{
+			multiImageView.zoomModeProperty().set(ZoomMode.FIXED);
+			sliderZoom.setValue(1.0);
+		});
+		sliderZoom.setTooltip(new Tooltip("Zoom factor"));
+		sliderZoom.valueProperty().addListener(onChange(value ->
+		{
+			multiImageView.zoomModeProperty().set(ZoomMode.FIXED);
+			multiImageView.zoomFixedProperty().set(value.doubleValue());
+		}));
+		sliderZoom.setTooltip(new Tooltip("Set zoom factor"));
+		sliderZoom.setOnMouseClicked(event ->
+		{
+			if (event.getClickCount() == 2)
+			{
+				multiImageView.zoomModeProperty().set(ZoomMode.FIXED);
+				multiImageView.zoomFixedProperty().set(sliderZoom.getValue());
+			}
+		});
+		final var labelZoom = new Label("100.0%");
+		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
+		labelZoom.textProperty().bind(when(multiImageView.isSingleSelectedProperty())
+			.then(multiImageView.zoomFactorProperty().multiply(100.0).asString("%.1f%% "))
+			.otherwise(""));
+		final var labelZoomWidth = new Label("8888.8% ");
+		labelZoomWidth.setVisible(false);
+		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);
+		stackPaneZoom.setAlignment(CENTER_RIGHT);
+//		stackPaneZoom.setBackground(Background.fill(Color.ROSYBROWN));
+		final var sliderRotation = new Slider(0, 360, 0);
+		sliderRotation.setTooltip(new Tooltip("Set image rotation"));
+		final var labelRotation = new Label("0°");
+		labelRotation.setTooltip(new Tooltip("Current image rotation"));
+		labelRotation.textProperty().bind(when(multiImageView.isSingleSelectedProperty())
+			.then(multiImageView.rotateProperty().asString("%.0f° "))
+			.otherwise(""));
+		final var labelRotationWidth = new Label(" 360° ");
+		labelRotationWidth.setVisible(false);
+		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);
+		stackPaneRotation.setAlignment(CENTER_RIGHT);
+//		stackPaneRotation.setBackground(Background.fill(Color.DARKKHAKI));
+		this.toolBarImage = new ToolBar(
+			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
+			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation);
+		toolBarImage.disableProperty().bind(not(multiImageView.isSingleSelectedProperty()));
+		this.toolBarFullscreenProperty = new SimpleBooleanProperty();
+		this.multiImageView.rotateProperty().bind(sliderRotation.valueProperty());
 		this.borderPane.setCenter(this.splitPane);
+		this.borderPane.setTop(toolBarImage);
 		this.progressControl = new ProgressControl(this.statusLine);
 		final var statusLines = new VBox();
 		this.borderPane.setBottom(statusLines);
@@ -218,12 +320,14 @@ class MainContent
 	/**
 	 * Display the given image.
 	 *
-	 * @param image the given image, may be null to clear the display
+	 * @param taskResult the given image, may be null to clear the display
 	 */
-	@SuppressWarnings("argument")
-	private void setImage(@Nullable Image image)
+	private void setImageDescriptor(ImageLoader.TaskResult taskResult)
 	{
-		imageView.setImage(image);
+		final var image = taskResult.image();
+		final var path = taskResult.path();
+		multiImageView.setImageDescriptor(image != null && path != null ?
+			new ImageDescriptor(image, path) : null);
 	}
 
 	private Paint getDefaultTextPaint()
@@ -240,25 +344,9 @@ class MainContent
 		return listView.getSelectionModel().selectedIndexProperty();
 	}
 
-	@SuppressWarnings("method.invocation")
-	ListBinding<ImageGroupDescriptor> getListBinding()
+	ReadOnlyListProperty<ImageGroupDescriptor> getListViewProperty()
 	{
-		if (listBinding == null)
-		{
-			listBinding = new ListBinding<ImageGroupDescriptor>()
-			{
-				{
-					bind(listView.getItems());
-				}
-
-				@Override
-				protected ObservableList<ImageGroupDescriptor> computeValue()
-				{
-					return listView.getItems();
-				}
-			};
-		}
-		return listBinding;
+		return listViewProperty.getReadOnlyProperty();
 	}
 
 	void selectFirst()
@@ -300,7 +388,7 @@ class MainContent
 				labelStatus.setText(MSG_FMT_LOADING_IMG.formatted(strPath));
 				labelStatus.setTextFill(Color.SKYBLUE);
 			}
-			setImage(taskResult.image());
+			setImageDescriptor(taskResult);
 		}));
 		this.listView.getSelectionModel().selectedIndexProperty()
 			.addListener(onChange(this::updateSelectedIndex));
@@ -332,18 +420,19 @@ class MainContent
 		{
 			logger.log(WARNING, "No image split pane available");
 		}
-		this.paneImage.setOnMouseClicked(event ->
+		multiImageView.getRegion().setOnMouseClicked(event ->
 		{
-			if (event.getClickCount() > 1)
+			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
 			{
-				if (isFullscreen())
+				if (isFullScreen())
 				{
-					closeFullscreen();
+					closeFullScreen();
 				}
 				else
 				{
-					setFullscreen(event.isShiftDown());
+					setFullScreen(event.isShiftDown());
 				}
+				event.consume();
 			}
 		});
 	}
@@ -391,9 +480,9 @@ class MainContent
 			}
 			else
 			{
-				if (imageContainer.getChildren().remove(paneImage))
+				if (imageContainer.getChildren().remove(multiImageView.getRegion()))
 				{
-					result = paneImage;
+					result = multiImageView.getRegion();
 				}
 				else
 				{
@@ -424,45 +513,84 @@ class MainContent
 			{
 				borderPane.setCenter(splitPane);
 			}
-			else if (root == paneImage)
+			else if (root == multiImageView.getRegion())
 			{
-				imageContainer.setCenter(paneImage);
+				imageContainer.setCenter(multiImageView.getRegion());
 			}
 			detachedComponent = null;
 		}
 	}
 
-	boolean isFullscreen()
+	private @Nullable ChangeListener<Boolean> toolBarFullscreenListener;
+
+	private boolean isFullScreen()
 	{
-		return this.stageFullscreen != null;
+		return this.stageFullScreen != null;
 	}
 
-	private void closeFullscreen()
+	private void closeFullScreen()
 	{
-		if (stageFullscreen != null)
+		final Stage stFullScreen = stageFullScreen;
+		if (stFullScreen != null)
 		{
-			stageFullscreen.close();
+			final ChangeListener<Boolean> listener = toolBarFullscreenListener;
+			if (listener != null)
+			{
+				toolBarFullscreenProperty.set(false);
+				toolBarFullscreenProperty.removeListener(listener);
+			}
+			stFullScreen.close();
 			reAttachFullscreenComponent();
-			stageFullscreen = null;
+			multiImageView.scrollBarsDisabledProperty().set(false);
+			stageFullScreen = null;
 		}
 	}
 
-	void setFullscreen(boolean fullPane)
+	void setFullScreen(boolean fullPane)
 	{
-		if (!isFullscreen())
+		if (!isFullScreen())
 		{
 			final var stage = new Stage();
-			stage.setOnCloseRequest(_ -> closeFullscreen());
-			stageFullscreen = stage;
+			stage.setOnCloseRequest(_ -> closeFullScreen());
+			stageFullScreen = stage;
+			multiImageView.scrollBarsDisabledProperty().set(true);
 			final var root = detachFullscreenComponent(fullPane);
 			final var rootPane = new BorderPane(root);
 			final var scene = new Scene(rootPane);
+			toolBarFullscreenListener = onChange(isFullscreen ->
+			{
+				if (isFullscreen)
+				{
+					borderPane.getChildren().remove(toolBarImage);
+					rootPane.setTop(toolBarImage);
+				}
+				else
+				{
+					rootPane.getChildren().remove(toolBarImage);
+					borderPane.setTop(toolBarImage);
+				}
+			});
+			toolBarFullscreenProperty.addListener(toolBarFullscreenListener);
 			scene.addEventFilter(KeyEvent.KEY_PRESSED, event ->
 			{
-				if (event.getCode().equals(KeyCode.ESCAPE) || event.getCode().equals(KeyCode.F11))
+				switch (event.getCode())
 				{
-					closeFullscreen();
-					event.consume();
+					case S ->
+					{
+						multiImageView.scrollBarsDisabledProperty().set(
+							!multiImageView.scrollBarsDisabledProperty().get());
+						event.consume();
+					}
+					case T ->
+					{
+						toolBarFullscreenProperty.set(!toolBarFullscreenProperty.get());
+						event.consume();
+					}
+					case ESCAPE, F11 ->
+					{
+						closeFullScreen();
+						event.consume();
+					}
 				}
 			});
 			SceneStylesheetUtil.setStylesheet(scene);

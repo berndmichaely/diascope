@@ -34,9 +34,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.prefs.Preferences;
 import javafx.application.Platform;
-import javafx.beans.binding.ListBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
@@ -243,8 +243,8 @@ public class MainWindow
 		}
 		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisibleProperty);
 		final var menuItemFullscreen = new MenuItem("Fullscreen");
-		menuItemFullscreen.setOnAction(_ -> mainContent.setFullscreen(false));
-		menuItemFullscreen.disableProperty().bind(getListBinding().emptyProperty());
+		menuItemFullscreen.setOnAction(_ -> mainContent.setFullScreen(false));
+		menuItemFullscreen.disableProperty().bind(getListViewProperty().emptyProperty());
 		menuItemFullscreen.setAccelerator(new KeyCodeCombination(KeyCode.F11));
 		final Button buttonViewFullscreen = new Button();
 		if (iconViewFullscreen != null)
@@ -258,8 +258,8 @@ public class MainWindow
 		}
 		adaptActionState(menuItemFullscreen, buttonViewFullscreen, "Show image in fullscreen mode");
 		final var menuItemFullscreenPane = new MenuItem("Fullscreen Pane");
-		menuItemFullscreenPane.setOnAction(_ -> mainContent.setFullscreen(true));
-		menuItemFullscreenPane.disableProperty().bind(getListBinding().emptyProperty());
+		menuItemFullscreenPane.setOnAction(_ -> mainContent.setFullScreen(true));
+		menuItemFullscreenPane.disableProperty().bind(getListViewProperty().emptyProperty());
 		menuItemFullscreenPane.setAccelerator(new KeyCodeCombination(KeyCode.F11, KeyCombination.SHIFT_DOWN));
 		final Button buttonViewFullscreenPane = new Button();
 		if (iconViewFullscreenPane != null)
@@ -280,22 +280,22 @@ public class MainWindow
 		menuItemShowFirst.setOnAction(_ -> mainContent.selectFirst());
 		menuItemShowFirst.disableProperty().bind(
 			selectedIndexProperty().isEqualTo(0).or(
-				getListBinding().sizeProperty().lessThanOrEqualTo(1)));
+				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var menuItemShowPrev = new MenuItem("Select Previous");
 		menuItemShowPrev.setOnAction(_ -> mainContent.selectPrevious());
 		menuItemShowPrev.disableProperty().bind(
 			selectedIndexProperty().isEqualTo(0).or(
-				getListBinding().sizeProperty().lessThanOrEqualTo(1)));
+				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var menuItemShowNext = new MenuItem("Select Next");
 		menuItemShowNext.setOnAction(_ -> mainContent.selectselectNext());
 		menuItemShowNext.disableProperty().bind(
-			selectedIndexProperty().isEqualTo(getListBinding().sizeProperty().subtract(1)).or(
-				getListBinding().sizeProperty().lessThanOrEqualTo(1)));
+			selectedIndexProperty().isEqualTo(getListViewProperty().sizeProperty().subtract(1)).or(
+				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var menuItemShowLast = new MenuItem("Select Last");
 		menuItemShowLast.setOnAction(_ -> mainContent.selectselectLast());
 		menuItemShowLast.disableProperty().bind(
-			selectedIndexProperty().isEqualTo(getListBinding().sizeProperty().subtract(1)).or(
-				getListBinding().sizeProperty().lessThanOrEqualTo(1)));
+			selectedIndexProperty().isEqualTo(getListViewProperty().sizeProperty().subtract(1)).or(
+				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var buttonItemShowFirst = new Button();
 		final var buttonItemShowPrev = new Button();
 		final var buttonItemShowNext = new Button();
@@ -484,9 +484,9 @@ public class MainWindow
 		return mainContent.selectedIndexProperty();
 	}
 
-	private ListBinding<ImageGroupDescriptor> getListBinding()
+	private ReadOnlyListProperty<ImageGroupDescriptor> getListViewProperty()
 	{
-		return mainContent.getListBinding();
+		return mainContent.getListViewProperty();
 	}
 
 	private void adaptActionState(MenuItem from, Button to)

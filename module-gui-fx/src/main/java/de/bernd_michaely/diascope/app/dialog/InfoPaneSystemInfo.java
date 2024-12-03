@@ -69,7 +69,7 @@ class InfoPaneSystemInfo implements InfoPane
 			textAppVersion.setTooltip(tooltipAppVersion);
 		}, () -> textAppVersion.setText(MSG_UNKNOWN));
 
-		final Label headerJreVersion = new Label("JRE Version:");
+		final Label headerJreVersion = new Label("Java Runtime Version:");
 		final Label textJreVersion = new Label(JreVersionUtil.getJreVersionInfo());
 
 		final Label headerJavaFXVersion = new Label("JavaFX Version:");

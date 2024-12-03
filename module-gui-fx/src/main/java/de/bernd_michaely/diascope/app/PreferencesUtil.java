@@ -16,7 +16,7 @@
  */
 package de.bernd_michaely.diascope.app;
 
-import de.bernd_michaely.diascope.app.version.SemanticVersion;
+import de.bernd_michaely.common.semver.SemanticVersion;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
