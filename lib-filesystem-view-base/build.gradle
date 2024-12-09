@@ -11,10 +11,6 @@ logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEA
 dependencies {
 	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
-
-	testCompileOnly "junit:junit:${versionJUnitVintage}"
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation 'com.google.jimfs:jimfs:1.2'
 }
 
 checkerFramework {
@@ -22,15 +18,18 @@ checkerFramework {
 	skipCheckerFramework = deactivateCheckerFramework
 	excludeTests = true
 }
-	
+
 testing {
 	suites {
 		test {
 			useJUnitJupiter(versionJUnit)
+			dependencies {
+				implementation 'com.google.jimfs:jimfs:1.2'
+			}
 		}
 	}
 }
-
+	
 tasks.named('test') {
 	logger.lifecycle "=> Configuring task »${name}« for JUnit"
 	systemProperty 'java.util.logging.config.file', rootProject.file('logging.properties')

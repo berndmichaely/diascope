@@ -103,8 +103,8 @@ allprojects {
 	ext.versionJUnit = '5.11.3'
 	ext.versionJUnitVintage = '4.13.2'
 	
-	ext.versionCheckerFramework = '3.48.2'
-	ext.versionCheckerFrameworkPlugin = '0.6.46'
+	ext.versionCheckerFramework = '3.48.3'
+	ext.versionCheckerFrameworkPlugin = '0.6.47'
 	
 	repositories {
 		mavenCentral()
@@ -196,41 +196,41 @@ task getVersionShield {
 	group javadoc.group
 	doLast {
 		final String label = toShieldParam(project.name)
-		final String message = toShieldParam(versionBase)
+		final String message = toShieldParam(project.version - ~'\\+.*$' - ~'-snapshot$')
 		final URL url = new URI("https://img.shields.io/badge/${label}-${message}-blue").toURL()
 		logger.lifecycle "→ getting data from URL »${url}«"
 		fileVersionShield.write(url.getText())
 	}
 }
 
-	application {
-		mainModule = 'de.bernd_michaely.diascope'
-		mainClass  = 'de.bernd_michaely.diascope.Launcher'
-		}
+application {
+	mainModule = 'de.bernd_michaely.diascope'
+	mainClass  = 'de.bernd_michaely.diascope.Launcher'
+}
 
-		jar {
-			javafx {
-				//	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
-				modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls' ]
-			}
+jar {
+	javafx {
+		//	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
+		modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls' ]
+	}
 
-			manifest {
-				attributes ( 'Main-Class' : "${application.mainModule.get()}/${application.mainClass.get()}" )
-			}
-		}
+	manifest {
+		attributes ( 'Main-Class' : "${application.mainModule.get()}/${application.mainClass.get()}" )
+	}
+}
 		
-		run {
-			logger.lifecycle " -> run task modularity : ${modularity.inferModulePath.get()}"
-			//args = [ '--development', 'running from within gradle' ]
+run {
+	logger.lifecycle " -> run task modularity : ${modularity.inferModulePath.get()}"
+	//args = [ '--development', 'running from within gradle' ]
 	
-			systemProperty 'java.util.logging.config.file', file('logging.properties')
+	systemProperty 'java.util.logging.config.file', file('logging.properties')
 	
-			def propertyNameDiascopeArgs = 'diascope.arg'
-			int i = 0
-			while (project.hasProperty("${propertyNameDiascopeArgs}.${i}")) {
-				args += project.getProperty("${propertyNameDiascopeArgs}.${i++}")
-			}
-			logger.lifecycle " -> Running with args :"
-			int k = 0
-			for (def arg: args) logger.lifecycle "    [${k++}] : »${arg}«"
-		}
+	def propertyNameDiascopeArgs = 'diascope.arg'
+	int i = 0
+	while (project.hasProperty("${propertyNameDiascopeArgs}.${i}")) {
+		args += project.getProperty("${propertyNameDiascopeArgs}.${i++}")
+	}
+	logger.lifecycle " -> Running with args :"
+	int k = 0
+	for (def arg: args) logger.lifecycle "    [${k++}] : »${arg}«"
+}
