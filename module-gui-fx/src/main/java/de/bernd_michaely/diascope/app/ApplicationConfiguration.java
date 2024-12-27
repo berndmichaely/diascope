@@ -33,8 +33,14 @@ import static de.bernd_michaely.diascope.app.ApplicationConfiguration.LaunchType
  */
 public class ApplicationConfiguration
 {
+	private static final String STR_APP_NAME = "Diascope";
 	private static @MonotonicNonNull ApplicationConfiguration instance;
 	private final State state;
+
+	public static String getApplicationName()
+	{
+		return STR_APP_NAME;
+	}
 
 	/**
 	 * The application starting mode.

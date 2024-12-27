@@ -21,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Class to handle a semantic version build.
  */
-public class Build extends DotSeparatedVersionPart
+public final class Build extends DotSeparatedVersionPart
 {
 	Build()
 	{

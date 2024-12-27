@@ -17,18 +17,21 @@
 package de.bernd_michaely.diascope.app.image;
 
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollBar;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.lang.Double.max;
+import static java.lang.Double.min;
 import static javafx.scene.layout.AnchorPane.setBottomAnchor;
 import static javafx.scene.layout.AnchorPane.setLeftAnchor;
 import static javafx.scene.layout.AnchorPane.setRightAnchor;
@@ -43,14 +46,24 @@ class Viewport
 {
 	private final AnchorPane paneLayers;
 	private final ScrollBar scrollBarH, scrollBarV;
-	private final ReadOnlyBooleanProperty scrollBarsDisabled;
-	private final ReadOnlyDoubleWrapper viewportWidthScroll, viewportHeightScroll;
+	private final ObservableBooleanValue scrollBarsDisabled;
 	private final DoubleProperty focusPointX, focusPointY;
+	private final DoubleProperty layersMaxWidth, layersMaxHeight;
+	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
+	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
+	private double mouseDragStartX, mouseDragStartY;
+	private double mouseScrollStartX, mouseScrollStartY;
 
-	Viewport(ReadOnlyBooleanProperty scrollBarsDisabled)
+	Viewport(ObservableBooleanValue scrollBarsDisabled)
 	{
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
+		this.layersMaxWidth = new SimpleDoubleProperty();
+		this.layersMaxHeight = new SimpleDoubleProperty();
+		this.scrollRangeMaxWidth = new ReadOnlyDoubleWrapper();
+		this.scrollRangeMaxHeight = new ReadOnlyDoubleWrapper();
+		this.scrollPosX = new ReadOnlyDoubleWrapper();
+		this.scrollPosY = new ReadOnlyDoubleWrapper();
 		this.scrollBarH = new ScrollBar();
 		initScrollBar(scrollBarH);
 		scrollBarH.setOrientation(Orientation.HORIZONTAL);
@@ -83,10 +96,34 @@ class Viewport
 		setTopAnchor(scrollBarV, 0.0);
 		setRightAnchor(scrollBarV, 0.0);
 		scrollBarH.heightProperty().addListener(onChange(h -> setBottomAnchor(scrollBarV, h.doubleValue())));
-		this.viewportWidthScroll = new ReadOnlyDoubleWrapper();
-		viewportWidthScroll.bind(paneLayers.widthProperty().subtract(scrollBarV.widthProperty()));
-		this.viewportHeightScroll = new ReadOnlyDoubleWrapper();
-		viewportHeightScroll.bind(paneLayers.heightProperty().subtract(scrollBarH.heightProperty()));
+		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(paneLayers.widthProperty()));
+		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(paneLayers.heightProperty()));
+		scrollPosX.bind(scrollBarH.valueProperty().multiply(scrollRangeMaxWidth));
+		scrollPosY.bind(scrollBarV.valueProperty().multiply(scrollRangeMaxHeight));
+		paneLayers.setOnMousePressed(event ->
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				mouseDragStartX = event.getX();
+				mouseDragStartY = event.getY();
+				mouseScrollStartX = scrollBarH.getValue();
+				mouseScrollStartY = scrollBarV.getValue();
+			}
+		});
+		paneLayers.setOnMouseDragged(event ->
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				final double px = scrollRangeMaxWidth.doubleValue();
+				final double py = scrollRangeMaxHeight.doubleValue();
+				final double dx = (event.getX() - mouseDragStartX) / px;
+				final double dy = (event.getY() - mouseDragStartY) / py;
+				final double x = min(max(0.0, mouseScrollStartX - dx), 1.0);
+				final double y = min(max(0.0, mouseScrollStartY - dy), 1.0);
+				scrollBarH.setValue(x);
+				scrollBarV.setValue(y);
+			}
+		});
 	}
 
 	private static void initScrollBar(ScrollBar scrollBar)
@@ -96,6 +133,7 @@ class Viewport
 		scrollBar.setValue(0.5);
 		scrollBar.setUnitIncrement(0.05);
 		scrollBar.setBlockIncrement(0.2);
+		scrollBar.setOpacity(0.75);
 	}
 
 	ScrollBar getScrollBarH()
@@ -108,17 +146,7 @@ class Viewport
 		return scrollBarV;
 	}
 
-	ReadOnlyDoubleProperty viewportWidthScrollProperty()
-	{
-		return viewportWidthScroll.getReadOnlyProperty();
-	}
-
-	ReadOnlyDoubleProperty viewportHeightScrollProperty()
-	{
-		return viewportHeightScroll.getReadOnlyProperty();
-	}
-
-	ReadOnlyBooleanProperty scrollBarsDisabledProperty()
+	ObservableBooleanValue scrollBarsDisabledProperty()
 	{
 		return scrollBarsDisabled;
 	}
@@ -141,6 +169,36 @@ class Viewport
 	ReadOnlyDoubleProperty heightProperty()
 	{
 		return paneLayers.heightProperty();
+	}
+
+	DoubleProperty layersMaxWidthProperty()
+	{
+		return layersMaxWidth;
+	}
+
+	DoubleProperty layersMaxHeightProperty()
+	{
+		return layersMaxHeight;
+	}
+
+	ReadOnlyDoubleProperty scrollRangeMaxWidthProperty()
+	{
+		return scrollRangeMaxWidth.getReadOnlyProperty();
+	}
+
+	ReadOnlyDoubleProperty scrollRangeMaxHeightProperty()
+	{
+		return scrollRangeMaxHeight.getReadOnlyProperty();
+	}
+
+	ReadOnlyDoubleProperty scrollPosXProperty()
+	{
+		return scrollPosX.getReadOnlyProperty();
+	}
+
+	ReadOnlyDoubleProperty scrollPosYProperty()
+	{
+		return scrollPosY.getReadOnlyProperty();
 	}
 
 	Pane getPaneLayers()

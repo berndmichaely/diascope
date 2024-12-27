@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
+import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import java.io.File;
 import java.nio.file.Path;
 import javafx.beans.binding.StringBinding;
@@ -25,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import static de.bernd_michaely.diascope.app.stage.GlobalConstants.PATH_USER_HOME;
 import static de.bernd_michaely.diascope.app.stage.StringBindingAppTitle.POSTFIX_DEVELOPMENT_MODE;
-import static de.bernd_michaely.diascope.app.stage.StringBindingAppTitle.TITLE_APPLICATION;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -52,7 +52,7 @@ public class StringBindingAppTitleTest
 
 	private void testCalculatedValue(boolean devMode)
 	{
-		final String title = TITLE_APPLICATION;
+		final String title = ApplicationConfiguration.getApplicationName();
 		final String titlePrefix = title + " - ";
 		final var pathProperty = new ReadOnlyObjectWrapper<Path>();
 		final var developmentModeProperty = new SimpleBooleanProperty(devMode);

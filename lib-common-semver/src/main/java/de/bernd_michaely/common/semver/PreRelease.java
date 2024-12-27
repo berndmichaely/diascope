@@ -21,7 +21,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Class to handle a semantic version pre-release.
  */
-public class PreRelease extends DotSeparatedVersionPart implements Comparable<PreRelease>
+public final class PreRelease extends DotSeparatedVersionPart implements Comparable<PreRelease>
 {
 	PreRelease()
 	{

@@ -72,11 +72,11 @@ import javafx.stage.Stage;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.ApplicationConfiguration.LaunchType.*;
+import static de.bernd_michaely.diascope.app.ApplicationConfiguration.getApplicationName;
 import static de.bernd_michaely.diascope.app.control.ScaleBox.SpaceGainingMode.*;
 import static de.bernd_michaely.diascope.app.dialog.ResizableDialog.DialogType.*;
 import static de.bernd_michaely.diascope.app.stage.GlobalConstants.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
-import static de.bernd_michaely.diascope.app.stage.StringBindingAppTitle.TITLE_APPLICATION;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static java.lang.System.Logger.Level.*;
 import static java.util.Objects.requireNonNullElse;
@@ -205,7 +205,7 @@ public class MainWindow
 		final EventHandler<ActionEvent> actionSysEnv = e ->
 			dialogSystemEnvironment.show(stage, new PaneInfoSysEnv().getDisplay());
 		final EventHandler<ActionEvent> actionInfoAbout = e ->
-			dialogInfoAbout.show(stage, new PaneInfoAbout(TITLE_APPLICATION).getDisplay());
+			dialogInfoAbout.show(stage, new PaneInfoAbout(getApplicationName()).getDisplay());
 		// Icons:
 		final Image iconFstv = Icons.ShowSidePane.getIconImage();
 		final Image iconFileOpen = Icons.FileOpen.getIconImage();

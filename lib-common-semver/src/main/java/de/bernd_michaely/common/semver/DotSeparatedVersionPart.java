@@ -23,7 +23,7 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 /**
  * Base class to handle a dot separated semantic version part.
  */
-public abstract class DotSeparatedVersionPart
+sealed public abstract class DotSeparatedVersionPart permits PreRelease, Build
 {
 	private static final String DELIMITER = "\\.";
 	private static final Identifier[] NULL = new Identifier[0];

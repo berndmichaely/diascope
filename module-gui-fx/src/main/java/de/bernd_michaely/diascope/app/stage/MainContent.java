@@ -541,7 +541,7 @@ class MainContent
 			}
 			stFullScreen.close();
 			reAttachFullscreenComponent();
-			multiImageView.scrollBarsDisabledProperty().set(false);
+			multiImageView.scrollBarsEnabledProperty().set(false);
 			stageFullScreen = null;
 		}
 	}
@@ -553,7 +553,7 @@ class MainContent
 			final var stage = new Stage();
 			stage.setOnCloseRequest(_ -> closeFullScreen());
 			stageFullScreen = stage;
-			multiImageView.scrollBarsDisabledProperty().set(true);
+			multiImageView.scrollBarsEnabledProperty().set(false);
 			final var root = detachFullscreenComponent(fullPane);
 			final var rootPane = new BorderPane(root);
 			final var scene = new Scene(rootPane);
@@ -577,8 +577,8 @@ class MainContent
 				{
 					case S ->
 					{
-						multiImageView.scrollBarsDisabledProperty().set(
-							!multiImageView.scrollBarsDisabledProperty().get());
+						multiImageView.scrollBarsEnabledProperty().set(
+							!multiImageView.scrollBarsEnabledProperty().get());
 						event.consume();
 					}
 					case T ->

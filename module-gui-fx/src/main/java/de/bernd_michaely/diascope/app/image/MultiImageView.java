@@ -17,7 +17,6 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.lang.System.Logger;
-import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -29,8 +28,10 @@ import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.input.MouseButton;
@@ -38,6 +39,9 @@ import javafx.scene.layout.Pane;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.lang.System.Logger.Level.*;
+import static javafx.beans.binding.Bindings.max;
+import static javafx.beans.binding.Bindings.not;
+import static javafx.beans.binding.Bindings.or;
 import static javafx.scene.layout.AnchorPane.setBottomAnchor;
 import static javafx.scene.layout.AnchorPane.setLeftAnchor;
 import static javafx.scene.layout.AnchorPane.setRightAnchor;
@@ -51,9 +55,9 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
 public class MultiImageView
 {
 	private static final int NULL_INDEX = -1;
-	private final List<ImageLayer> layers;
+	private final ObservableList<ImageLayer> layers;
 	private final ImageLayer nullLayer;
-	private final ReadOnlyListWrapper layersProperty;
+	private final ReadOnlyListWrapper<ImageLayer> layersProperty;
 	private final ReadOnlyIntegerWrapper selectedSingleIndex;
 	private final ReadOnlyBooleanWrapper isSingleSelected;
 	private final ReadOnlyObjectWrapper<ImageLayer> selectedLayer;
@@ -62,7 +66,7 @@ public class MultiImageView
 	private final DoubleProperty rotateProperty;
 	private final DoubleProperty zoomFixedProperty;
 	private final ObjectProperty<ZoomMode> zoomModeProperty;
-	private final ReadOnlyBooleanWrapper scrollBarsDisabled;
+	private final BooleanProperty scrollBarsEnabled;
 
 	public enum ZoomMode
 	{
@@ -93,11 +97,10 @@ public class MultiImageView
 
 	public MultiImageView()
 	{
-		final ObservableList<ImageLayer> observableList = FXCollections.observableArrayList();
-		this.layers = observableList;
-		this.layersProperty = new ReadOnlyListWrapper<>(observableList);
-		this.scrollBarsDisabled = new ReadOnlyBooleanWrapper();
-		this.viewport = new Viewport(scrollBarsDisabled.getReadOnlyProperty());
+		this.layers = FXCollections.observableArrayList();
+		this.layersProperty = new ReadOnlyListWrapper<>(layers);
+		this.scrollBarsEnabled = new SimpleBooleanProperty();
+		this.viewport = new Viewport(not(scrollBarsEnabled));
 		this.nullLayer = new NullImageLayer(viewport);
 		this.rotateProperty = new SimpleDoubleProperty(0.0);
 		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
@@ -126,8 +129,7 @@ public class MultiImageView
 	public void addLayer(int index)
 	{
 		final boolean wasEmpty = layers.isEmpty();
-		final ImageLayer layer = createImageLayer();
-		layers.add(index, layer);
+		final ImageLayer layer = createImageLayer(index);
 		if (wasEmpty)
 		{
 			selectedLayer.set(layer);
@@ -135,9 +137,10 @@ public class MultiImageView
 		}
 	}
 
-	private ImageLayer createImageLayer()
+	private ImageLayer createImageLayer(int index)
 	{
 		final var imageLayer = new ImageLayer(viewport);
+		layers.add(index, imageLayer);
 		imageLayer.rotateProperty().bind(rotateProperty);
 		imageLayer.zoomFixedProperty().bind(zoomFixedProperty);
 		imageLayer.zoomModeProperty().bind(zoomModeProperty);
@@ -146,9 +149,20 @@ public class MultiImageView
 		setLeftAnchor(paneLayer, 0.0);
 		setRightAnchor(paneLayer, 0.0);
 		setBottomAnchor(paneLayer, 0.0);
-		viewport.getPaneLayers().getChildren().addFirst(paneLayer);
-		viewport.getScrollBarH().visibleProperty().bind(imageLayer.scrollBarEnabledHorizontalProperty());
-		viewport.getScrollBarV().visibleProperty().bind(imageLayer.scrollBarEnabledVerticalProperty());
+		viewport.getPaneLayers().getChildren().add(index, paneLayer);
+		updateScrollRangeBindings();
+		// scrollbar visibility bindings:
+		final ImageLayer firstLayer = layers.getFirst();
+		ObservableBooleanValue propSbvH = firstLayer.scrollBarEnabledHorizontalProperty();
+		ObservableBooleanValue propSbvV = firstLayer.scrollBarEnabledVerticalProperty();
+		for (int i = 1; i < layers.size(); i++)
+		{
+			final ImageLayer layer = layers.get(i);
+			propSbvH = or(propSbvH, layer.scrollBarEnabledHorizontalProperty());
+			propSbvV = or(propSbvV, layer.scrollBarEnabledVerticalProperty());
+		}
+		viewport.getScrollBarH().visibleProperty().bind(propSbvH);
+		viewport.getScrollBarV().visibleProperty().bind(propSbvV);
 		paneLayer.setOnMouseClicked(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 1 &&
@@ -160,6 +174,34 @@ public class MultiImageView
 			}
 		});
 		return imageLayer;
+	}
+
+	private void updateScrollRangeBindings()
+	{
+		if (layers.isEmpty())
+		{
+			viewport.layersMaxWidthProperty().unbind();
+			viewport.layersMaxWidthProperty().set(0.0);
+			viewport.layersMaxHeightProperty().unbind();
+			viewport.layersMaxHeightProperty().set(0.0);
+		}
+		else
+		{
+			final ImageLayer first = layers.getFirst();
+			first.maxToPreviousWidthProperty().bind(max(first.layerWidthProperty(), 0.0));
+			first.maxToPreviousHeightProperty().bind(max(first.layerHeightProperty(), 0.0));
+			for (int i = 1; i < layers.size(); i++)
+			{
+				final ImageLayer lPrev = layers.get(i - 1);
+				final ImageLayer lNext = layers.get(i);
+				lNext.maxToPreviousWidthProperty().bind(
+					max(lPrev.maxToPreviousWidthProperty(), lNext.layerWidthProperty()));
+				lNext.maxToPreviousHeightProperty().bind(
+					max(lPrev.maxToPreviousHeightProperty(), lNext.layerHeightProperty()));
+			}
+			viewport.layersMaxWidthProperty().bind(layers.getLast().maxToPreviousWidthProperty());
+			viewport.layersMaxHeightProperty().bind(layers.getLast().maxToPreviousHeightProperty());
+		}
 	}
 
 	private void toggleLayerSelection(ImageLayer layer)
@@ -180,7 +222,7 @@ public class MultiImageView
 					.filter(l -> l != layer)
 					.forEach(l -> l.selectedProperty().set(false));
 			}
-			final long numSelected = layers.stream().filter(ImageLayer::isSelected).count();
+			final int numSelected = (int) layers.stream().filter(ImageLayer::isSelected).count();
 			isSingleSelected.set(numSelected == 1);
 			if (isSingleSelected.get())
 			{
@@ -225,9 +267,9 @@ public class MultiImageView
 		return rotateProperty;
 	}
 
-	public BooleanProperty scrollBarsDisabledProperty()
+	public BooleanProperty scrollBarsEnabledProperty()
 	{
-		return scrollBarsDisabled;
+		return scrollBarsEnabled;
 	}
 
 	public DoubleProperty zoomFixedProperty()

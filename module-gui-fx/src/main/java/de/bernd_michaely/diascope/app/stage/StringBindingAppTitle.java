@@ -23,6 +23,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.diascope.app.ApplicationConfiguration.getApplicationName;
 import static de.bernd_michaely.diascope.app.stage.GlobalConstants.PATH_USER_HOME;
 import static java.util.Objects.requireNonNull;
 
@@ -33,7 +34,6 @@ import static java.util.Objects.requireNonNull;
  */
 class StringBindingAppTitle extends StringBinding
 {
-	static final String TITLE_APPLICATION = "Diascope";
 	static final String POSTFIX_DEVELOPMENT_MODE = " (development mode)";
 	private static final String STR_HOME = "~";
 	private final ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty;
@@ -66,7 +66,7 @@ class StringBindingAppTitle extends StringBinding
 	@Override
 	protected String computeValue()
 	{
-		final StringBuilder title = new StringBuilder(TITLE_APPLICATION);
+		final StringBuilder title = new StringBuilder(getApplicationName());
 		final Path selectedPath = selectedPathProperty.get();
 		if (selectedPath != null)
 		{

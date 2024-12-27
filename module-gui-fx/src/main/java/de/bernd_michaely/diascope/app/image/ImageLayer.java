@@ -41,6 +41,7 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static javafx.beans.binding.Bindings.isNull;
 import static javafx.beans.binding.Bindings.max;
 import static javafx.beans.binding.Bindings.min;
+import static javafx.beans.binding.Bindings.negate;
 import static javafx.beans.binding.Bindings.not;
 import static javafx.beans.binding.Bindings.when;
 import static javafx.scene.layout.AnchorPane.setBottomAnchor;
@@ -59,12 +60,12 @@ class ImageLayer
 	private final ImageView imageView;
 	private final DoubleProperty aspectRatio;
 	private final Rectangle imageRotated;
-	private final DoubleProperty imageWidth, imageHeight;
-	private final DoubleProperty imageWidthRotated, imageHeightRotated;
-	private final DoubleProperty imageWidthTransformed, imageHeightTransformed;
+	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
+	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
+	private final ReadOnlyDoubleWrapper imageWidthTransformed, imageHeightTransformed;
+	private final DoubleProperty maxToPreviousWidth, maxToPreviousHeight;
 	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
-	private final BooleanProperty zoomFillWidthNeedsScroll, zoomFillHeightNeedsScroll;
-	private final DoubleProperty zoomFillWidth, zoomFillHeight, zoomFill;
+	private final DoubleProperty zoomFill;
 	private final DoubleProperty zoomFixed;
 	private final ObjectProperty<ZoomMode> zoomMode;
 	private final ReadOnlyDoubleWrapper zoomFactor;
@@ -74,7 +75,6 @@ class ImageLayer
 	private final BooleanProperty scrollBarsDisabled;
 	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
 	private final ReadOnlyBooleanWrapper scrollBarVisibleHorizontal, scrollBarVisibleVertical;
-	private final DoubleProperty viewportWidthCurrent, viewportHeightCurrent;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final Scale scale;
 	private final Rotate rotate;
@@ -95,17 +95,17 @@ class ImageLayer
 		setBottomAnchor(imageView, 0.0);
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.imageRotated = new Rectangle();
-		this.imageWidth = new SimpleDoubleProperty();
-		this.imageHeight = new SimpleDoubleProperty();
-		this.imageWidthRotated = new SimpleDoubleProperty();
-		this.imageHeightRotated = new SimpleDoubleProperty();
+		this.imageWidth = new ReadOnlyDoubleWrapper();
+		this.imageHeight = new ReadOnlyDoubleWrapper();
+		this.imageWidthRotated = new ReadOnlyDoubleWrapper();
+		this.imageHeightRotated = new ReadOnlyDoubleWrapper();
+		this.imageWidthTransformed = new ReadOnlyDoubleWrapper();
+		this.imageHeightTransformed = new ReadOnlyDoubleWrapper();
+		this.maxToPreviousWidth = new SimpleDoubleProperty();
+		this.maxToPreviousHeight = new SimpleDoubleProperty();
 		this.zoomFitWidth = new SimpleDoubleProperty();
 		this.zoomFitHeight = new SimpleDoubleProperty();
 		this.zoomFit = new SimpleDoubleProperty();
-		this.zoomFillWidthNeedsScroll = new SimpleBooleanProperty();
-		this.zoomFillHeightNeedsScroll = new SimpleBooleanProperty();
-		this.zoomFillWidth = new SimpleDoubleProperty();
-		this.zoomFillHeight = new SimpleDoubleProperty();
 		this.zoomFill = new SimpleDoubleProperty();
 		this.zoomFixed = new SimpleDoubleProperty();
 		this.zoomFactor = new ReadOnlyDoubleWrapper();
@@ -129,76 +129,50 @@ class ImageLayer
 		zoomFitWidth.bind(viewport.widthProperty().divide(imageWidthRotated));
 		zoomFitHeight.bind(viewport.heightProperty().divide(imageHeightRotated));
 		zoomFit.bind(min(zoomFitWidth, zoomFitHeight));
-		zoomFillWidthNeedsScroll.bind(
-			imageHeightRotated.multiply(zoomFitWidth).greaterThan(viewport.heightProperty()));
-		zoomFillHeightNeedsScroll.bind(
-			imageWidthRotated.multiply(zoomFitHeight).greaterThan(viewport.widthProperty()));
-		zoomFillWidth.bind(when(zoomFillWidthNeedsScroll.and(not(viewport.scrollBarsDisabledProperty())))
-			.then(viewport.viewportWidthScrollProperty().divide(imageWidthRotated))
-			.otherwise(zoomFitWidth));
-		zoomFillHeight.bind(when(zoomFillHeightNeedsScroll.and(not(viewport.scrollBarsDisabledProperty())))
-			.then(viewport.viewportHeightScrollProperty().divide(imageHeightRotated))
-			.otherwise(zoomFitHeight));
-		zoomFill.bind(max(zoomFillWidth, zoomFillHeight));
+		zoomFill.bind(max(zoomFitWidth, zoomFitHeight));
 		zoomFactor.bind(
 			when(imageIsNull).then(0.0)
 				.otherwise(when(zoomModeIsFit).then(zoomFit)
 					.otherwise(when(zoomModeIsFill).then(zoomFill)
 						.otherwise(zoomFixed))));
-		this.scrollBarEnabledHorizontal = new ReadOnlyBooleanWrapper();
-		scrollBarEnabledHorizontal.bind(
-			when(scrollBarsDisabled).then(false)
-				.otherwise(when(zoomModeIsFill).then(zoomFillHeightNeedsScroll)
-					.otherwise(imageWidthRotated.multiply(zoomFixed).greaterThan(
-						when(imageHeightRotated.multiply(zoomFixed).greaterThan(viewport.heightProperty()))
-							.then(viewport.viewportWidthScrollProperty()).otherwise(viewport.widthProperty())))));
-		this.scrollBarVisibleHorizontal = new ReadOnlyBooleanWrapper();
-		scrollBarVisibleHorizontal.bind(not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledHorizontal));
-		this.scrollBarEnabledVertical = new ReadOnlyBooleanWrapper();
-		scrollBarEnabledVertical.bind(
-			when(scrollBarsDisabled).then(false)
-				.otherwise(when(zoomModeIsFill).then(zoomFillWidthNeedsScroll)
-					.otherwise(imageHeightRotated.multiply(zoomFixed).greaterThan(
-						when(imageWidthRotated.multiply(zoomFixed).greaterThan(viewport.widthProperty()))
-							.then(viewport.viewportHeightScrollProperty()).otherwise(viewport.heightProperty())))));
-		this.scrollBarVisibleVertical = new ReadOnlyBooleanWrapper();
-		scrollBarVisibleVertical.bind(not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledVertical));
-		this.viewportWidthCurrent = new SimpleDoubleProperty();
-		viewportWidthCurrent.bind(
-			when(scrollBarEnabledVertical)
-				.then(viewport.viewportWidthScrollProperty())
-				.otherwise(viewport.widthProperty()));
-		this.viewportHeightCurrent = new SimpleDoubleProperty();
-		viewportHeightCurrent.bind(
-			when(scrollBarEnabledHorizontal)
-				.then(viewport.viewportHeightScrollProperty())
-				.otherwise(viewport.heightProperty()));
 		this.scale = new Scale();
 		scale.xProperty().bind(zoomFactor);
 		scale.yProperty().bind(zoomFactor);
-		this.imageWidthTransformed = new SimpleDoubleProperty();
-		this.imageHeightTransformed = new SimpleDoubleProperty();
 		imageWidthTransformed.bind(imageWidthRotated.multiply(zoomFactor));
 		imageHeightTransformed.bind(imageHeightRotated.multiply(zoomFactor));
+		this.scrollBarEnabledHorizontal = new ReadOnlyBooleanWrapper();
+		scrollBarEnabledHorizontal.bind(
+			imageWidthTransformed.getReadOnlyProperty().greaterThan(viewport.widthProperty()));
+		this.scrollBarVisibleHorizontal = new ReadOnlyBooleanWrapper();
+		scrollBarVisibleHorizontal.bind(
+			not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledHorizontal));
+		this.scrollBarEnabledVertical = new ReadOnlyBooleanWrapper();
+		scrollBarEnabledVertical.bind(
+			imageHeightTransformed.getReadOnlyProperty().greaterThan(viewport.heightProperty()));
+		this.scrollBarVisibleVertical = new ReadOnlyBooleanWrapper();
+		scrollBarVisibleVertical.bind(
+			not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledVertical));
 		this.rotate = new Rotate();
 		rotate.angleProperty().bind(imageRotated.rotateProperty());
 		final var translateCenter = new Translate();
-		translateCenter.xProperty().bind(imageWidth.divide(-2));
-		translateCenter.yProperty().bind(imageHeight.divide(-2));
+		translateCenter.xProperty().bind(imageWidth.divide(-2.0));
+		translateCenter.yProperty().bind(imageHeight.divide(-2.0));
 		final var translateBack = new Translate();
-		translateBack.xProperty().bind(imageWidthRotated.divide(2));
-		translateBack.yProperty().bind(imageHeightRotated.divide(2));
+		translateBack.xProperty().bind(imageWidthRotated.divide(2.0));
+		translateBack.yProperty().bind(imageHeightRotated.divide(2.0));
 		this.focusPointX = new SimpleDoubleProperty();
 		focusPointX.bind(viewport.focusPointX());
 		this.focusPointY = new SimpleDoubleProperty();
 		focusPointY.bind(viewport.focusPointY());
 		this.translateScroll = new Translate();
 		translateScroll.xProperty().bind(
-			viewportWidthCurrent.subtract(imageWidthTransformed).multiply(
-				when(scrollBarEnabledHorizontal).then(viewport.getScrollBarH().valueProperty()).otherwise(0.5)));
+			when(scrollBarEnabledHorizontal)
+				.then(negate(viewport.scrollPosXProperty()))
+				.otherwise(viewport.widthProperty().subtract(imageWidthTransformed).divide(2.0)));
 		translateScroll.yProperty().bind(
-			viewportHeightCurrent.subtract(imageHeightTransformed).multiply(
-				when(scrollBarEnabledVertical).then(viewport.getScrollBarV().valueProperty()).otherwise(0.5)));
+			when(scrollBarEnabledVertical)
+				.then(negate(viewport.scrollPosYProperty()))
+				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
 		imageView.getTransforms().addAll(translateScroll, scale, translateBack, rotate, translateCenter);
 		this.selected = new SimpleBooleanProperty();
 	}
@@ -223,6 +197,16 @@ class ImageLayer
 		return zoomFactor.getReadOnlyProperty();
 	}
 
+	ReadOnlyDoubleProperty layerWidthProperty()
+	{
+		return imageWidthTransformed.getReadOnlyProperty();
+	}
+
+	ReadOnlyDoubleProperty layerHeightProperty()
+	{
+		return imageHeightTransformed.getReadOnlyProperty();
+	}
+
 	ReadOnlyBooleanProperty imageIsNullProperty()
 	{
 		return imageIsNull.getReadOnlyProperty();
@@ -236,6 +220,16 @@ class ImageLayer
 	ReadOnlyBooleanProperty scrollBarEnabledVerticalProperty()
 	{
 		return scrollBarVisibleVertical.getReadOnlyProperty();
+	}
+
+	DoubleProperty maxToPreviousWidthProperty()
+	{
+		return maxToPreviousWidth;
+	}
+
+	DoubleProperty maxToPreviousHeightProperty()
+	{
+		return maxToPreviousHeight;
 	}
 
 	ImageView getImageView()

@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope;
 
-import de.bernd_michaely.common.cli.parser.AnsiColorEscapeCodesUtil;
 import de.bernd_michaely.common.cli.parser.CommandLineArguments;
 import de.bernd_michaely.common.cli.parser.InvalidCommandLineParametersException;
 import de.bernd_michaely.common.cli.parser.OptionDefinitionException;
@@ -42,25 +41,22 @@ public class Launcher
 	private static final String OPT_DEVELOPMENT = "development";
 	private static final String OPT_EXPORT_PREFERENCES = "show-preferences";
 	private static final String OPT_CLEAR_PREFERENCES = "clear-preferences";
-
 	private static boolean helpMode, developmentMode, exportPrefsMode, clearPrefsMode;
-
-	private static void handleArguments(String longOption, @Nullable String param)
-	{
-		switch (longOption)
-		{
-			case OPT_HELP -> helpMode = true;
-			case OPT_DEVELOPMENT -> developmentMode = true;
-			case OPT_EXPORT_PREFERENCES -> exportPrefsMode = true;
-			case OPT_CLEAR_PREFERENCES -> clearPrefsMode = true;
-			default -> throw new AssertionError();
-		}
-	}
 
 	public static void main(String... args)
 	{
-		AnsiColorEscapeCodesUtil.setColoringEnabled(false);
-		final var commandLineArguments = new CommandLineArguments(Launcher::handleArguments);
+		final var commandLineArguments = new CommandLineArguments((String longOption, @Nullable String param) ->
+		{
+			switch (longOption)
+			{
+				case OPT_HELP -> helpMode = true;
+				case OPT_DEVELOPMENT -> developmentMode = true;
+				case OPT_EXPORT_PREFERENCES -> exportPrefsMode = true;
+				case OPT_CLEAR_PREFERENCES -> clearPrefsMode = true;
+				default -> throw new AssertionError(
+						"Invalid CommandLineArguments long option »%s«".formatted(longOption));
+			}
+		});
 		try
 		{
 			commandLineArguments
@@ -87,7 +83,7 @@ public class Launcher
 		if (helpMode)
 		{
 			final PrintStream ps = System.out;
-			final var appName = new StringBuilder("Diascope");
+			final var appName = new StringBuilder(ApplicationConfiguration.getApplicationName());
 			ApplicationConfiguration.getState().version().ifPresent(
 				version -> appName.append(" ").append(version));
 			List.of(

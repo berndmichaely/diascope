@@ -4,9 +4,8 @@ plugins {
 
 rootProject.name = 'Diascope'
 
-file('.').eachDir { dir ->
-	def d = dir.name
-	if (d.startsWith('module-') || d.startsWith('lib-') ) {
-		include d
-	}
+final File baseDir = file('.')
+baseDir.eachDir { dir ->
+	final String d = dir.name
+	if (d.startsWith('module-') || d.startsWith('lib-')) include d
 }
