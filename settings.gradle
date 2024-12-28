@@ -4,8 +4,4 @@ plugins {
 
 rootProject.name = 'Diascope'
 
-final File baseDir = file('.')
-baseDir.eachDir { dir ->
-	final String d = dir.name
-	if (d.startsWith('module-') || d.startsWith('lib-')) include d
-}
+file '.' eachDirMatch (~/((module)|(lib))-.*/, { include it.name })

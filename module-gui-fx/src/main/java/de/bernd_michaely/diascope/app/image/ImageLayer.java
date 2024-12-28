@@ -135,6 +135,9 @@ class ImageLayer
 				.otherwise(when(zoomModeIsFit).then(zoomFit)
 					.otherwise(when(zoomModeIsFill).then(zoomFill)
 						.otherwise(zoomFixed))));
+		imageRotated.rotateProperty().bind(viewport.rotateProperty());
+		zoomFixed.bind(viewport.zoomFixedProperty());
+		zoomMode.bind(viewport.zoomModeProperty());
 		this.scale = new Scale();
 		scale.xProperty().bind(zoomFactor);
 		scale.yProperty().bind(zoomFactor);
@@ -154,6 +157,11 @@ class ImageLayer
 			not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledVertical));
 		this.rotate = new Rotate();
 		rotate.angleProperty().bind(imageRotated.rotateProperty());
+		final var mirror = new Scale();
+		mirror.xProperty().bind(when(viewport.mirrorXProperty()).then(-1.0).otherwise(1.0));
+		mirror.pivotXProperty().bind(imageWidth.divide(2.0));
+		mirror.yProperty().bind(when(viewport.mirrorYProperty()).then(-1.0).otherwise(1.0));
+		mirror.pivotYProperty().bind(imageHeight.divide(2.0));
 		final var translateCenter = new Translate();
 		translateCenter.xProperty().bind(imageWidth.divide(-2.0));
 		translateCenter.yProperty().bind(imageHeight.divide(-2.0));
@@ -173,7 +181,8 @@ class ImageLayer
 			when(scrollBarEnabledVertical)
 				.then(negate(viewport.scrollPosYProperty()))
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
-		imageView.getTransforms().addAll(translateScroll, scale, translateBack, rotate, translateCenter);
+		imageView.getTransforms().addAll(
+			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
 		this.selected = new SimpleBooleanProperty();
 	}
 

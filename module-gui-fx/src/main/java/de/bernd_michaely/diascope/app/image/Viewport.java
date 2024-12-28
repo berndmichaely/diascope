@@ -16,10 +16,15 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollBar;
@@ -45,6 +50,10 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
 class Viewport
 {
 	private final AnchorPane paneLayers;
+	private final DoubleProperty rotateProperty;
+	private final DoubleProperty zoomFixedProperty;
+	private final BooleanProperty mirrorXProperty, mirrorYProperty;
+	private final ObjectProperty<ZoomMode> zoomModeProperty;
 	private final ScrollBar scrollBarH, scrollBarV;
 	private final ObservableBooleanValue scrollBarsDisabled;
 	private final DoubleProperty focusPointX, focusPointY;
@@ -56,6 +65,11 @@ class Viewport
 
 	Viewport(ObservableBooleanValue scrollBarsDisabled)
 	{
+		this.rotateProperty = new SimpleDoubleProperty(0.0);
+		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
+		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
+		this.mirrorXProperty = new SimpleBooleanProperty();
+		this.mirrorYProperty = new SimpleBooleanProperty();
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -149,6 +163,31 @@ class Viewport
 	ObservableBooleanValue scrollBarsDisabledProperty()
 	{
 		return scrollBarsDisabled;
+	}
+
+	DoubleProperty rotateProperty()
+	{
+		return rotateProperty;
+	}
+
+	DoubleProperty zoomFixedProperty()
+	{
+		return zoomFixedProperty;
+	}
+
+	ObjectProperty<ZoomMode> zoomModeProperty()
+	{
+		return zoomModeProperty;
+	}
+
+	BooleanProperty mirrorXProperty()
+	{
+		return mirrorXProperty;
+	}
+
+	BooleanProperty mirrorYProperty()
+	{
+		return mirrorYProperty;
 	}
 
 	DoubleProperty focusPointX()

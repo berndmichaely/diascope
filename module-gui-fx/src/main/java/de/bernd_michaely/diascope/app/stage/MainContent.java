@@ -45,6 +45,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Slider;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -232,9 +233,34 @@ class MainContent
 		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);
 		stackPaneRotation.setAlignment(CENTER_RIGHT);
 //		stackPaneRotation.setBackground(Background.fill(Color.DARKKHAKI));
+		final var buttonMirrorX = new ToggleButton();
+		final Image iconMirrorX = Icons.MirrorX.getIconImage();
+		if (iconMirrorX != null)
+		{
+			buttonMirrorX.setGraphic(new ImageView(iconMirrorX));
+		}
+		else
+		{
+			buttonMirrorX.setText("Mirr. horiz.");
+		}
+		buttonMirrorX.setTooltip(new Tooltip("Mirror image horizontally"));
+		multiImageView.mirrorXProperty().bind(buttonMirrorX.selectedProperty());
+		final var buttonMirrorY = new ToggleButton();
+		final Image iconMirrorY = Icons.MirrorY.getIconImage();
+		if (iconMirrorY != null)
+		{
+			buttonMirrorY.setGraphic(new ImageView(iconMirrorY));
+		}
+		else
+		{
+			buttonMirrorY.setText("Mirr. vert.");
+		}
+		buttonMirrorY.setTooltip(new Tooltip("Mirror image vertically"));
+		multiImageView.mirrorYProperty().bind(buttonMirrorY.selectedProperty());
 		this.toolBarImage = new ToolBar(
 			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
-			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation);
+			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
+			buttonMirrorX, buttonMirrorY);
 		toolBarImage.disableProperty().bind(not(multiImageView.isSingleSelectedProperty()));
 		this.toolBarFullscreenProperty = new SimpleBooleanProperty();
 		this.multiImageView.rotateProperty().bind(sliderRotation.valueProperty());

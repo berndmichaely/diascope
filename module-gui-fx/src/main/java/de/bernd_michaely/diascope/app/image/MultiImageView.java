@@ -29,8 +29,6 @@ import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -63,9 +61,6 @@ public class MultiImageView
 	private final ReadOnlyObjectWrapper<ImageLayer> selectedLayer;
 	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final Viewport viewport;
-	private final DoubleProperty rotateProperty;
-	private final DoubleProperty zoomFixedProperty;
-	private final ObjectProperty<ZoomMode> zoomModeProperty;
 	private final BooleanProperty scrollBarsEnabled;
 
 	public enum ZoomMode
@@ -102,9 +97,6 @@ public class MultiImageView
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		this.viewport = new Viewport(not(scrollBarsEnabled));
 		this.nullLayer = new NullImageLayer(viewport);
-		this.rotateProperty = new SimpleDoubleProperty(0.0);
-		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
-		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
 		this.selectedSingleIndex = new ReadOnlyIntegerWrapper(NULL_INDEX);
 		this.isSingleSelected = new ReadOnlyBooleanWrapper();
 		this.selectedLayer = new ReadOnlyObjectWrapper<>(nullLayer);
@@ -141,9 +133,6 @@ public class MultiImageView
 	{
 		final var imageLayer = new ImageLayer(viewport);
 		layers.add(index, imageLayer);
-		imageLayer.rotateProperty().bind(rotateProperty);
-		imageLayer.zoomFixedProperty().bind(zoomFixedProperty);
-		imageLayer.zoomModeProperty().bind(zoomModeProperty);
 		final var paneLayer = imageLayer.getPaneLayer();
 		setTopAnchor(paneLayer, 0.0);
 		setLeftAnchor(paneLayer, 0.0);
@@ -264,7 +253,7 @@ public class MultiImageView
 
 	public DoubleProperty rotateProperty()
 	{
-		return rotateProperty;
+		return viewport.rotateProperty();
 	}
 
 	public BooleanProperty scrollBarsEnabledProperty()
@@ -274,16 +263,26 @@ public class MultiImageView
 
 	public DoubleProperty zoomFixedProperty()
 	{
-		return zoomFixedProperty;
+		return viewport.zoomFixedProperty();
 	}
 
 	public ObjectProperty<ZoomMode> zoomModeProperty()
 	{
-		return zoomModeProperty;
+		return viewport.zoomModeProperty();
 	}
 
 	public ReadOnlyDoubleProperty zoomFactorProperty()
 	{
 		return zoomFactor.getReadOnlyProperty();
+	}
+
+	public BooleanProperty mirrorXProperty()
+	{
+		return viewport.mirrorXProperty();
+	}
+
+	public BooleanProperty mirrorYProperty()
+	{
+		return viewport.mirrorYProperty();
 	}
 }

@@ -39,6 +39,7 @@ public enum Icons
 	ShowThumbs,
 	ViewFullscreen, ViewFullscreenPane, ShowSidePane,
 	ZoomFitWindow, ZoomFillWindow, Zoom100,
+	MirrorX, MirrorY,
 	ViewRotateByExif, ViewDisplayMetaData,
 	// Navigation
 	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast;
