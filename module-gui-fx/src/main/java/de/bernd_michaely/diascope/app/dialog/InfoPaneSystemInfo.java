@@ -77,11 +77,11 @@ class InfoPaneSystemInfo implements InfoPane
 		final Label textJavaFXVersion = new Label(versionJavafx != null ?
 			versionJavafx : MSG_UNKNOWN);
 
-		final Label headerShapeClipSupport = new Label(
-			"Shape clip support");
+		final Label headerShapeClipSupport = new Label("Shape clipping support:");
 		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
 		final Label textShapeClipSupport = new Label(
-			"Shape clip supported : " + (isShapeClipSupported ? "yes" : "no"));
+			//			"Shape clipping supported : " +
+			(isShapeClipSupported ? "yes" : "no"));
 
 		final Label headerOSName = new Label("Operating system name:");
 		final Label textOSName = new Label(System.getProperty("os.name"));

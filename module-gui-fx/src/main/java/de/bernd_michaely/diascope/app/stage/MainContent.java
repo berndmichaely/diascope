@@ -155,6 +155,31 @@ class MainContent
 		SplitPane.setResizableWithParent(this.listView, false);
 		this.borderPane = new BorderPane();
 		// ToolBar:
+		final var buttonLayerAdd = new Button();
+		final Image iconLayerAdd = Icons.LayerAdd.getIconImage();
+		if (iconLayerAdd != null)
+		{
+			buttonLayerAdd.setGraphic(new ImageView(iconLayerAdd));
+		}
+		else
+		{
+			buttonLayerAdd.setText("+");
+		}
+		buttonLayerAdd.setTooltip(new Tooltip("Add a new image view"));
+		buttonLayerAdd.setOnAction(event -> multiImageView.addLayer());
+		final var buttonLayerRemove = new Button();
+		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
+		if (iconLayerRemove != null)
+		{
+			buttonLayerRemove.setGraphic(new ImageView(iconLayerRemove));
+		}
+		else
+		{
+			buttonLayerRemove.setText("-");
+		}
+		buttonLayerRemove.setTooltip(new Tooltip("Remove selected image view"));
+		buttonLayerRemove.disableProperty().bind(multiImageView.numberOfLayersProperty().lessThan(2));
+		buttonLayerRemove.setOnAction(event -> multiImageView.removeLayer());
 		final var buttonZoomFitWindow = new Button();
 		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
 		if (iconZoomFitWindow != null)
@@ -258,6 +283,7 @@ class MainContent
 		buttonMirrorY.setTooltip(new Tooltip("Mirror image vertically"));
 		multiImageView.mirrorYProperty().bind(buttonMirrorY.selectedProperty());
 		this.toolBarImage = new ToolBar(
+			buttonLayerAdd, buttonLayerRemove,
 			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
 			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
 			buttonMirrorX, buttonMirrorY);

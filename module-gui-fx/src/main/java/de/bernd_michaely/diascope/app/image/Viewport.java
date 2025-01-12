@@ -20,8 +20,11 @@ import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -49,22 +52,31 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
  */
 class Viewport
 {
-	private final AnchorPane paneLayers;
+	private final CornerAngles cornerAngles;
+	private final ObservableBooleanValue scrollBarsDisabled;
+	private final ReadOnlyListProperty<ImageLayer> layersProperty;
+	private final ReadOnlyBooleanWrapper multiLayerMode;
+	private final AnchorPane viewportPane;
 	private final DoubleProperty rotateProperty;
 	private final DoubleProperty zoomFixedProperty;
 	private final BooleanProperty mirrorXProperty, mirrorYProperty;
 	private final ObjectProperty<ZoomMode> zoomModeProperty;
 	private final ScrollBar scrollBarH, scrollBarV;
-	private final ObservableBooleanValue scrollBarsDisabled;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
+	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
+	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
-	Viewport(ObservableBooleanValue scrollBarsDisabled)
+	Viewport(ObservableBooleanValue scrollBarsDisabled,
+		ReadOnlyListProperty<ImageLayer> layersProperty)
 	{
+		this.scrollBarsDisabled = scrollBarsDisabled;
+		this.layersProperty = layersProperty;
+		this.multiLayerMode = new ReadOnlyBooleanWrapper();
 		this.rotateProperty = new SimpleDoubleProperty(0.0);
 		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
 		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
@@ -78,6 +90,10 @@ class Viewport
 		this.scrollRangeMaxHeight = new ReadOnlyDoubleWrapper();
 		this.scrollPosX = new ReadOnlyDoubleWrapper();
 		this.scrollPosY = new ReadOnlyDoubleWrapper();
+		this.splitCenterX = new ReadOnlyDoubleWrapper();
+		this.splitCenterY = new ReadOnlyDoubleWrapper();
+		this.splitCenterDx = new ReadOnlyDoubleWrapper();
+		this.splitCenterDy = new ReadOnlyDoubleWrapper();
 		this.scrollBarH = new ScrollBar();
 		initScrollBar(scrollBarH);
 		scrollBarH.setOrientation(Orientation.HORIZONTAL);
@@ -98,23 +114,29 @@ class Viewport
 //				scrollBarV.setValue(focusPointY.doubleValue());
 //			}
 //		}));
-		this.scrollBarsDisabled = scrollBarsDisabled;
-		this.paneLayers = new AnchorPane();
-		paneLayers.setBackground(Background.fill(Color.BLACK));
-		paneLayers.setMinSize(0, 0);
-		paneLayers.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		paneLayers.getChildren().addAll(scrollBarH, scrollBarV);
+		this.viewportPane = new AnchorPane();
+
+		multiLayerMode.bind(layersProperty.sizeProperty().greaterThanOrEqualTo(2));
+		viewportPane.setBackground(Background.fill(Color.BLACK));
+		viewportPane.setMinSize(0, 0);
+		viewportPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		viewportPane.getChildren().addAll(scrollBarH, scrollBarV);
 		setLeftAnchor(scrollBarH, 0.0);
 		scrollBarV.widthProperty().addListener(onChange(w -> setRightAnchor(scrollBarH, w.doubleValue())));
 		setBottomAnchor(scrollBarH, 0.0);
 		setTopAnchor(scrollBarV, 0.0);
 		setRightAnchor(scrollBarV, 0.0);
 		scrollBarH.heightProperty().addListener(onChange(h -> setBottomAnchor(scrollBarV, h.doubleValue())));
-		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(paneLayers.widthProperty()));
-		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(paneLayers.heightProperty()));
+		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(viewportPane.widthProperty()));
+		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(viewportPane.heightProperty()));
 		scrollPosX.bind(scrollBarH.valueProperty().multiply(scrollRangeMaxWidth));
 		scrollPosY.bind(scrollBarV.valueProperty().multiply(scrollRangeMaxHeight));
-		paneLayers.setOnMousePressed(event ->
+		splitCenterDx.bind(viewportPane.widthProperty().subtract(splitCenterX.getReadOnlyProperty()));
+		splitCenterDy.bind(viewportPane.heightProperty().subtract(splitCenterY.getReadOnlyProperty()));
+		this.cornerAngles = new CornerAngles(
+			splitCenterX.getReadOnlyProperty(), splitCenterY.getReadOnlyProperty(),
+			splitCenterDx.getReadOnlyProperty(), splitCenterDy.getReadOnlyProperty());
+		viewportPane.setOnMousePressed(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
@@ -124,7 +146,7 @@ class Viewport
 				mouseScrollStartY = scrollBarV.getValue();
 			}
 		});
-		paneLayers.setOnMouseDragged(event ->
+		viewportPane.setOnMouseDragged(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
@@ -138,6 +160,8 @@ class Viewport
 				scrollBarV.setValue(y);
 			}
 		});
+		splitCenterX.bind(viewportPane.widthProperty().divide(2.0));
+		splitCenterY.bind(viewportPane.heightProperty().divide(2.0));
 	}
 
 	private static void initScrollBar(ScrollBar scrollBar)
@@ -148,6 +172,21 @@ class Viewport
 		scrollBar.setUnitIncrement(0.05);
 		scrollBar.setBlockIncrement(0.2);
 		scrollBar.setOpacity(0.75);
+	}
+
+	ReadOnlyBooleanProperty multiLayerModeProperty()
+	{
+		return multiLayerMode.getReadOnlyProperty();
+	}
+
+	boolean isClippingEnabled()
+	{
+		return multiLayerModeProperty().get();
+	}
+
+	CornerAngles getCornerAngles()
+	{
+		return cornerAngles;
 	}
 
 	ScrollBar getScrollBarH()
@@ -202,19 +241,29 @@ class Viewport
 
 	ReadOnlyDoubleProperty widthProperty()
 	{
-		return paneLayers.widthProperty();
+		return getViewportPane().widthProperty();
 	}
 
 	ReadOnlyDoubleProperty heightProperty()
 	{
-		return paneLayers.heightProperty();
+		return getViewportPane().heightProperty();
 	}
 
+	/**
+	 * The maximum of widths of all layers.
+	 *
+	 * @return a property holding the maximum of widths of all layers
+	 */
 	DoubleProperty layersMaxWidthProperty()
 	{
 		return layersMaxWidth;
 	}
 
+	/**
+	 * The maximum of heights of all layers.
+	 *
+	 * @return a property holding the maximum of heights of all layers
+	 */
 	DoubleProperty layersMaxHeightProperty()
 	{
 		return layersMaxHeight;
@@ -240,8 +289,28 @@ class Viewport
 		return scrollPosY.getReadOnlyProperty();
 	}
 
-	Pane getPaneLayers()
+	ReadOnlyDoubleWrapper splitCenterXProperty()
 	{
-		return paneLayers;
+		return splitCenterX;
+	}
+
+	ReadOnlyDoubleWrapper splitCenterYProperty()
+	{
+		return splitCenterY;
+	}
+
+	ReadOnlyDoubleWrapper splitCenterDxProperty()
+	{
+		return splitCenterDx;
+	}
+
+	ReadOnlyDoubleWrapper splitCenterDyProperty()
+	{
+		return splitCenterDy;
+	}
+
+	Pane getViewportPane()
+	{
+		return viewportPane;
 	}
 }

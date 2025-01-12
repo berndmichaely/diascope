@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
+import java.util.Arrays;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -24,18 +25,29 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
+import javafx.scene.shape.StrokeType;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
+import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
+import static de.bernd_michaely.diascope.app.image.Bindings.tan;
+import static de.bernd_michaely.diascope.app.image.Border.*;
 import static de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static javafx.beans.binding.Bindings.isNull;
@@ -56,10 +68,12 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
  */
 class ImageLayer
 {
-	private final AnchorPane paneLayer;
-	private final ImageView imageView;
+	private final AnchorPane paneLayer = new AnchorPane();
+	private final ImageView imageView = new ImageView();
+	private final Rectangle imageRotated = new Rectangle();
+	private final Polygon clippingShape = new Polygon();
+	private final Polygon selectionShape = new Polygon();
 	private final DoubleProperty aspectRatio;
-	private final Rectangle imageRotated;
 	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
 	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
 	private final ReadOnlyDoubleWrapper imageWidthTransformed, imageHeightTransformed;
@@ -76,6 +90,11 @@ class ImageLayer
 	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
 	private final ReadOnlyBooleanWrapper scrollBarVisibleHorizontal, scrollBarVisibleVertical;
 	private final DoubleProperty focusPointX, focusPointY;
+	private final DoubleProperty dividerAngle;
+	private final ReadOnlyDoubleWrapper dividerAngleNorm;
+	private final ReadOnlyDoubleProperty angleNormalized;
+	private final ReadOnlyObjectWrapper<Border> dividerBorder;
+	private final ReadOnlyDoubleWrapper dividerBorderX, dividerBorderY;
 	private final Scale scale;
 	private final Rotate rotate;
 	private final Translate translateScroll;
@@ -84,17 +103,24 @@ class ImageLayer
 
 	ImageLayer(Viewport viewport)
 	{
-		this.paneLayer = new AnchorPane();
+		this.selected = new SimpleBooleanProperty();
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		this.imageView = new ImageView();
-		paneLayer.getChildren().add(imageView);
+		selectionShape.setFill(new Color(0.0, 0.0, 0.0, 0.0));
+//		selectionShape.setStroke(Color.CORNFLOWERBLUE);
+		selectionShape.strokeProperty().bind(when(selected)
+			.then(Color.CORNFLOWERBLUE).otherwise(Color.ALICEBLUE));
+		selectionShape.setStrokeWidth(3);
+		selectionShape.setStrokeLineCap(StrokeLineCap.ROUND);
+		selectionShape.setStrokeLineJoin(StrokeLineJoin.ROUND);
+		selectionShape.setStrokeType(StrokeType.INSIDE);
+//		selectionShape.visibleProperty().bind(selected);
+		paneLayer.getChildren().addAll(selectionShape, imageView);
 		setTopAnchor(imageView, 0.0);
 		setLeftAnchor(imageView, 0.0);
 		setRightAnchor(imageView, 0.0);
 		setBottomAnchor(imageView, 0.0);
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
-		this.imageRotated = new Rectangle();
 		this.imageWidth = new ReadOnlyDoubleWrapper();
 		this.imageHeight = new ReadOnlyDoubleWrapper();
 		this.imageWidthRotated = new ReadOnlyDoubleWrapper();
@@ -110,6 +136,11 @@ class ImageLayer
 		this.zoomFixed = new SimpleDoubleProperty();
 		this.zoomFactor = new ReadOnlyDoubleWrapper();
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
+		this.dividerAngle = new SimpleDoubleProperty(0.0);
+		this.dividerBorder = new ReadOnlyObjectWrapper<>(Border.RIGHT);
+		this.dividerBorderX = new ReadOnlyDoubleWrapper();
+		this.dividerBorderY = new ReadOnlyDoubleWrapper();
+		this.dividerAngleNorm = new ReadOnlyDoubleWrapper();
 
 		imageIsNull.bind(isNull(imageView.imageProperty()));
 		this.zoomMode = new SimpleObjectProperty<>();
@@ -183,7 +214,54 @@ class ImageLayer
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
-		this.selected = new SimpleBooleanProperty();
+		dividerAngleNorm.bind(normalizeAngle(dividerAngle));
+		this.angleNormalized = dividerAngleNorm.getReadOnlyProperty();
+		dividerBorder.bind(
+			when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(RIGHT)))
+				.then(RIGHT).otherwise(
+				when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(BOTTOM)))
+					.then(BOTTOM).otherwise(
+					when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(LEFT)))
+						.then(LEFT).otherwise(
+						when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(TOP)))
+							.then(TOP).otherwise(RIGHT)))));
+		dividerBorderX.bind(
+			when(dividerBorder.isEqualTo(RIGHT))
+				.then(viewport.widthProperty()).otherwise(
+				when(dividerBorder.isEqualTo(BOTTOM))
+					.then(tan(angleNormalized.subtract(90.0))
+						.multiply(viewport.splitCenterDyProperty())
+						.add(viewport.splitCenterXProperty())).otherwise(
+					when(dividerBorder.isEqualTo(LEFT))
+						.then(0.0).otherwise( // TOP
+						tan(angleNormalized.add(90.0))
+							.multiply(viewport.splitCenterYProperty())
+							.add(viewport.splitCenterXProperty())))));
+		dividerBorderY.bind(
+			when(dividerBorder.isEqualTo(RIGHT))
+				.then(tan(angleNormalized)
+					.multiply(viewport.splitCenterDxProperty())
+					.add(viewport.splitCenterYProperty())).otherwise(
+				when(dividerBorder.isEqualTo(BOTTOM))
+					.then(viewport.heightProperty()).otherwise(
+					when(dividerBorder.isEqualTo(LEFT))
+						.then(tan(angleNormalized.subtract(180.0))
+							.multiply(viewport.splitCenterXProperty())
+							.add(viewport.splitCenterYProperty()))
+						.otherwise(0.0)))); // TOP
+		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
+		{
+			if (enabled)
+			{
+				setNullableClip(clippingShape);
+			}
+			else
+			{
+				setNullableClip(null);
+				clippingShape.getPoints().clear();
+				selectionShape.getPoints().clear();
+			}
+		}));
 	}
 
 	ObjectProperty<ZoomMode> zoomModeProperty()
@@ -275,9 +353,44 @@ class ImageLayer
 		imageView.setImage(image);
 	}
 
+	@SuppressWarnings("argument")
+	private void setNullableClip(@UnderInitialization ImageLayer this,
+		@Nullable Node clip)
+	{
+//		imageView.setClip(clip);
+		paneLayer.setClip(clip);
+	}
+
 	BooleanProperty selectedProperty()
 	{
 		return selected;
+	}
+
+	DoubleProperty dividerAngleProperty()
+	{
+		return dividerAngle;
+	}
+
+	Border getDividerBorder()
+	{
+		return dividerBorder.getReadOnlyProperty().get();
+	}
+
+	Double getDividerBorderX()
+	{
+		return dividerBorderX.getValue();
+	}
+
+	Double getDividerBorderY()
+	{
+		return dividerBorderY.getValue();
+	}
+
+	void setShapePoints(Double... points)
+	{
+		System.out.println("SET SHAPE POINTS: " + Arrays.deepToString(points));
+		clippingShape.getPoints().setAll(points);
+		selectionShape.getPoints().setAll(points);
 	}
 
 	boolean isSelected()

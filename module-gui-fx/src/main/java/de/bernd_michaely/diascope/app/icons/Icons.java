@@ -42,7 +42,9 @@ public enum Icons
 	MirrorX, MirrorY,
 	ViewRotateByExif, ViewDisplayMetaData,
 	// Navigation
-	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast;
+	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast,
+	// Layer
+	LayerAdd, LayerRemove;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());
 
