@@ -16,34 +16,21 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyListProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.value.ObservableBooleanValue;
-import javafx.geometry.Orientation;
-import javafx.scene.control.ScrollBar;
 import javafx.scene.input.MouseButton;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 
-import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Double.max;
 import static java.lang.Double.min;
-import static javafx.scene.layout.AnchorPane.setBottomAnchor;
-import static javafx.scene.layout.AnchorPane.setLeftAnchor;
-import static javafx.scene.layout.AnchorPane.setRightAnchor;
-import static javafx.scene.layout.AnchorPane.setTopAnchor;
 
 /**
  * Class to describe the viewport of a MultiImageView containing all images.
@@ -52,18 +39,15 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
  */
 class Viewport
 {
+	private final StackPane paneViewport;
+	private final StackPane layersPane;
+	private final ScrollBars scrollBars;
 	private final CornerAngles cornerAngles;
-	private final ObservableBooleanValue scrollBarsDisabled;
 	private final ReadOnlyListProperty<ImageLayer> layersProperty;
 	private final ReadOnlyBooleanWrapper multiLayerMode;
-	private final AnchorPane viewportPane;
-	private final DoubleProperty rotateProperty;
-	private final DoubleProperty zoomFixedProperty;
-	private final BooleanProperty mirrorXProperty, mirrorYProperty;
-	private final ObjectProperty<ZoomMode> zoomModeProperty;
-	private final ScrollBar scrollBarH, scrollBarV;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
+	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
 	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
 	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
@@ -71,17 +55,10 @@ class Viewport
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
-	Viewport(ObservableBooleanValue scrollBarsDisabled,
-		ReadOnlyListProperty<ImageLayer> layersProperty)
+	Viewport(ReadOnlyListProperty<ImageLayer> layersProperty)
 	{
-		this.scrollBarsDisabled = scrollBarsDisabled;
 		this.layersProperty = layersProperty;
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
-		this.rotateProperty = new SimpleDoubleProperty(0.0);
-		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
-		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
-		this.mirrorXProperty = new SimpleBooleanProperty();
-		this.mirrorYProperty = new SimpleBooleanProperty();
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -94,59 +71,43 @@ class Viewport
 		this.splitCenterY = new ReadOnlyDoubleWrapper();
 		this.splitCenterDx = new ReadOnlyDoubleWrapper();
 		this.splitCenterDy = new ReadOnlyDoubleWrapper();
-		this.scrollBarH = new ScrollBar();
-		initScrollBar(scrollBarH);
-		scrollBarH.setOrientation(Orientation.HORIZONTAL);
-//		scrollBarH.visibleProperty().addListener(onChange(becomesVisible ->
-//		{
-//			if (becomesVisible)
-//			{
-//				scrollBarH.setValue(focusPointX.doubleValue());
-//			}
-//		}));
-		this.scrollBarV = new ScrollBar();
-		initScrollBar(scrollBarV);
-		scrollBarV.setOrientation(Orientation.VERTICAL);
-//		scrollBarV.visibleProperty().addListener(onChange(becomesVisible ->
-//		{
-//			if (becomesVisible)
-//			{
-//				scrollBarV.setValue(focusPointY.doubleValue());
-//			}
-//		}));
-		this.viewportPane = new AnchorPane();
-
 		multiLayerMode.bind(layersProperty.sizeProperty().greaterThanOrEqualTo(2));
-		viewportPane.setBackground(Background.fill(Color.BLACK));
-		viewportPane.setMinSize(0, 0);
-		viewportPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		viewportPane.getChildren().addAll(scrollBarH, scrollBarV);
-		setLeftAnchor(scrollBarH, 0.0);
-		scrollBarV.widthProperty().addListener(onChange(w -> setRightAnchor(scrollBarH, w.doubleValue())));
-		setBottomAnchor(scrollBarH, 0.0);
-		setTopAnchor(scrollBarV, 0.0);
-		setRightAnchor(scrollBarV, 0.0);
-		scrollBarH.heightProperty().addListener(onChange(h -> setBottomAnchor(scrollBarV, h.doubleValue())));
-		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(viewportPane.widthProperty()));
-		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(viewportPane.heightProperty()));
-		scrollPosX.bind(scrollBarH.valueProperty().multiply(scrollRangeMaxWidth));
-		scrollPosY.bind(scrollBarV.valueProperty().multiply(scrollRangeMaxHeight));
-		splitCenterDx.bind(viewportPane.widthProperty().subtract(splitCenterX.getReadOnlyProperty()));
-		splitCenterDy.bind(viewportPane.heightProperty().subtract(splitCenterY.getReadOnlyProperty()));
+		this.scrollBars = new ScrollBars();
+		this.layersPane = new StackPane();
+		this.paneViewport = new StackPane(layersPane, scrollBars.getPane());
+		paneViewport.setBackground(Background.fill(Color.BLACK));
+		paneViewport.setMinSize(0, 0);
+		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		this.scrollBarEnabledHorizontal = new ReadOnlyBooleanWrapper();
+		scrollBarEnabledHorizontal.bind(
+			layersMaxWidth.greaterThan(paneViewport.widthProperty()));
+		scrollBars.horizontalVisibleProperty().bind(
+			scrollBars.enabledProperty().and(scrollBarEnabledHorizontal));
+		this.scrollBarEnabledVertical = new ReadOnlyBooleanWrapper();
+		scrollBarEnabledVertical.bind(
+			layersMaxHeight.greaterThan(paneViewport.heightProperty()));
+		scrollBars.verticalVisibleProperty().bind(
+			scrollBars.enabledProperty().and(scrollBarEnabledVertical));
+		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(paneViewport.widthProperty()));
+		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(paneViewport.heightProperty()));
+		scrollPosX.bind(scrollBars.valueHProperty().multiply(scrollRangeMaxWidth));
+		scrollPosY.bind(scrollBars.valueVProperty().multiply(scrollRangeMaxHeight));
+		splitCenterDx.bind(paneViewport.widthProperty().subtract(splitCenterX.getReadOnlyProperty()));
+		splitCenterDy.bind(paneViewport.heightProperty().subtract(splitCenterY.getReadOnlyProperty()));
 		this.cornerAngles = new CornerAngles(
 			splitCenterX.getReadOnlyProperty(), splitCenterY.getReadOnlyProperty(),
 			splitCenterDx.getReadOnlyProperty(), splitCenterDy.getReadOnlyProperty());
-		viewportPane.setOnMousePressed(event ->
+		paneViewport.setOnMousePressed(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
 				mouseDragStartX = event.getX();
 				mouseDragStartY = event.getY();
-				mouseScrollStartX = scrollBarH.getValue();
-				mouseScrollStartY = scrollBarV.getValue();
+				mouseScrollStartX = scrollBars.valueHProperty().doubleValue();
+				mouseScrollStartY = scrollBars.valueVProperty().doubleValue();
 			}
 		});
-		viewportPane.setOnMouseDragged(event ->
+		paneViewport.setOnMouseDragged(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
@@ -156,22 +117,17 @@ class Viewport
 				final double dy = (event.getY() - mouseDragStartY) / py;
 				final double x = min(max(0.0, mouseScrollStartX - dx), 1.0);
 				final double y = min(max(0.0, mouseScrollStartY - dy), 1.0);
-				scrollBarH.setValue(x);
-				scrollBarV.setValue(y);
+				scrollBars.valueHProperty().setValue(x);
+				scrollBars.valueVProperty().setValue(y);
 			}
 		});
-		splitCenterX.bind(viewportPane.widthProperty().divide(2.0));
-		splitCenterY.bind(viewportPane.heightProperty().divide(2.0));
+		splitCenterX.bind(paneViewport.widthProperty().divide(2.0));
+		splitCenterY.bind(paneViewport.heightProperty().divide(2.0));
 	}
 
-	private static void initScrollBar(ScrollBar scrollBar)
+	void addLayer(int index, ImageLayer imageLayer)
 	{
-		scrollBar.setMin(0.0);
-		scrollBar.setMax(1.0);
-		scrollBar.setValue(0.5);
-		scrollBar.setUnitIncrement(0.05);
-		scrollBar.setBlockIncrement(0.2);
-		scrollBar.setOpacity(0.75);
+		layersPane.getChildren().add(index, imageLayer.getRegion());
 	}
 
 	ReadOnlyBooleanProperty multiLayerModeProperty()
@@ -189,44 +145,9 @@ class Viewport
 		return cornerAngles;
 	}
 
-	ScrollBar getScrollBarH()
+	ScrollBars getScrollBars()
 	{
-		return scrollBarH;
-	}
-
-	ScrollBar getScrollBarV()
-	{
-		return scrollBarV;
-	}
-
-	ObservableBooleanValue scrollBarsDisabledProperty()
-	{
-		return scrollBarsDisabled;
-	}
-
-	DoubleProperty rotateProperty()
-	{
-		return rotateProperty;
-	}
-
-	DoubleProperty zoomFixedProperty()
-	{
-		return zoomFixedProperty;
-	}
-
-	ObjectProperty<ZoomMode> zoomModeProperty()
-	{
-		return zoomModeProperty;
-	}
-
-	BooleanProperty mirrorXProperty()
-	{
-		return mirrorXProperty;
-	}
-
-	BooleanProperty mirrorYProperty()
-	{
-		return mirrorYProperty;
+		return scrollBars;
 	}
 
 	DoubleProperty focusPointX()
@@ -241,12 +162,12 @@ class Viewport
 
 	ReadOnlyDoubleProperty widthProperty()
 	{
-		return getViewportPane().widthProperty();
+		return getPaneViewport().widthProperty();
 	}
 
 	ReadOnlyDoubleProperty heightProperty()
 	{
-		return getViewportPane().heightProperty();
+		return getPaneViewport().heightProperty();
 	}
 
 	/**
@@ -267,6 +188,16 @@ class Viewport
 	DoubleProperty layersMaxHeightProperty()
 	{
 		return layersMaxHeight;
+	}
+
+	ReadOnlyBooleanProperty scrollBarEnabledHorizontalProperty()
+	{
+		return scrollBarEnabledHorizontal.getReadOnlyProperty();
+	}
+
+	ReadOnlyBooleanProperty scrollBarEnabledVerticalProperty()
+	{
+		return scrollBarEnabledVertical.getReadOnlyProperty();
 	}
 
 	ReadOnlyDoubleProperty scrollRangeMaxWidthProperty()
@@ -309,8 +240,8 @@ class Viewport
 		return splitCenterDy;
 	}
 
-	Pane getViewportPane()
+	Pane getPaneViewport()
 	{
-		return viewportPane;
+		return paneViewport;
 	}
 }

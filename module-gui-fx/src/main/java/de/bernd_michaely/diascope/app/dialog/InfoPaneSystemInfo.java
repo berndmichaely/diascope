@@ -79,9 +79,8 @@ class InfoPaneSystemInfo implements InfoPane
 
 		final Label headerShapeClipSupport = new Label("Shape clipping support:");
 		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
-		final Label textShapeClipSupport = new Label(
-			//			"Shape clipping supported : " +
-			(isShapeClipSupported ? "yes" : "no"));
+		final Label textShapeClipSupport = new Label(isShapeClipSupported ?
+			"yes" : "no (multi layer mode not available)");
 
 		final Label headerOSName = new Label("Operating system name:");
 		final Label textOSName = new Label(System.getProperty("os.name"));

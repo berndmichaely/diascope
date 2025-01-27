@@ -16,23 +16,21 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
-import java.util.Arrays;
+import java.util.function.BiConsumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
@@ -45,21 +43,14 @@ import javafx.scene.transform.Translate;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
-import static de.bernd_michaely.diascope.app.image.Bindings.tan;
-import static de.bernd_michaely.diascope.app.image.Border.*;
-import static de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode.*;
+import static de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode.FILL;
+import static de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static javafx.beans.binding.Bindings.isNull;
 import static javafx.beans.binding.Bindings.max;
 import static javafx.beans.binding.Bindings.min;
 import static javafx.beans.binding.Bindings.negate;
-import static javafx.beans.binding.Bindings.not;
 import static javafx.beans.binding.Bindings.when;
-import static javafx.scene.layout.AnchorPane.setBottomAnchor;
-import static javafx.scene.layout.AnchorPane.setLeftAnchor;
-import static javafx.scene.layout.AnchorPane.setRightAnchor;
-import static javafx.scene.layout.AnchorPane.setTopAnchor;
 
 /**
  * Class to describe ImageView transformations.
@@ -68,7 +59,7 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
  */
 class ImageLayer
 {
-	private final AnchorPane paneLayer = new AnchorPane();
+	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
 	private final Polygon clippingShape = new Polygon();
@@ -78,48 +69,41 @@ class ImageLayer
 	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
 	private final ReadOnlyDoubleWrapper imageWidthTransformed, imageHeightTransformed;
 	private final DoubleProperty maxToPreviousWidth, maxToPreviousHeight;
+	private final ImageTransforms imageTransforms;
 	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
 	private final DoubleProperty zoomFill;
-	private final DoubleProperty zoomFixed;
-	private final ObjectProperty<ZoomMode> zoomMode;
 	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final ReadOnlyBooleanWrapper imageIsNull;
 	private final BooleanProperty zoomModeIsFit;
 	private final BooleanProperty zoomModeIsFill;
-	private final BooleanProperty scrollBarsDisabled;
-	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
-	private final ReadOnlyBooleanWrapper scrollBarVisibleHorizontal, scrollBarVisibleVertical;
 	private final DoubleProperty focusPointX, focusPointY;
-	private final DoubleProperty dividerAngle;
-	private final ReadOnlyDoubleWrapper dividerAngleNorm;
-	private final ReadOnlyDoubleProperty angleNormalized;
-	private final ReadOnlyObjectWrapper<Border> dividerBorder;
-	private final ReadOnlyDoubleWrapper dividerBorderX, dividerBorderY;
+	private final Divider divider;
 	private final Scale scale;
 	private final Rotate rotate;
 	private final Translate translateScroll;
 	private final BooleanProperty selected;
+	private boolean mouseDragged;
 	private String imageTitle = "";
 
 	ImageLayer(Viewport viewport)
 	{
 		this.selected = new SimpleBooleanProperty();
-		paneLayer.setMinSize(0, 0);
-		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		selectionShape.setFill(new Color(0.0, 0.0, 0.0, 0.0));
+		selectionShape.setFill(Color.TRANSPARENT);
 //		selectionShape.setStroke(Color.CORNFLOWERBLUE);
 		selectionShape.strokeProperty().bind(when(selected)
 			.then(Color.CORNFLOWERBLUE).otherwise(Color.ALICEBLUE));
-		selectionShape.setStrokeWidth(3);
+		selectionShape.strokeWidthProperty().bind(when(selected).then(4).otherwise(1));
 		selectionShape.setStrokeLineCap(StrokeLineCap.ROUND);
 		selectionShape.setStrokeLineJoin(StrokeLineJoin.ROUND);
 		selectionShape.setStrokeType(StrokeType.INSIDE);
 //		selectionShape.visibleProperty().bind(selected);
-		paneLayer.getChildren().addAll(selectionShape, imageView);
-		setTopAnchor(imageView, 0.0);
-		setLeftAnchor(imageView, 0.0);
-		setRightAnchor(imageView, 0.0);
-		setBottomAnchor(imageView, 0.0);
+		paneLayer.getChildren().addAll(imageView, selectionShape);
+		paneLayer.setMinSize(0, 0);
+		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+//		setTopAnchor(imageView, 0.0);
+//		setLeftAnchor(imageView, 0.0);
+//		setRightAnchor(imageView, 0.0);
+//		setBottomAnchor(imageView, 0.0);
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.imageWidth = new ReadOnlyDoubleWrapper();
 		this.imageHeight = new ReadOnlyDoubleWrapper();
@@ -129,28 +113,25 @@ class ImageLayer
 		this.imageHeightTransformed = new ReadOnlyDoubleWrapper();
 		this.maxToPreviousWidth = new SimpleDoubleProperty();
 		this.maxToPreviousHeight = new SimpleDoubleProperty();
+		this.imageTransforms = new ImageTransforms();
 		this.zoomFitWidth = new SimpleDoubleProperty();
 		this.zoomFitHeight = new SimpleDoubleProperty();
 		this.zoomFit = new SimpleDoubleProperty();
 		this.zoomFill = new SimpleDoubleProperty();
-		this.zoomFixed = new SimpleDoubleProperty();
 		this.zoomFactor = new ReadOnlyDoubleWrapper();
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
-		this.dividerAngle = new SimpleDoubleProperty(0.0);
-		this.dividerBorder = new ReadOnlyObjectWrapper<>(Border.RIGHT);
-		this.dividerBorderX = new ReadOnlyDoubleWrapper();
-		this.dividerBorderY = new ReadOnlyDoubleWrapper();
-		this.dividerAngleNorm = new ReadOnlyDoubleWrapper();
+		this.divider = new Divider(viewport.getCornerAngles(),
+			viewport.widthProperty(), viewport.heightProperty(),
+			viewport.splitCenterXProperty().getReadOnlyProperty(),
+			viewport.splitCenterYProperty().getReadOnlyProperty(),
+			viewport.splitCenterDxProperty().getReadOnlyProperty(),
+			viewport.splitCenterDyProperty().getReadOnlyProperty());
 
 		imageIsNull.bind(isNull(imageView.imageProperty()));
-		this.zoomMode = new SimpleObjectProperty<>();
-		zoomMode.set(ZoomMode.getDefault());
 		this.zoomModeIsFit = new SimpleBooleanProperty();
-		zoomModeIsFit.bind(zoomMode.isEqualTo(FIT));
+		zoomModeIsFit.bind(imageTransforms.zoomModeProperty().isEqualTo(FIT));
 		this.zoomModeIsFill = new SimpleBooleanProperty();
-		zoomModeIsFill.bind(zoomMode.isEqualTo(FILL));
-		this.scrollBarsDisabled = new SimpleBooleanProperty();
-		scrollBarsDisabled.bind(imageIsNull.or(zoomModeIsFit).or(viewport.scrollBarsDisabledProperty()));
+		zoomModeIsFill.bind(imageTransforms.zoomModeProperty().isEqualTo(FILL));
 		imageRotated.boundsInParentProperty().addListener(onChange(bounds ->
 		{
 			imageWidthRotated.set(bounds.getWidth());
@@ -165,33 +146,19 @@ class ImageLayer
 			when(imageIsNull).then(0.0)
 				.otherwise(when(zoomModeIsFit).then(zoomFit)
 					.otherwise(when(zoomModeIsFill).then(zoomFill)
-						.otherwise(zoomFixed))));
-		imageRotated.rotateProperty().bind(viewport.rotateProperty());
-		zoomFixed.bind(viewport.zoomFixedProperty());
-		zoomMode.bind(viewport.zoomModeProperty());
+						.otherwise(imageTransforms.zoomFixedProperty()))));
+		imageRotated.rotateProperty().bind(imageTransforms.rotateProperty());
 		this.scale = new Scale();
 		scale.xProperty().bind(zoomFactor);
 		scale.yProperty().bind(zoomFactor);
 		imageWidthTransformed.bind(imageWidthRotated.multiply(zoomFactor));
 		imageHeightTransformed.bind(imageHeightRotated.multiply(zoomFactor));
-		this.scrollBarEnabledHorizontal = new ReadOnlyBooleanWrapper();
-		scrollBarEnabledHorizontal.bind(
-			imageWidthTransformed.getReadOnlyProperty().greaterThan(viewport.widthProperty()));
-		this.scrollBarVisibleHorizontal = new ReadOnlyBooleanWrapper();
-		scrollBarVisibleHorizontal.bind(
-			not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledHorizontal));
-		this.scrollBarEnabledVertical = new ReadOnlyBooleanWrapper();
-		scrollBarEnabledVertical.bind(
-			imageHeightTransformed.getReadOnlyProperty().greaterThan(viewport.heightProperty()));
-		this.scrollBarVisibleVertical = new ReadOnlyBooleanWrapper();
-		scrollBarVisibleVertical.bind(
-			not(viewport.scrollBarsDisabledProperty()).and(scrollBarEnabledVertical));
 		this.rotate = new Rotate();
 		rotate.angleProperty().bind(imageRotated.rotateProperty());
 		final var mirror = new Scale();
-		mirror.xProperty().bind(when(viewport.mirrorXProperty()).then(-1.0).otherwise(1.0));
+		mirror.xProperty().bind(when(imageTransforms.mirrorXProperty()).then(-1.0).otherwise(1.0));
 		mirror.pivotXProperty().bind(imageWidth.divide(2.0));
-		mirror.yProperty().bind(when(viewport.mirrorYProperty()).then(-1.0).otherwise(1.0));
+		mirror.yProperty().bind(when(imageTransforms.mirrorYProperty()).then(-1.0).otherwise(1.0));
 		mirror.pivotYProperty().bind(imageHeight.divide(2.0));
 		final var translateCenter = new Translate();
 		translateCenter.xProperty().bind(imageWidth.divide(-2.0));
@@ -205,50 +172,15 @@ class ImageLayer
 		focusPointY.bind(viewport.focusPointY());
 		this.translateScroll = new Translate();
 		translateScroll.xProperty().bind(
-			when(scrollBarEnabledHorizontal)
+			when(viewport.scrollBarEnabledHorizontalProperty())
 				.then(negate(viewport.scrollPosXProperty()))
 				.otherwise(viewport.widthProperty().subtract(imageWidthTransformed).divide(2.0)));
 		translateScroll.yProperty().bind(
-			when(scrollBarEnabledVertical)
+			when(viewport.scrollBarEnabledVerticalProperty())
 				.then(negate(viewport.scrollPosYProperty()))
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
-		dividerAngleNorm.bind(normalizeAngle(dividerAngle));
-		this.angleNormalized = dividerAngleNorm.getReadOnlyProperty();
-		dividerBorder.bind(
-			when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(RIGHT)))
-				.then(RIGHT).otherwise(
-				when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(BOTTOM)))
-					.then(BOTTOM).otherwise(
-					when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(LEFT)))
-						.then(LEFT).otherwise(
-						when(angleNormalized.lessThanOrEqualTo(viewport.getCornerAngles().get(TOP)))
-							.then(TOP).otherwise(RIGHT)))));
-		dividerBorderX.bind(
-			when(dividerBorder.isEqualTo(RIGHT))
-				.then(viewport.widthProperty()).otherwise(
-				when(dividerBorder.isEqualTo(BOTTOM))
-					.then(tan(angleNormalized.subtract(90.0))
-						.multiply(viewport.splitCenterDyProperty())
-						.add(viewport.splitCenterXProperty())).otherwise(
-					when(dividerBorder.isEqualTo(LEFT))
-						.then(0.0).otherwise( // TOP
-						tan(angleNormalized.add(90.0))
-							.multiply(viewport.splitCenterYProperty())
-							.add(viewport.splitCenterXProperty())))));
-		dividerBorderY.bind(
-			when(dividerBorder.isEqualTo(RIGHT))
-				.then(tan(angleNormalized)
-					.multiply(viewport.splitCenterDxProperty())
-					.add(viewport.splitCenterYProperty())).otherwise(
-				when(dividerBorder.isEqualTo(BOTTOM))
-					.then(viewport.heightProperty()).otherwise(
-					when(dividerBorder.isEqualTo(LEFT))
-						.then(tan(angleNormalized.subtract(180.0))
-							.multiply(viewport.splitCenterXProperty())
-							.add(viewport.splitCenterYProperty()))
-						.otherwise(0.0)))); // TOP
 		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
 		{
 			if (enabled)
@@ -264,19 +196,29 @@ class ImageLayer
 		}));
 	}
 
-	ObjectProperty<ZoomMode> zoomModeProperty()
+	static ImageLayer createInstance(Viewport viewport, BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
-		return zoomMode;
+		final var imageLayer = new ImageLayer(viewport);
+		// post init:
+		imageLayer.paneLayer.setOnMouseDragged(event ->
+		{
+			imageLayer.mouseDragged = true;
+		});
+		imageLayer.paneLayer.setOnMouseReleased(event ->
+		{
+			if (!imageLayer.mouseDragged && event.getButton().equals(MouseButton.PRIMARY) &&
+				event.getClickCount() == 1 && !event.isShiftDown() && !event.isAltDown())
+			{
+				layerSelectionHandler.accept(imageLayer, event.isControlDown());
+			}
+			imageLayer.mouseDragged = false;
+		});
+		return imageLayer;
 	}
 
-	DoubleProperty zoomFixedProperty()
+	ImageTransforms getImageTransforms()
 	{
-		return zoomFixed;
-	}
-
-	DoubleProperty rotateProperty()
-	{
-		return imageRotated.rotateProperty();
+		return imageTransforms;
 	}
 
 	ReadOnlyDoubleProperty zoomFactorProperty()
@@ -299,16 +241,6 @@ class ImageLayer
 		return imageIsNull.getReadOnlyProperty();
 	}
 
-	ReadOnlyBooleanProperty scrollBarEnabledHorizontalProperty()
-	{
-		return scrollBarVisibleHorizontal.getReadOnlyProperty();
-	}
-
-	ReadOnlyBooleanProperty scrollBarEnabledVerticalProperty()
-	{
-		return scrollBarVisibleVertical.getReadOnlyProperty();
-	}
-
 	DoubleProperty maxToPreviousWidthProperty()
 	{
 		return maxToPreviousWidth;
@@ -324,7 +256,7 @@ class ImageLayer
 		return imageView;
 	}
 
-	AnchorPane getPaneLayer()
+	Region getRegion()
 	{
 		return paneLayer;
 	}
@@ -366,35 +298,24 @@ class ImageLayer
 		return selected;
 	}
 
-	DoubleProperty dividerAngleProperty()
+	boolean isSelected()
 	{
-		return dividerAngle;
+		return selected.get();
 	}
 
-	Border getDividerBorder()
+	void setSelected(boolean selected)
 	{
-		return dividerBorder.getReadOnlyProperty().get();
+		this.selected.set(selected);
 	}
 
-	Double getDividerBorderX()
+	Divider getDivider()
 	{
-		return dividerBorderX.getValue();
-	}
-
-	Double getDividerBorderY()
-	{
-		return dividerBorderY.getValue();
+		return divider;
 	}
 
 	void setShapePoints(Double... points)
 	{
-		System.out.println("SET SHAPE POINTS: " + Arrays.deepToString(points));
 		clippingShape.getPoints().setAll(points);
 		selectionShape.getPoints().setAll(points);
-	}
-
-	boolean isSelected()
-	{
-		return selected.get();
 	}
 }

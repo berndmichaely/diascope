@@ -30,13 +30,6 @@ enum Border
 {
 	RIGHT, BOTTOM, LEFT, TOP;
 
-	Border previous()
-	{
-		final int o = ordinal();
-		final int n = values().length;
-		return values()[o > 0 ? o - 1 : n - 1];
-	}
-
 	/// Get the next Border in ascending order of angles.
 	///
 	/// @return the next Border in ascending order of angles

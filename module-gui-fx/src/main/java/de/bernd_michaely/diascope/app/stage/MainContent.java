@@ -20,14 +20,15 @@ import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.PreferencesUtil;
 import de.bernd_michaely.diascope.app.icons.Icons;
 import de.bernd_michaely.diascope.app.image.ImageDescriptor;
+import de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode;
 import de.bernd_michaely.diascope.app.image.MultiImageView;
-import de.bernd_michaely.diascope.app.image.MultiImageView.ZoomMode;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameters;
 import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
 import java.lang.System.Logger;
 import java.nio.file.Path;
 import java.util.prefs.Preferences;
+import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -69,8 +70,6 @@ import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_IMAG
 import static de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.RequestType.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static java.lang.System.Logger.Level.*;
-import static javafx.beans.binding.Bindings.not;
-import static javafx.beans.binding.Bindings.when;
 import static javafx.geometry.Pos.*;
 
 /**
@@ -191,7 +190,7 @@ class MainContent
 			buttonZoomFitWindow.setText("Fit");
 		}
 		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
-		buttonZoomFitWindow.setOnAction(event -> multiImageView.zoomModeProperty().set(ZoomMode.FIT));
+		buttonZoomFitWindow.setOnAction(event -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIT));
 		final var buttonZoomFillWindow = new Button();
 		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
 		if (iconZoomFillWindow != null)
@@ -203,7 +202,7 @@ class MainContent
 			buttonZoomFillWindow.setText("Fill");
 		}
 		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
-		buttonZoomFillWindow.setOnAction(event -> multiImageView.zoomModeProperty().set(ZoomMode.FILL));
+		buttonZoomFillWindow.setOnAction(event -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FILL));
 		final var buttonZoom100 = new Button();
 		final Image iconZoom100 = Icons.Zoom100.getIconImage();
 		if (iconZoom100 != null)
@@ -218,29 +217,28 @@ class MainContent
 		final var sliderZoom = new Slider(0.01, 4, 1);
 		buttonZoom100.setOnAction(event ->
 		{
-			multiImageView.zoomModeProperty().set(ZoomMode.FIXED);
+			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
 			sliderZoom.setValue(1.0);
 		});
 		sliderZoom.setTooltip(new Tooltip("Zoom factor"));
 		sliderZoom.valueProperty().addListener(onChange(value ->
 		{
-			multiImageView.zoomModeProperty().set(ZoomMode.FIXED);
-			multiImageView.zoomFixedProperty().set(value.doubleValue());
+			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
+			multiImageView.getImageTransforms().zoomFixedProperty().set(value.doubleValue());
 		}));
 		sliderZoom.setTooltip(new Tooltip("Set zoom factor"));
 		sliderZoom.setOnMouseClicked(event ->
 		{
 			if (event.getClickCount() == 2)
 			{
-				multiImageView.zoomModeProperty().set(ZoomMode.FIXED);
-				multiImageView.zoomFixedProperty().set(sliderZoom.getValue());
+				multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
+				multiImageView.getImageTransforms().zoomFixedProperty().set(sliderZoom.getValue());
 			}
 		});
 		final var labelZoom = new Label("100.0%");
 		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
-		labelZoom.textProperty().bind(when(multiImageView.isSingleSelectedProperty())
-			.then(multiImageView.zoomFactorProperty().multiply(100.0).asString("%.1f%% "))
-			.otherwise(""));
+		labelZoom.textProperty().bind(
+			multiImageView.zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
 		final var labelZoomWidth = new Label("8888.8% ");
 		labelZoomWidth.setVisible(false);
 		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);
@@ -250,9 +248,7 @@ class MainContent
 		sliderRotation.setTooltip(new Tooltip("Set image rotation"));
 		final var labelRotation = new Label("0°");
 		labelRotation.setTooltip(new Tooltip("Current image rotation"));
-		labelRotation.textProperty().bind(when(multiImageView.isSingleSelectedProperty())
-			.then(multiImageView.rotateProperty().asString("%.0f° "))
-			.otherwise(""));
+		labelRotation.textProperty().bind(multiImageView.getImageTransforms().rotateProperty().asString("%.0f° "));
 		final var labelRotationWidth = new Label(" 360° ");
 		labelRotationWidth.setVisible(false);
 		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);
@@ -269,7 +265,7 @@ class MainContent
 			buttonMirrorX.setText("Mirr. horiz.");
 		}
 		buttonMirrorX.setTooltip(new Tooltip("Mirror image horizontally"));
-		multiImageView.mirrorXProperty().bind(buttonMirrorX.selectedProperty());
+		multiImageView.getImageTransforms().mirrorXProperty().bind(buttonMirrorX.selectedProperty());
 		final var buttonMirrorY = new ToggleButton();
 		final Image iconMirrorY = Icons.MirrorY.getIconImage();
 		if (iconMirrorY != null)
@@ -281,15 +277,19 @@ class MainContent
 			buttonMirrorY.setText("Mirr. vert.");
 		}
 		buttonMirrorY.setTooltip(new Tooltip("Mirror image vertically"));
-		multiImageView.mirrorYProperty().bind(buttonMirrorY.selectedProperty());
-		this.toolBarImage = new ToolBar(
-			buttonLayerAdd, buttonLayerRemove,
+		multiImageView.getImageTransforms().mirrorYProperty().bind(buttonMirrorY.selectedProperty());
+		this.toolBarImage = new ToolBar();
+		if (Platform.isSupported(ConditionalFeature.SHAPE_CLIP))
+		{
+			toolBarImage.getItems().addAll(buttonLayerAdd, buttonLayerRemove);
+		}
+		toolBarImage.getItems().addAll(
 			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
 			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
 			buttonMirrorX, buttonMirrorY);
-		toolBarImage.disableProperty().bind(not(multiImageView.isSingleSelectedProperty()));
+//		toolBarImage.disableProperty().bind(not(multiImageView.isSingleSelectedProperty()));
 		this.toolBarFullscreenProperty = new SimpleBooleanProperty();
-		this.multiImageView.rotateProperty().bind(sliderRotation.valueProperty());
+		this.multiImageView.getImageTransforms().rotateProperty().bind(sliderRotation.valueProperty());
 		this.borderPane.setCenter(this.splitPane);
 		this.borderPane.setTop(toolBarImage);
 		this.progressControl = new ProgressControl(this.statusLine);

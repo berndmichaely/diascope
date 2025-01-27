@@ -31,7 +31,7 @@ public class CornerAnglesTest
 {
 	private void _test_CornerAngles(CornerAngles cornerAngles, double expectedAngle, Border border)
 	{
-		System.out.println("Corner %s→%s : %f°".formatted(border, border.next(), expectedAngle));
+		System.out.println("· Corner %s → %s : %f°".formatted(border, border.next(), expectedAngle));
 		assertEquals(expectedAngle, cornerAngles.get(border).get());
 	}
 

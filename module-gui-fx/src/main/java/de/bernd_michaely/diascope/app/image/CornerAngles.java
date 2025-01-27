@@ -26,15 +26,21 @@ import static de.bernd_michaely.diascope.app.image.Border.LEFT;
 import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
 import static de.bernd_michaely.diascope.app.image.Border.TOP;
 
-/**
- * Class to handle viewport corner angles.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Class to handle viewport corner angles.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class CornerAngles
 {
 	private final EnumMap<Border, ReadOnlyDoubleWrapper> cornerAngles;
 
+	/// Creates a new instance.
+	///
+	/// @param x the x coordinate of the split center point
+	/// @param y the y coordinate of the split center point
+	/// @param dx delta x to the viewport width
+	/// @param dy delta y to the viewport height
+	///
 	CornerAngles(
 		ReadOnlyDoubleProperty x, ReadOnlyDoubleProperty y,
 		ReadOnlyDoubleProperty dx, ReadOnlyDoubleProperty dy)
@@ -60,6 +66,14 @@ class CornerAngles
 		}
 	}
 
+	/// Returns a property indicating the angle of the split center point to the
+	/// given viewport corner.
+	///
+	/// @param  border the given corner indicated by the associated border
+	/// @return a property indicating the angle of the split center point to the
+	///         given viewport corner
+	/// @see    Border
+	///
 	ReadOnlyDoubleProperty get(Border border)
 	{
 		final var prop = cornerAngles.get(border);

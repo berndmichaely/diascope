@@ -18,8 +18,6 @@ package de.bernd_michaely.diascope.app.image;
 
 import java.lang.System.Logger;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
@@ -30,23 +28,15 @@ import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.input.MouseButton;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
 import static javafx.beans.binding.Bindings.max;
-import static javafx.beans.binding.Bindings.not;
-import static javafx.beans.binding.Bindings.or;
-import static javafx.scene.layout.AnchorPane.setBottomAnchor;
-import static javafx.scene.layout.AnchorPane.setLeftAnchor;
-import static javafx.scene.layout.AnchorPane.setRightAnchor;
-import static javafx.scene.layout.AnchorPane.setTopAnchor;
 
 /**
  * Facade of a component to display multiple images.
@@ -57,6 +47,7 @@ public class MultiImageView
 {
 	private static final Double ZERO = 0.0;
 	private static final int NULL_INDEX = -1;
+	private final ImageTransforms imageTransforms;
 	private final ObservableList<ImageLayer> layers;
 	private final ImageLayer nullLayer;
 	private final ReadOnlyListWrapper<ImageLayer> layersProperty;
@@ -67,16 +58,6 @@ public class MultiImageView
 	private final Viewport viewport;
 	private final BooleanProperty scrollBarsEnabled;
 	private final ChangeListener<Number> listenerClippingPoints;
-
-	public enum ZoomMode
-	{
-		FIT, FILL, FIXED;
-
-		static ZoomMode getDefault()
-		{
-			return FIT;
-		}
-	}
 
 	private static class NullImageLayer extends ImageLayer
 	{
@@ -97,10 +78,13 @@ public class MultiImageView
 
 	public MultiImageView()
 	{
+		this.imageTransforms = new ImageTransforms();
 		this.layers = FXCollections.observableArrayList();
 		this.layersProperty = new ReadOnlyListWrapper<>(layers);
+		this.viewport = new Viewport(layersProperty.getReadOnlyProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
-		this.viewport = new Viewport(not(scrollBarsEnabled), layersProperty.getReadOnlyProperty());
+		viewport.getScrollBars().enabledProperty().bind(
+			scrollBarsEnabled.and(imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
 		this.nullLayer = new NullImageLayer(viewport);
 		this.selectedSingleIndex = new ReadOnlyIntegerWrapper(NULL_INDEX);
 		this.isSingleSelected = new ReadOnlyBooleanWrapper();
@@ -115,16 +99,16 @@ public class MultiImageView
 				{
 					final var layer = layers.get(i);
 					final var layerNext = layers.get(i == n - 1 ? 0 : i + 1);
-					final var corner = layer.getDividerBorder();
-					final var cornerNext = layerNext.getDividerBorder();
+					final var corner = layer.getDivider().getBorder();
+					final var cornerNext = layerNext.getDivider().getBorder();
 					final int numIntermediateCorners = Border.numberOfCornerPointsBetween(corner, cornerNext);
 					final int numPoints = 2 * (3 + numIntermediateCorners);
 					final Double[] points = new Double[numPoints];
 					int index = 0;
 					points[index++] = viewport.splitCenterXProperty().getValue();
 					points[index++] = viewport.splitCenterYProperty().getValue();
-					points[index++] = layer.getDividerBorderX();
-					points[index++] = layer.getDividerBorderY();
+					points[index++] = layer.getDivider().getBorderIntersectionX();
+					points[index++] = layer.getDivider().getBorderIntersectionY();
 					var c = corner;
 					for (int k = 0; k < numIntermediateCorners; k++, c = c.next())
 					{
@@ -147,8 +131,8 @@ public class MultiImageView
 								throw new IllegalStateException("Invalid border: " + c);
 						};
 					}
-					points[index++] = layerNext.getDividerBorderX();
-					points[index++] = layerNext.getDividerBorderY();
+					points[index++] = layerNext.getDivider().getBorderIntersectionX();
+					points[index++] = layerNext.getDivider().getBorderIntersectionY();
 					layer.setShapePoints(points);
 				}
 			}
@@ -160,9 +144,14 @@ public class MultiImageView
 	 *
 	 * @return the main component
 	 */
-	public Pane getRegion()
+	public Region getRegion()
 	{
-		return viewport.getViewportPane();
+		return viewport.getPaneViewport();
+	}
+
+	public ImageTransforms getImageTransforms()
+	{
+		return imageTransforms;
 	}
 
 	public void addLayer()
@@ -183,37 +172,36 @@ public class MultiImageView
 
 	private ImageLayer createImageLayer(int index)
 	{
-		final var imageLayer = new ImageLayer(viewport);
+		final var imageLayer = ImageLayer.createInstance(viewport, this::toggleLayerSelection);
 		layers.add(index, imageLayer);
-		final AnchorPane paneLayer = imageLayer.getPaneLayer();
-		setTopAnchor(paneLayer, 0.0);
-		setLeftAnchor(paneLayer, 0.0);
-		setRightAnchor(paneLayer, 0.0);
-		setBottomAnchor(paneLayer, 0.0);
-		viewport.getViewportPane().getChildren().add(index, paneLayer);
+//		final Pane paneLayer = imageLayer.getPaneLayer();
+//		setTopAnchor(paneLayer, 0.0);
+//		setLeftAnchor(paneLayer, 0.0);
+//		setRightAnchor(paneLayer, 0.0);
+//		setBottomAnchor(paneLayer, 0.0);
+		viewport.addLayer(index, imageLayer);
 		updateScrollRangeBindings();
-		updateScrollbarVisibilityBindings();
-		paneLayer.setOnMouseClicked(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 1 &&
-				event.isControlDown())
-			{
-				layers.stream()
-					.filter(layer -> layer.getPaneLayer() == paneLayer)
-					.findFirst().ifPresent(layer -> toggleLayerSelection(layer, event.isShiftDown()));
-			}
-		});
+//		paneLayer.setOnMouseClicked(event ->
+//		{
+//			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 1 &&
+//				event.isControlDown())
+//			{
+//				layers.stream()
+//					.filter(layer -> layer.getPaneLayer() == paneLayer)
+//					.findFirst().ifPresent(layer -> toggleLayerSelection(layer, event.isShiftDown()));
+//			}
+//		});
 		final int numLayers = layers.size();
 		if (numLayers == 2)
 		{
 			viewport.widthProperty().addListener(listenerClippingPoints);
 			viewport.heightProperty().addListener(listenerClippingPoints);
 		}
-		imageLayer.dividerAngleProperty().addListener(listenerClippingPoints);
+		imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
 		final double da = 360.0 / numLayers;
 		for (int i = 0; i < numLayers; i++)
 		{
-			layers.get(i).dividerAngleProperty().set(i * da);
+			layers.get(i).getDivider().setAngle(i * da);
 		}
 		return imageLayer;
 	}
@@ -225,38 +213,17 @@ public class MultiImageView
 
 	private void removeLayer(int index)
 	{
-		final ImageLayer removed = layers.remove(index);
-		removed.dividerAngleProperty().unbind();
-		if (layers.size() == 1)
+		if (index >= 0)
 		{
-			viewport.widthProperty().removeListener(listenerClippingPoints);
-			viewport.heightProperty().removeListener(listenerClippingPoints);
-		}
-		viewport.getViewportPane().getChildren().remove(removed.getPaneLayer());
-		updateScrollRangeBindings();
-		updateScrollbarVisibilityBindings();
-	}
-
-	private void updateScrollbarVisibilityBindings()
-	{
-		if (layers.isEmpty())
-		{
-			viewport.getScrollBarH().visibleProperty().unbind();
-			viewport.getScrollBarV().visibleProperty().unbind();
-		}
-		else
-		{
-			final ImageLayer firstLayer = layers.getFirst();
-			ObservableBooleanValue propSbvH = firstLayer.scrollBarEnabledHorizontalProperty();
-			ObservableBooleanValue propSbvV = firstLayer.scrollBarEnabledVerticalProperty();
-			for (int i = 1; i < layers.size(); i++)
+			final ImageLayer removed = layers.remove(index);
+			removed.getDivider().angleProperty().unbind();
+			if (layers.size() == 1)
 			{
-				final ImageLayer layer = layers.get(i);
-				propSbvH = or(propSbvH, layer.scrollBarEnabledHorizontalProperty());
-				propSbvV = or(propSbvV, layer.scrollBarEnabledVerticalProperty());
+				viewport.widthProperty().removeListener(listenerClippingPoints);
+				viewport.heightProperty().removeListener(listenerClippingPoints);
 			}
-			viewport.getScrollBarH().visibleProperty().bind(propSbvH);
-			viewport.getScrollBarV().visibleProperty().bind(propSbvV);
+			viewport.getPaneViewport().getChildren().remove(removed.getRegion());
+			updateScrollRangeBindings();
 		}
 	}
 
@@ -293,21 +260,20 @@ public class MultiImageView
 		final int index = layers.indexOf(layer);
 		if (index >= 0)
 		{
-			final BooleanProperty selectedProperty = layer.selectedProperty();
-			selectedProperty.set(!selectedProperty.get());
+			final boolean selected = !layer.isSelected();
+			layer.setSelected(selected);
 			if (!multiSelect)
 			{
-				layers.stream()
-					.filter(l -> l != layer)
-					.forEach(l -> l.selectedProperty().set(false));
+				layers.stream().filter(l -> l != layer).forEach(l -> l.setSelected(false));
 			}
 			final int numSelected = (int) layers.stream().filter(ImageLayer::isSelected).count();
-			isSingleSelected.set(numSelected == 1);
-			if (isSingleSelected.get())
+			final boolean singleSelected = numSelected == 1;
+			isSingleSelected.set(singleSelected);
+			if (singleSelected)
 			{
 				selectedSingleIndex.set(index);
 				selectedLayer.set(layer);
-				zoomFactor.bind(selectedLayer.get().zoomFactorProperty());
+				selectedLayer.get().getImageTransforms().bindProperties(getImageTransforms());
 			}
 			else
 			{
@@ -315,6 +281,7 @@ public class MultiImageView
 				selectedLayer.set(nullLayer);
 			}
 		}
+		System.out.println("toggleLayerSelection: INDEX == " + selectedSingleIndex.getReadOnlyProperty().get());
 	}
 
 	public ReadOnlyIntegerProperty numberOfLayersProperty()
@@ -332,6 +299,11 @@ public class MultiImageView
 		return isSingleSelected.getReadOnlyProperty();
 	}
 
+	public boolean isSingleSelected()
+	{
+		return isSingleSelected.get();
+	}
+
 	/**
 	 * Display the given image.
 	 *
@@ -339,16 +311,10 @@ public class MultiImageView
 	 */
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
-		final var imageLayer = selectedLayer.get();
-		if (imageLayer != nullLayer)
+		if (isSingleSelected())
 		{
-			imageLayer.setImageDescriptor(imageDescriptor);
+			selectedLayer.get().setImageDescriptor(imageDescriptor);
 		}
-	}
-
-	public DoubleProperty rotateProperty()
-	{
-		return viewport.rotateProperty();
 	}
 
 	public BooleanProperty scrollBarsEnabledProperty()
@@ -356,28 +322,8 @@ public class MultiImageView
 		return scrollBarsEnabled;
 	}
 
-	public DoubleProperty zoomFixedProperty()
-	{
-		return viewport.zoomFixedProperty();
-	}
-
-	public ObjectProperty<ZoomMode> zoomModeProperty()
-	{
-		return viewport.zoomModeProperty();
-	}
-
 	public ReadOnlyDoubleProperty zoomFactorProperty()
 	{
 		return zoomFactor.getReadOnlyProperty();
-	}
-
-	public BooleanProperty mirrorXProperty()
-	{
-		return viewport.mirrorXProperty();
-	}
-
-	public BooleanProperty mirrorYProperty()
-	{
-		return viewport.mirrorYProperty();
 	}
 }

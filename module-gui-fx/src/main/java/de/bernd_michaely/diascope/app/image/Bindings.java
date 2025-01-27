@@ -17,7 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import javafx.beans.binding.DoubleBinding;
-import javafx.beans.value.ObservableDoubleValue;
+import javafx.beans.value.ObservableNumberValue;
 
 /**
  * Utility class to create additional bindings.
@@ -28,9 +28,9 @@ class Bindings
 {
 	private static class TanBinding extends DoubleBinding
 	{
-		private final ObservableDoubleValue value;
+		private final ObservableNumberValue value;
 
-		private TanBinding(ObservableDoubleValue value)
+		private TanBinding(ObservableNumberValue value)
 		{
 			this.value = value;
 		}
@@ -41,7 +41,7 @@ class Bindings
 			return Math.tan(Math.toRadians(value.doubleValue()));
 		}
 
-		private static TanBinding newInstance(ObservableDoubleValue value)
+		private static TanBinding newInstance(ObservableNumberValue value)
 		{
 			final var binding = new TanBinding(value);
 			binding.bind(value);
@@ -51,9 +51,9 @@ class Bindings
 
 	private static class ArcTanBinding extends DoubleBinding
 	{
-		private final ObservableDoubleValue value;
+		private final ObservableNumberValue value;
 
-		private ArcTanBinding(ObservableDoubleValue value)
+		private ArcTanBinding(ObservableNumberValue value)
 		{
 			this.value = value;
 		}
@@ -64,7 +64,7 @@ class Bindings
 			return Math.toDegrees(Math.atan(value.doubleValue()));
 		}
 
-		private static ArcTanBinding newInstance(ObservableDoubleValue value)
+		private static ArcTanBinding newInstance(ObservableNumberValue value)
 		{
 			final var binding = new ArcTanBinding(value);
 			binding.bind(value);
@@ -76,9 +76,9 @@ class Bindings
 	{
 		private static final double C = 360.0;
 		private static final double L = 2 * C;
-		private final ObservableDoubleValue angle;
+		private final ObservableNumberValue angle;
 
-		private NormalizeAngleBinding(ObservableDoubleValue angle)
+		private NormalizeAngleBinding(ObservableNumberValue angle)
 		{
 			this.angle = angle;
 		}
@@ -102,7 +102,7 @@ class Bindings
 			return a == -0.0 ? 0.0 : a;
 		}
 
-		private static NormalizeAngleBinding newInstance(ObservableDoubleValue angle)
+		private static NormalizeAngleBinding newInstance(ObservableNumberValue angle)
 		{
 			final var binding = new NormalizeAngleBinding(angle);
 			binding.bind(angle);
@@ -110,12 +110,12 @@ class Bindings
 		}
 	}
 
-	static DoubleBinding tan(ObservableDoubleValue value)
+	static DoubleBinding tan(ObservableNumberValue value)
 	{
 		return TanBinding.newInstance(value);
 	}
 
-	static DoubleBinding arctan(ObservableDoubleValue value)
+	static DoubleBinding arctan(ObservableNumberValue value)
 	{
 		return ArcTanBinding.newInstance(value);
 	}
@@ -126,7 +126,7 @@ class Bindings
 	 * @param angle the given angle
 	 * @return the angle normalized to the range [0°..360°[
 	 */
-	static DoubleBinding normalizeAngle(ObservableDoubleValue angle)
+	static DoubleBinding normalizeAngle(ObservableNumberValue angle)
 	{
 		return NormalizeAngleBinding.newInstance(angle);
 	}

@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import static de.bernd_michaely.diascope.app.image.Border.*;
@@ -30,10 +31,19 @@ import static org.junit.jupiter.api.Assertions.*;
 public class BorderTest
 {
 	@Test
+	public void test_ordering()
+	{
+		System.out.println("Test Border ordering");
+		assertIterableEquals(List.of(RIGHT, BOTTOM, LEFT, TOP), List.of(Border.values()));
+	}
+
+	@Test
 	public void test_next()
 	{
+		System.out.println("Test Border::next");
 		final int maxLength = Arrays.stream(Border.values())
 			.map(Border::name).mapToInt(String::length).max().orElse(0);
+		final int n = Border.values().length;
 		for (var border : Border.values())
 		{
 			final Border expected = switch (border)
@@ -47,27 +57,35 @@ public class BorderTest
 				case RIGHT ->
 					BOTTOM;
 			};
+			assertEquals(1, (n + expected.ordinal() - border.ordinal()) % n);
 			final Border actual = border.next();
 			System.out.format("%" + maxLength + "s → %s%n", border, actual);
 			assertEquals(expected, actual);
 		}
 	}
 
+	private void _test_numberOfCornerPointsBetween(int expected, Border border1, Border border2)
+	{
+		System.out.println("· %s → %s = %d".formatted(border1, border2, expected));
+		assertEquals(expected, numberOfCornerPointsBetween(border1, border2));
+	}
+
 	@Test
 	public void test_numberOfCornerPointsBetween()
 	{
+		System.out.println("Check number of  corner  points  between borders:");
 		for (var border : Border.values())
 		{
-			assertEquals(0, numberOfCornerPointsBetween(border, border));
-			assertEquals(1, numberOfCornerPointsBetween(border, border.next()));
-			assertEquals(2, numberOfCornerPointsBetween(border, border.next().next()));
-			assertEquals(3, numberOfCornerPointsBetween(border, border.next().next().next()));
-			assertEquals(0, numberOfCornerPointsBetween(border, border.next().next().next().next()));
-			assertEquals(0, numberOfCornerPointsBetween(border, border.next().next().next().next()));
-			assertEquals(3, numberOfCornerPointsBetween(border.next(), border));
-			assertEquals(2, numberOfCornerPointsBetween(border.next().next(), border));
-			assertEquals(1, numberOfCornerPointsBetween(border.next().next().next(), border));
-			assertEquals(0, numberOfCornerPointsBetween(border.next().next().next().next(), border));
+			_test_numberOfCornerPointsBetween(0, border, border);
+			_test_numberOfCornerPointsBetween(1, border, border.next());
+			_test_numberOfCornerPointsBetween(2, border, border.next().next());
+			_test_numberOfCornerPointsBetween(3, border, border.next().next().next());
+			_test_numberOfCornerPointsBetween(0, border, border.next().next().next().next());
+			_test_numberOfCornerPointsBetween(0, border, border.next().next().next().next());
+			_test_numberOfCornerPointsBetween(3, border.next(), border);
+			_test_numberOfCornerPointsBetween(2, border.next().next(), border);
+			_test_numberOfCornerPointsBetween(1, border.next().next().next(), border);
+			_test_numberOfCornerPointsBetween(0, border.next().next().next().next(), border);
 		}
 	}
 }
