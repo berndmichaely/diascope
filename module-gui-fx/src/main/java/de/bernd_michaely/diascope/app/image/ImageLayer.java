@@ -31,20 +31,15 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.StrokeLineCap;
-import javafx.scene.shape.StrokeLineJoin;
-import javafx.scene.shape.StrokeType;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
-import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode.FILL;
-import static de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode.FIT;
+import static de.bernd_michaely.diascope.app.image.ZoomMode.FILL;
+import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static javafx.beans.binding.Bindings.isNull;
 import static javafx.beans.binding.Bindings.max;
@@ -52,18 +47,17 @@ import static javafx.beans.binding.Bindings.min;
 import static javafx.beans.binding.Bindings.negate;
 import static javafx.beans.binding.Bindings.when;
 
-/**
- * Class to describe ImageView transformations.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Class to describe ImageView transformations.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class ImageLayer
 {
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
 	private final Polygon clippingShape = new Polygon();
-	private final Polygon selectionShape = new Polygon();
+	private final ImageLayerShape imageLayerShape = new ImageLayerShape();
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
 	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
@@ -81,29 +75,14 @@ class ImageLayer
 	private final Scale scale;
 	private final Rotate rotate;
 	private final Translate translateScroll;
-	private final BooleanProperty selected;
 	private boolean mouseDragged;
 	private String imageTitle = "";
 
 	ImageLayer(Viewport viewport)
 	{
-		this.selected = new SimpleBooleanProperty();
-		selectionShape.setFill(Color.TRANSPARENT);
-//		selectionShape.setStroke(Color.CORNFLOWERBLUE);
-		selectionShape.strokeProperty().bind(when(selected)
-			.then(Color.CORNFLOWERBLUE).otherwise(Color.ALICEBLUE));
-		selectionShape.strokeWidthProperty().bind(when(selected).then(4).otherwise(1));
-		selectionShape.setStrokeLineCap(StrokeLineCap.ROUND);
-		selectionShape.setStrokeLineJoin(StrokeLineJoin.ROUND);
-		selectionShape.setStrokeType(StrokeType.INSIDE);
-//		selectionShape.visibleProperty().bind(selected);
-		paneLayer.getChildren().addAll(imageView, selectionShape);
+		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-//		setTopAnchor(imageView, 0.0);
-//		setLeftAnchor(imageView, 0.0);
-//		setRightAnchor(imageView, 0.0);
-//		setBottomAnchor(imageView, 0.0);
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.imageWidth = new ReadOnlyDoubleWrapper();
 		this.imageHeight = new ReadOnlyDoubleWrapper();
@@ -126,7 +105,6 @@ class ImageLayer
 			viewport.splitCenterYProperty().getReadOnlyProperty(),
 			viewport.splitCenterDxProperty().getReadOnlyProperty(),
 			viewport.splitCenterDyProperty().getReadOnlyProperty());
-
 		imageIsNull.bind(isNull(imageView.imageProperty()));
 		this.zoomModeIsFit = new SimpleBooleanProperty();
 		zoomModeIsFit.bind(imageTransforms.zoomModeProperty().isEqualTo(FIT));
@@ -181,25 +159,24 @@ class ImageLayer
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
-		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
-		{
-			if (enabled)
-			{
-				setNullableClip(clippingShape);
-			}
-			else
-			{
-				setNullableClip(null);
-				clippingShape.getPoints().clear();
-				selectionShape.getPoints().clear();
-			}
-		}));
 	}
 
 	static ImageLayer createInstance(Viewport viewport, BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
 		final var imageLayer = new ImageLayer(viewport);
 		// post init:
+		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
+		{
+			if (enabled)
+			{
+				imageLayer.setNullableClip(imageLayer.clippingShape);
+			}
+			else
+			{
+				imageLayer.setNullableClip(null);
+				imageLayer.clearShapePoints();
+			}
+		}));
 		imageLayer.paneLayer.setOnMouseDragged(event ->
 		{
 			imageLayer.mouseDragged = true;
@@ -261,11 +238,10 @@ class ImageLayer
 		return paneLayer;
 	}
 
-	/**
-	 * Set the image to display.
-	 *
-	 * @param imageDescriptor the given image, may be null to clear the display
-	 */
+	/// Set the image to display.
+	///
+	/// @param imageDescriptor the given image, may be null to clear the display
+	///
 	void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
 		final var image = imageDescriptor != null ? imageDescriptor.getImage() : null;
@@ -286,26 +262,24 @@ class ImageLayer
 	}
 
 	@SuppressWarnings("argument")
-	private void setNullableClip(@UnderInitialization ImageLayer this,
-		@Nullable Node clip)
+	private void setNullableClip(@Nullable Node clip)
 	{
-//		imageView.setClip(clip);
 		paneLayer.setClip(clip);
 	}
 
 	BooleanProperty selectedProperty()
 	{
-		return selected;
+		return getImageLayerShape().selectedProperty();
 	}
 
 	boolean isSelected()
 	{
-		return selected.get();
+		return selectedProperty().get();
 	}
 
 	void setSelected(boolean selected)
 	{
-		this.selected.set(selected);
+		selectedProperty().set(selected);
 	}
 
 	Divider getDivider()
@@ -313,9 +287,20 @@ class ImageLayer
 		return divider;
 	}
 
+	ImageLayerShape getImageLayerShape()
+	{
+		return imageLayerShape;
+	}
+
+	private void clearShapePoints()
+	{
+		clippingShape.getPoints().clear();
+		getImageLayerShape().clearPoints();
+	}
+
 	void setShapePoints(Double... points)
 	{
 		clippingShape.getPoints().setAll(points);
-		selectionShape.getPoints().setAll(points);
+		getImageLayerShape().setShapePoints(points);
 	}
 }

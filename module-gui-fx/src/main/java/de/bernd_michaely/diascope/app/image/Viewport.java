@@ -32,18 +32,17 @@ import javafx.scene.paint.Color;
 import static java.lang.Double.max;
 import static java.lang.Double.min;
 
-/**
- * Class to describe the viewport of a MultiImageView containing all images.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Class to describe the viewport of a MultiImageView containing all images.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class Viewport
 {
+	private final StackPane paneImageLayers = new StackPane();
+	private final Pane paneImageLayerShapes = new Pane();
+	private final ScrollBars scrollBars = new ScrollBars();
 	private final StackPane paneViewport;
-	private final StackPane layersPane;
-	private final ScrollBars scrollBars;
 	private final CornerAngles cornerAngles;
-	private final ReadOnlyListProperty<ImageLayer> layersProperty;
 	private final ReadOnlyBooleanWrapper multiLayerMode;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
@@ -57,7 +56,6 @@ class Viewport
 
 	Viewport(ReadOnlyListProperty<ImageLayer> layersProperty)
 	{
-		this.layersProperty = layersProperty;
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
@@ -72,9 +70,8 @@ class Viewport
 		this.splitCenterDx = new ReadOnlyDoubleWrapper();
 		this.splitCenterDy = new ReadOnlyDoubleWrapper();
 		multiLayerMode.bind(layersProperty.sizeProperty().greaterThanOrEqualTo(2));
-		this.scrollBars = new ScrollBars();
-		this.layersPane = new StackPane();
-		this.paneViewport = new StackPane(layersPane, scrollBars.getPane());
+		this.paneViewport = new StackPane(
+			paneImageLayers, scrollBars.getPane(), paneImageLayerShapes);
 		paneViewport.setBackground(Background.fill(Color.BLACK));
 		paneViewport.setMinSize(0, 0);
 		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -127,7 +124,14 @@ class Viewport
 
 	void addLayer(int index, ImageLayer imageLayer)
 	{
-		layersPane.getChildren().add(index, imageLayer.getRegion());
+		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
+		paneImageLayerShapes.getChildren().add(index, imageLayer.getImageLayerShape().getShape());
+	}
+
+	void removeLayer(int index)
+	{
+		paneImageLayers.getChildren().remove(index);
+		paneImageLayerShapes.getChildren().remove(index);
 	}
 
 	ReadOnlyBooleanProperty multiLayerModeProperty()

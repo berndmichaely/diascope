@@ -20,7 +20,7 @@ import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.PreferencesUtil;
 import de.bernd_michaely.diascope.app.icons.Icons;
 import de.bernd_michaely.diascope.app.image.ImageDescriptor;
-import de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode;
+import de.bernd_michaely.diascope.app.image.ZoomMode;
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameters;

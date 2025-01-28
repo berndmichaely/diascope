@@ -29,11 +29,10 @@ import static javafx.scene.layout.AnchorPane.setLeftAnchor;
 import static javafx.scene.layout.AnchorPane.setRightAnchor;
 import static javafx.scene.layout.AnchorPane.setTopAnchor;
 
-/**
- * Class to handle viewport scrollbars.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Class to handle viewport scrollbars.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class ScrollBars
 {
 	private final AnchorPane pane;

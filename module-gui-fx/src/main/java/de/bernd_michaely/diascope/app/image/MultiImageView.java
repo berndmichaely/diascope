@@ -33,7 +33,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ImageTransforms.ZoomMode.FIT;
+import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
 import static javafx.beans.binding.Bindings.max;
@@ -118,8 +118,6 @@ public class MultiImageView
 								viewport.widthProperty().getValue();
 							case BOTTOM, LEFT ->
 								ZERO;
-							default ->
-								throw new IllegalStateException("Invalid border: " + c);
 						};
 						points[index++] = switch (c)
 						{
@@ -127,8 +125,6 @@ public class MultiImageView
 								viewport.heightProperty().getValue();
 							case LEFT, TOP ->
 								ZERO;
-							default ->
-								throw new IllegalStateException("Invalid border: " + c);
 						};
 					}
 					points[index++] = layerNext.getDivider().getBorderIntersectionX();
@@ -174,23 +170,8 @@ public class MultiImageView
 	{
 		final var imageLayer = ImageLayer.createInstance(viewport, this::toggleLayerSelection);
 		layers.add(index, imageLayer);
-//		final Pane paneLayer = imageLayer.getPaneLayer();
-//		setTopAnchor(paneLayer, 0.0);
-//		setLeftAnchor(paneLayer, 0.0);
-//		setRightAnchor(paneLayer, 0.0);
-//		setBottomAnchor(paneLayer, 0.0);
 		viewport.addLayer(index, imageLayer);
 		updateScrollRangeBindings();
-//		paneLayer.setOnMouseClicked(event ->
-//		{
-//			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 1 &&
-//				event.isControlDown())
-//			{
-//				layers.stream()
-//					.filter(layer -> layer.getPaneLayer() == paneLayer)
-//					.findFirst().ifPresent(layer -> toggleLayerSelection(layer, event.isShiftDown()));
-//			}
-//		});
 		final int numLayers = layers.size();
 		if (numLayers == 2)
 		{
@@ -208,21 +189,25 @@ public class MultiImageView
 
 	public void removeLayer()
 	{
-		removeLayer(selectedSingleIndexProperty().get());
+		if (isSingleSelected())
+		{
+			removeLayer(selectedSingleIndexProperty().get());
+		}
 	}
 
 	private void removeLayer(int index)
 	{
-		if (index >= 0)
+		final int n = layers.size();
+		if (index >= 0 && index < n)
 		{
 			final ImageLayer removed = layers.remove(index);
 			removed.getDivider().angleProperty().unbind();
-			if (layers.size() == 1)
+			if (n == 1)
 			{
 				viewport.widthProperty().removeListener(listenerClippingPoints);
 				viewport.heightProperty().removeListener(listenerClippingPoints);
 			}
-			viewport.getPaneViewport().getChildren().remove(removed.getRegion());
+			viewport.removeLayer(index);
 			updateScrollRangeBindings();
 		}
 	}

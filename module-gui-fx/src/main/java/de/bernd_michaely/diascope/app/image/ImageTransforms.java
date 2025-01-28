@@ -34,22 +34,6 @@ public class ImageTransforms
 	private final DoubleProperty rotateProperty;
 	private final BooleanProperty mirrorXProperty, mirrorYProperty;
 
-	/// Enumerating the available image zoom modes.
-	public enum ZoomMode
-	{
-		/// The image will be zoomed to fit into the viewport.
-		FIT,
-		/// The image will be zoomed to fill the viewport.
-		FILL,
-		/// The image will be zoomed according to a given zoom factor.
-		FIXED;
-
-		static ZoomMode getDefault()
-		{
-			return FIT;
-		}
-	}
-
 	ImageTransforms()
 	{
 		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
