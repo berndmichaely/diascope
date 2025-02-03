@@ -28,22 +28,21 @@
      inkscape:document-units="px"
      inkscape:zoom="0.67864583"
      inkscape:cx="960"
-     inkscape:cy="539.30929"
+     inkscape:cy="538.57253"
      inkscape:window-width="1920"
-     inkscape:window-height="1102"
+     inkscape:window-height="1126"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer4"
+     inkscape:current-layer="svg1"
      showgrid="false" />
   <defs
      id="defs1" />
   <g
-     inkscape:label="Layer lines"
      inkscape:groupmode="layer"
-     id="layer1"
-     style="display:inline"
-     sodipodi:insensitive="true">
+     id="layer3"
+     inkscape:label="Layer bg"
+     style="display:inline">
     <rect
        style="display:inline;fill:#d7daff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
        id="rect11"
@@ -51,29 +50,39 @@
        height="1078"
        x="1"
        y="1"
-       ry="0" />
+       ry="0"
+       inkscape:label="rect bg" />
     <rect
-       style="fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       style="display:inline;fill:none;fill-rule:evenodd;stroke:#ff0000;stroke-width:2;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
        id="rect1"
        width="1918"
        height="1078"
        x="1"
        y="1"
-       ry="0" />
+       ry="0"
+       inkscape:label="rect frame"
+       sodipodi:insensitive="true" />
+  </g>
+  <g
+     inkscape:label="Layer lines"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:none"
+     sodipodi:insensitive="true">
     <path
-       style="fill:#4d4d4d;stroke:#2b2b2b;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:0.796019"
+       style="display:inline;fill:#4d4d4d;stroke:#2b2b2b;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:0.796019"
        d="m 2.5,2.5 1915,1075"
        id="path1" />
     <path
-       style="fill:#4d4d4d;stroke:#2b2b2b;stroke-width:5;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:0.796019"
+       style="display:inline;fill:#4d4d4d;stroke:#2b2b2b;stroke-width:5;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:0.796019"
        d="M 2.5,1077.5 1917.5,2.5"
        id="path2" />
   </g>
   <g
      inkscape:groupmode="layer"
      id="layer4"
-     inkscape:label="Layer bg 1"
-     style="display:inline"
+     inkscape:label="Layer bg quarters"
+     style="display:none"
      sodipodi:insensitive="true">
     <path
        style="fill:#decd87;fill-rule:evenodd;stroke:none;stroke-width:0;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"

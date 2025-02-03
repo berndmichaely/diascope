@@ -16,7 +16,11 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.lang.ref.WeakReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import javafx.application.ConditionalFeature;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -28,7 +32,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.shape.Polygon;
@@ -57,6 +60,7 @@ class ImageLayer
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
 	private final Polygon clippingShape = new Polygon();
+	private final BooleanProperty clippingEnabled = new SimpleBooleanProperty();
 	private final ImageLayerShape imageLayerShape = new ImageLayerShape();
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
@@ -75,7 +79,6 @@ class ImageLayer
 	private final Scale scale;
 	private final Rotate rotate;
 	private final Translate translateScroll;
-	private boolean mouseDragged;
 	private String imageTitle = "";
 
 	ImageLayer(Viewport viewport)
@@ -165,7 +168,25 @@ class ImageLayer
 	{
 		final var imageLayer = new ImageLayer(viewport);
 		// post init:
-		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
+		imageLayer.getImageLayerShape().setLayerSelectionHandler(new Consumer<Boolean>()
+		{
+			private final WeakReference<ImageLayer> wImageLayer = new WeakReference<>(imageLayer);
+
+			@Override
+			public void accept(Boolean value)
+			{
+				ImageLayer imageLayer = null;
+				if (wImageLayer != null)
+				{
+					imageLayer = wImageLayer.get();
+				}
+				if (imageLayer != null)
+				{
+					layerSelectionHandler.accept(imageLayer, value);
+				}
+			}
+		});
+		imageLayer.clippingEnabled.addListener(onChange(enabled ->
 		{
 			if (enabled)
 			{
@@ -177,19 +198,7 @@ class ImageLayer
 				imageLayer.clearShapePoints();
 			}
 		}));
-		imageLayer.paneLayer.setOnMouseDragged(event ->
-		{
-			imageLayer.mouseDragged = true;
-		});
-		imageLayer.paneLayer.setOnMouseReleased(event ->
-		{
-			if (!imageLayer.mouseDragged && event.getButton().equals(MouseButton.PRIMARY) &&
-				event.getClickCount() == 1 && !event.isShiftDown() && !event.isAltDown())
-			{
-				layerSelectionHandler.accept(imageLayer, event.isControlDown());
-			}
-			imageLayer.mouseDragged = false;
-		});
+		imageLayer.clippingEnabled.bind(viewport.multiLayerModeProperty());
 		return imageLayer;
 	}
 
@@ -228,11 +237,6 @@ class ImageLayer
 		return maxToPreviousHeight;
 	}
 
-	ImageView getImageView()
-	{
-		return imageView;
-	}
-
 	Region getRegion()
 	{
 		return paneLayer;
@@ -261,10 +265,18 @@ class ImageLayer
 		imageView.setImage(image);
 	}
 
+	BooleanProperty clippingEnabledProperty()
+	{
+		return clippingEnabled;
+	}
+
 	@SuppressWarnings("argument")
 	private void setNullableClip(@Nullable Node clip)
 	{
-		paneLayer.setClip(clip);
+		if (Platform.isSupported(ConditionalFeature.SHAPE_CLIP))
+		{
+			paneLayer.setClip(clip);
+		}
 	}
 
 	BooleanProperty selectedProperty()
@@ -302,5 +314,11 @@ class ImageLayer
 	{
 		clippingShape.getPoints().setAll(points);
 		getImageLayerShape().setShapePoints(points);
+	}
+
+	@Override
+	public String toString()
+	{
+		return imageTitle;
 	}
 }

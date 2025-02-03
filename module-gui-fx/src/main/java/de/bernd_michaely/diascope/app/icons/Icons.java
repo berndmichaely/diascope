@@ -37,14 +37,15 @@ public enum Icons
 	SelectAll, SelectInvert, SelectNone,
 	// View:
 	ShowThumbs,
-	ViewFullscreen, ViewFullscreenPane, ShowSidePane,
+	ViewFullscreen, // ViewFullscreenPane,
+	ShowSidePane,
 	ZoomFitWindow, ZoomFillWindow, Zoom100,
 	MirrorX, MirrorY,
 	ViewRotateByExif, ViewDisplayMetaData,
 	// Navigation
 	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast,
 	// Layer
-	LayerAdd, LayerRemove;
+	LayerAdd, LayerRemove, ShowDividers;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());
 

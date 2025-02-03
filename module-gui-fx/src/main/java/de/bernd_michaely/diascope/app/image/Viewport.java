@@ -16,12 +16,13 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
-import javafx.beans.property.ReadOnlyListProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
@@ -38,12 +39,12 @@ import static java.lang.Double.min;
 ///
 class Viewport
 {
-	private final StackPane paneImageLayers = new StackPane();
+	private final Pane paneImageLayers = new Pane();
 	private final Pane paneImageLayerShapes = new Pane();
 	private final ScrollBars scrollBars = new ScrollBars();
 	private final StackPane paneViewport;
 	private final CornerAngles cornerAngles;
-	private final ReadOnlyBooleanWrapper multiLayerMode;
+	private final BooleanProperty multiLayerMode;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
 	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
@@ -54,9 +55,9 @@ class Viewport
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
-	Viewport(ReadOnlyListProperty<ImageLayer> layersProperty)
+	Viewport()
 	{
-		this.multiLayerMode = new ReadOnlyBooleanWrapper();
+		this.multiLayerMode = new SimpleBooleanProperty();
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -69,9 +70,9 @@ class Viewport
 		this.splitCenterY = new ReadOnlyDoubleWrapper();
 		this.splitCenterDx = new ReadOnlyDoubleWrapper();
 		this.splitCenterDy = new ReadOnlyDoubleWrapper();
-		multiLayerMode.bind(layersProperty.sizeProperty().greaterThanOrEqualTo(2));
+		paneImageLayerShapes.setBackground(Background.EMPTY);
 		this.paneViewport = new StackPane(
-			paneImageLayers, scrollBars.getPane(), paneImageLayerShapes);
+			paneImageLayers, paneImageLayerShapes, scrollBars.getPane());
 		paneViewport.setBackground(Background.fill(Color.BLACK));
 		paneViewport.setMinSize(0, 0);
 		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -128,15 +129,15 @@ class Viewport
 		paneImageLayerShapes.getChildren().add(index, imageLayer.getImageLayerShape().getShape());
 	}
 
-	void removeLayer(int index)
+	void removeLayer(ImageLayer imageLayer)
 	{
-		paneImageLayers.getChildren().remove(index);
-		paneImageLayerShapes.getChildren().remove(index);
+		paneImageLayerShapes.getChildren().remove(imageLayer.getImageLayerShape().getShape());
+		paneImageLayers.getChildren().remove(imageLayer.getRegion());
 	}
 
-	ReadOnlyBooleanProperty multiLayerModeProperty()
+	BooleanProperty multiLayerModeProperty()
 	{
-		return multiLayerMode.getReadOnlyProperty();
+		return multiLayerMode;
 	}
 
 	boolean isClippingEnabled()

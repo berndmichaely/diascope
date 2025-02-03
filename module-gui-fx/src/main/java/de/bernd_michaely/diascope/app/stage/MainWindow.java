@@ -210,7 +210,6 @@ public class MainWindow
 		final Image iconFstv = Icons.ShowSidePane.getIconImage();
 		final Image iconFileOpen = Icons.FileOpen.getIconImage();
 		final Image iconViewFullscreen = Icons.ViewFullscreen.getIconImage();
-		final Image iconViewFullscreenPane = Icons.ViewFullscreenPane.getIconImage();
 		final Image iconViewShowFirst = Icons.ViewShowFirst.getIconImage();
 		final Image iconViewShowPrev = Icons.ViewShowPrev.getIconImage();
 		final Image iconViewShowNext = Icons.ViewShowNext.getIconImage();
@@ -243,7 +242,7 @@ public class MainWindow
 		}
 		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisibleProperty);
 		final var menuItemFullscreen = new MenuItem("Fullscreen");
-		menuItemFullscreen.setOnAction(_ -> mainContent.setFullScreen(false));
+		menuItemFullscreen.setOnAction(_ -> mainContent.setFullScreen());
 		menuItemFullscreen.disableProperty().bind(getListViewProperty().emptyProperty());
 		menuItemFullscreen.setAccelerator(new KeyCodeCombination(KeyCode.F11));
 		final Button buttonViewFullscreen = new Button();
@@ -257,23 +256,7 @@ public class MainWindow
 			buttonViewFullscreen.setText("FullScreen");
 		}
 		adaptActionState(menuItemFullscreen, buttonViewFullscreen, "Show image in fullscreen mode");
-		final var menuItemFullscreenPane = new MenuItem("Fullscreen Pane");
-		menuItemFullscreenPane.setOnAction(_ -> mainContent.setFullScreen(true));
-		menuItemFullscreenPane.disableProperty().bind(getListViewProperty().emptyProperty());
-		menuItemFullscreenPane.setAccelerator(new KeyCodeCombination(KeyCode.F11, KeyCombination.SHIFT_DOWN));
-		final Button buttonViewFullscreenPane = new Button();
-		if (iconViewFullscreenPane != null)
-		{
-			menuItemFullscreenPane.setGraphic(new ImageView(iconViewFullscreenPane));
-			buttonViewFullscreenPane.setGraphic(new ImageView(iconViewFullscreenPane));
-		}
-		else
-		{
-			buttonViewFullscreenPane.setText("FullScr.Pane");
-		}
-		adaptActionState(menuItemFullscreenPane, buttonViewFullscreenPane, "Show image pane in fullscreen mode");
-		menuView.getItems().addAll(menuItemFullscreen, menuItemFullscreenPane,
-			new SeparatorMenuItem(), menuItemShowSidePane);
+		menuView.getItems().addAll(menuItemFullscreen, menuItemShowSidePane);
 		// Menu("Navigation")
 		final var menuNavigation = new Menu("Navigation");
 		final var menuItemShowFirst = new MenuItem("Select First");
@@ -361,7 +344,7 @@ public class MainWindow
 		final var menuBar = new MenuBar(menuFile, menuView, menuNavigation, menuOptions, menuHelp);
 		final var toolBar = new ToolBar(toggleButtonSidePane, buttonDirOpen,
 			new Separator(),
-			buttonViewFullscreen, buttonViewFullscreenPane,
+			buttonViewFullscreen,
 			new Separator(),
 			buttonItemShowFirst, buttonItemShowPrev, buttonItemShowNext, buttonItemShowLast
 		);

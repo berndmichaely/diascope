@@ -89,10 +89,14 @@ def String readSvnRevision()
 	return svnRev
 }
 
-final String versionBase = '0.2.0-snapshot'
+final String versionBase = '0.2.0'
+
+final String propPreRelease = 'diascope.pre-release'
+final String versionPreRelease  = project.hasProperty(propPreRelease) ?
+	"${versionBase}-${project.getProperty(propPreRelease)}" : versionBase
 
 final String build_nr = readSvnRevision()
-final String semVer = build_nr ? "${versionBase}+${build_nr}" : versionBase
+final String semVer = build_nr ? "${versionPreRelease}+${build_nr}" : versionPreRelease
 
 final def regexSemVer = ~/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 if (!(semVer =~ regexSemVer)) throw new StopExecutionException("Invalid semantic version »${semVer}«")

@@ -16,14 +16,17 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.shape.StrokeType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static javafx.beans.binding.Bindings.when;
 
@@ -33,18 +36,44 @@ import static javafx.beans.binding.Bindings.when;
 ///
 class ImageLayerShape
 {
+	private static final Color COLOR_SELECTED = Color.CORNFLOWERBLUE;
+	private static final Color COLOR_UNSELECTED = Color.ALICEBLUE;
 	private final Polygon polygon = new Polygon();
 	private final BooleanProperty selected = new SimpleBooleanProperty();
+	private final BooleanProperty unselectedVisible = new SimpleBooleanProperty();
+	private boolean mouseDragged;
+	private @Nullable Consumer<Boolean> layerSelectionHandler;
 
-	public ImageLayerShape()
+	ImageLayerShape()
 	{
 		polygon.setFill(Color.TRANSPARENT);
 		polygon.setStrokeLineCap(StrokeLineCap.ROUND);
 		polygon.setStrokeLineJoin(StrokeLineJoin.ROUND);
 		polygon.setStrokeType(StrokeType.INSIDE);
-		polygon.strokeProperty().bind(
-			when(selected).then(Color.CORNFLOWERBLUE).otherwise(Color.ALICEBLUE));
-		polygon.strokeWidthProperty().bind(when(selected).then(4).otherwise(1));
+		polygon.strokeProperty().bind(when(selected).then(COLOR_SELECTED).otherwise(
+			when(unselectedVisible).then(COLOR_UNSELECTED).otherwise(Color.TRANSPARENT)));
+		polygon.strokeWidthProperty().bind(when(selected).then(4.0).otherwise(1.0));
+		polygon.setOnMouseDragged(event ->
+		{
+			mouseDragged = true;
+		});
+		polygon.setOnMouseReleased(event ->
+		{
+			if (!mouseDragged && event.getButton().equals(MouseButton.PRIMARY) &&
+				event.getClickCount() == 1 && !event.isShiftDown() && !event.isAltDown())
+			{
+				if (layerSelectionHandler != null)
+				{
+					layerSelectionHandler.accept(event.isControlDown());
+				}
+			}
+			mouseDragged = false;
+		});
+	}
+
+	void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler)
+	{
+		this.layerSelectionHandler = layerSelectionHandler;
 	}
 
 	BooleanProperty selectedProperty()
@@ -52,9 +81,9 @@ class ImageLayerShape
 		return selected;
 	}
 
-	BooleanProperty visibleProperty()
+	BooleanProperty unselectedVisibleProperty()
 	{
-		return getShape().visibleProperty();
+		return unselectedVisible;
 	}
 
 	void setShapePoints(Double... points)

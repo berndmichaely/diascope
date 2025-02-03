@@ -16,27 +16,17 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.lang.System.Logger;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
-import javafx.beans.property.ReadOnlyIntegerWrapper;
-import javafx.beans.property.ReadOnlyListWrapper;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
-import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static java.lang.System.Logger.Level.*;
-import static javafx.beans.binding.Bindings.max;
 
 /**
  * Facade of a component to display multiple images.
@@ -45,94 +35,22 @@ import static javafx.beans.binding.Bindings.max;
  */
 public class MultiImageView
 {
-	private static final Double ZERO = 0.0;
-	private static final int NULL_INDEX = -1;
-	private final ImageTransforms imageTransforms;
-	private final ObservableList<ImageLayer> layers;
-	private final ImageLayer nullLayer;
-	private final ReadOnlyListWrapper<ImageLayer> layersProperty;
-	private final ReadOnlyIntegerWrapper selectedSingleIndex;
-	private final ReadOnlyBooleanWrapper isSingleSelected;
-	private final ReadOnlyObjectWrapper<ImageLayer> selectedLayer;
+	private final ImageLayers imageLayers;
+	private final SelectionModel selectionModel;
 	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final Viewport viewport;
 	private final BooleanProperty scrollBarsEnabled;
-	private final ChangeListener<Number> listenerClippingPoints;
-
-	private static class NullImageLayer extends ImageLayer
-	{
-		private static final Logger logger = System.getLogger(NullImageLayer.class.getName());
-
-		private NullImageLayer(Viewport viewport)
-		{
-			super(viewport);
-		}
-
-		@Override
-		final void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
-		{
-			logger.log(WARNING, "Trying to set image on %s : »%s«".formatted(getClass().getName(),
-				imageDescriptor != null ? imageDescriptor.getPath() : "(null)"));
-		}
-	}
 
 	public MultiImageView()
 	{
-		this.imageTransforms = new ImageTransforms();
-		this.layers = FXCollections.observableArrayList();
-		this.layersProperty = new ReadOnlyListWrapper<>(layers);
-		this.viewport = new Viewport(layersProperty.getReadOnlyProperty());
+		this.viewport = new Viewport();
+		this.imageLayers = new ImageLayers(viewport);
+		this.selectionModel = new SelectionModel(imageLayers);
+		imageLayers.setLayerSelectionHandler(selectionModel::toggleLayerSelection);
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
-			scrollBarsEnabled.and(imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
-		this.nullLayer = new NullImageLayer(viewport);
-		this.selectedSingleIndex = new ReadOnlyIntegerWrapper(NULL_INDEX);
-		this.isSingleSelected = new ReadOnlyBooleanWrapper();
-		this.selectedLayer = new ReadOnlyObjectWrapper<>(nullLayer);
+			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
 		this.zoomFactor = new ReadOnlyDoubleWrapper();
-		this.listenerClippingPoints = onChange(() ->
-		{
-			if (viewport.isClippingEnabled())
-			{
-				final int n = layers.size();
-				for (int i = 0; i < n; i++)
-				{
-					final var layer = layers.get(i);
-					final var layerNext = layers.get(i == n - 1 ? 0 : i + 1);
-					final var corner = layer.getDivider().getBorder();
-					final var cornerNext = layerNext.getDivider().getBorder();
-					final int numIntermediateCorners = Border.numberOfCornerPointsBetween(corner, cornerNext);
-					final int numPoints = 2 * (3 + numIntermediateCorners);
-					final Double[] points = new Double[numPoints];
-					int index = 0;
-					points[index++] = viewport.splitCenterXProperty().getValue();
-					points[index++] = viewport.splitCenterYProperty().getValue();
-					points[index++] = layer.getDivider().getBorderIntersectionX();
-					points[index++] = layer.getDivider().getBorderIntersectionY();
-					var c = corner;
-					for (int k = 0; k < numIntermediateCorners; k++, c = c.next())
-					{
-						points[index++] = switch (c)
-						{
-							case TOP, RIGHT ->
-								viewport.widthProperty().getValue();
-							case BOTTOM, LEFT ->
-								ZERO;
-						};
-						points[index++] = switch (c)
-						{
-							case RIGHT, BOTTOM ->
-								viewport.heightProperty().getValue();
-							case LEFT, TOP ->
-								ZERO;
-						};
-					}
-					points[index++] = layerNext.getDivider().getBorderIntersectionX();
-					points[index++] = layerNext.getDivider().getBorderIntersectionY();
-					layer.setShapePoints(points);
-				}
-			}
-		});
 	}
 
 	/**
@@ -147,146 +65,62 @@ public class MultiImageView
 
 	public ImageTransforms getImageTransforms()
 	{
-		return imageTransforms;
+		return imageLayers.getImageTransforms();
+	}
+
+	private ObservableList<ImageLayer> getLayers()
+	{
+		return imageLayers.getLayers();
 	}
 
 	public void addLayer()
 	{
-		addLayer(layers.size());
+		final var singleSelectedLayer = selectionModel.getSingleSelectedLayer();
+		if (singleSelectedLayer != null)
+		{
+			addLayer(getLayers().indexOf(singleSelectedLayer) + 1);
+		}
+		else
+		{
+			addLayer(getLayers().size());
+		}
 	}
 
 	private void addLayer(int index)
 	{
-		final boolean wasEmpty = layers.isEmpty();
-		final ImageLayer layer = createImageLayer(index);
-		if (wasEmpty)
-		{
-			selectedLayer.set(layer);
-			toggleLayerSelection(layer, false);
-		}
-	}
-
-	private ImageLayer createImageLayer(int index)
-	{
-		final var imageLayer = ImageLayer.createInstance(viewport, this::toggleLayerSelection);
-		layers.add(index, imageLayer);
-		viewport.addLayer(index, imageLayer);
-		updateScrollRangeBindings();
-		final int numLayers = layers.size();
-		if (numLayers == 2)
-		{
-			viewport.widthProperty().addListener(listenerClippingPoints);
-			viewport.heightProperty().addListener(listenerClippingPoints);
-		}
-		imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
-		final double da = 360.0 / numLayers;
-		for (int i = 0; i < numLayers; i++)
-		{
-			layers.get(i).getDivider().setAngle(i * da);
-		}
-		return imageLayer;
+		final ImageLayer layer = imageLayers.createImageLayer(index);
+		selectionModel.toggleLayerSelection(layer, false);
 	}
 
 	public void removeLayer()
 	{
 		if (isSingleSelected())
 		{
-			removeLayer(selectedSingleIndexProperty().get());
-		}
-	}
-
-	private void removeLayer(int index)
-	{
-		final int n = layers.size();
-		if (index >= 0 && index < n)
-		{
-			final ImageLayer removed = layers.remove(index);
-			removed.getDivider().angleProperty().unbind();
-			if (n == 1)
+			final var imageLayer = selectionModel.singleSelectedLayerProperty().get();
+			if (imageLayer != null)
 			{
-				viewport.widthProperty().removeListener(listenerClippingPoints);
-				viewport.heightProperty().removeListener(listenerClippingPoints);
+				imageLayers.removeLayer(imageLayer);
 			}
-			viewport.removeLayer(index);
-			updateScrollRangeBindings();
-		}
-	}
-
-	private void updateScrollRangeBindings()
-	{
-		if (layers.isEmpty())
-		{
-			viewport.layersMaxWidthProperty().unbind();
-			viewport.layersMaxWidthProperty().set(0.0);
-			viewport.layersMaxHeightProperty().unbind();
-			viewport.layersMaxHeightProperty().set(0.0);
-		}
-		else
-		{
-			final ImageLayer first = layers.getFirst();
-			first.maxToPreviousWidthProperty().bind(max(first.layerWidthProperty(), 0.0));
-			first.maxToPreviousHeightProperty().bind(max(first.layerHeightProperty(), 0.0));
-			for (int i = 1; i < layers.size(); i++)
+			if (getLayers().size() == 1)
 			{
-				final ImageLayer lPrev = layers.get(i - 1);
-				final ImageLayer lNext = layers.get(i);
-				lNext.maxToPreviousWidthProperty().bind(
-					max(lPrev.maxToPreviousWidthProperty(), lNext.layerWidthProperty()));
-				lNext.maxToPreviousHeightProperty().bind(
-					max(lPrev.maxToPreviousHeightProperty(), lNext.layerHeightProperty()));
-			}
-			viewport.layersMaxWidthProperty().bind(layers.getLast().maxToPreviousWidthProperty());
-			viewport.layersMaxHeightProperty().bind(layers.getLast().maxToPreviousHeightProperty());
-		}
-	}
-
-	private void toggleLayerSelection(ImageLayer layer, boolean multiSelect)
-	{
-		final int index = layers.indexOf(layer);
-		if (index >= 0)
-		{
-			final boolean selected = !layer.isSelected();
-			layer.setSelected(selected);
-			if (!multiSelect)
-			{
-				layers.stream().filter(l -> l != layer).forEach(l -> l.setSelected(false));
-			}
-			final int numSelected = (int) layers.stream().filter(ImageLayer::isSelected).count();
-			final boolean singleSelected = numSelected == 1;
-			isSingleSelected.set(singleSelected);
-			if (singleSelected)
-			{
-				selectedSingleIndex.set(index);
-				selectedLayer.set(layer);
-				selectedLayer.get().getImageTransforms().bindProperties(getImageTransforms());
-			}
-			else
-			{
-				selectedSingleIndex.set(NULL_INDEX);
-				selectedLayer.set(nullLayer);
+				selectionModel.toggleLayerSelection(getLayers().get(0), false);
 			}
 		}
-		System.out.println("toggleLayerSelection: INDEX == " + selectedSingleIndex.getReadOnlyProperty().get());
 	}
 
 	public ReadOnlyIntegerProperty numberOfLayersProperty()
 	{
-		return layersProperty.sizeProperty();
-	}
-
-	public ReadOnlyIntegerProperty selectedSingleIndexProperty()
-	{
-		return selectedSingleIndex.getReadOnlyProperty();
+		return imageLayers.layersProperty().sizeProperty();
 	}
 
 	public ReadOnlyBooleanProperty isSingleSelectedProperty()
 	{
-		return isSingleSelected.getReadOnlyProperty();
+		return selectionModel.singleLayerSelectedProperty();
 	}
 
 	public boolean isSingleSelected()
 	{
-		return isSingleSelected.get();
+		return isSingleSelectedProperty().get();
 	}
 
 	/**
@@ -298,7 +132,11 @@ public class MultiImageView
 	{
 		if (isSingleSelected())
 		{
-			selectedLayer.get().setImageDescriptor(imageDescriptor);
+			final var imageLayer = selectionModel.getSingleSelectedLayer();
+			if (imageLayer != null)
+			{
+				imageLayer.setImageDescriptor(imageDescriptor);
+			}
 		}
 	}
 
@@ -310,5 +148,20 @@ public class MultiImageView
 	public ReadOnlyDoubleProperty zoomFactorProperty()
 	{
 		return zoomFactor.getReadOnlyProperty();
+	}
+
+	public ReadOnlyBooleanProperty multiLayerModeProperty()
+	{
+		return viewport.multiLayerModeProperty();
+	}
+
+	public boolean isMultiLayerMode()
+	{
+		return multiLayerModeProperty().get();
+	}
+
+	public BooleanProperty dividersVisibleProperty()
+	{
+		return imageLayers.dividersVisibleProperty();
 	}
 }

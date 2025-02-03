@@ -21,6 +21,7 @@ import javafx.beans.property.DoubleProperty;
 import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollBar;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -53,6 +54,7 @@ class ScrollBars
 		setRightAnchor(scrollBarV, 0.0);
 		scrollBarH.heightProperty().addListener(onChange(h -> setBottomAnchor(scrollBarV, h.doubleValue())));
 		this.pane = new AnchorPane(scrollBarH, scrollBarV);
+		pane.setBackground(Background.EMPTY);
 		scrollBarH.visibleProperty().bind(pane.visibleProperty());
 		scrollBarV.visibleProperty().bind(pane.visibleProperty());
 	}
