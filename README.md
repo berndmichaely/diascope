@@ -16,4 +16,6 @@ to build the application into the `./build/install/Diascope` directory.
 
 ### Trial hint
 
+![Screenshot](doc/screenshots/Screenshot_01.png "Screenshot")
+
 Select the test image directory `./doc/test-images/png` and add alternately a layer (using the **+** button in the toolbar) and select another test image. Then try the functionality available in the toolbar.
