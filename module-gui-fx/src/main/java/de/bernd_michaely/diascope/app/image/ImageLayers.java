@@ -144,6 +144,8 @@ class ImageLayers
 			viewport.multiLayerModeProperty().set(true);
 			viewport.widthProperty().addListener(listenerClippingPoints);
 			viewport.heightProperty().addListener(listenerClippingPoints);
+			viewport.splitCenterXProperty().addListener(listenerClippingPoints);
+			viewport.splitCenterYProperty().addListener(listenerClippingPoints);
 		}
 		imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
 		updateDividerDefaultAngles();

@@ -24,11 +24,14 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.scene.Cursor;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
 
 import static java.lang.Double.max;
 import static java.lang.Double.min;
@@ -41,6 +44,7 @@ class Viewport
 {
 	private final Pane paneImageLayers = new Pane();
 	private final Pane paneImageLayerShapes = new Pane();
+	private final Circle shapeSplitCenter = new Circle();
 	private final ScrollBars scrollBars = new ScrollBars();
 	private final StackPane paneViewport;
 	private final CornerAngles cornerAngles;
@@ -54,6 +58,7 @@ class Viewport
 	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
+	private boolean isSplitCenterDrag;
 
 	Viewport()
 	{
@@ -72,7 +77,7 @@ class Viewport
 		this.splitCenterDy = new ReadOnlyDoubleWrapper();
 		paneImageLayerShapes.setBackground(Background.EMPTY);
 		this.paneViewport = new StackPane(
-			paneImageLayers, paneImageLayerShapes, scrollBars.getPane());
+			paneImageLayers, paneImageLayerShapes, shapeSplitCenter, scrollBars.getPane());
 		paneViewport.setBackground(Background.fill(Color.BLACK));
 		paneViewport.setMinSize(0, 0);
 		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -107,7 +112,7 @@ class Viewport
 		});
 		paneViewport.setOnMouseDragged(event ->
 		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
+			if (!isSplitCenterDrag && event.getButton().equals(MouseButton.PRIMARY))
 			{
 				final double px = scrollRangeMaxWidth.doubleValue();
 				final double py = scrollRangeMaxHeight.doubleValue();
@@ -119,8 +124,44 @@ class Viewport
 				scrollBars.valueVProperty().setValue(y);
 			}
 		});
-		splitCenterX.bind(paneViewport.widthProperty().divide(2.0));
-		splitCenterY.bind(paneViewport.heightProperty().divide(2.0));
+		shapeSplitCenter.setRadius(Font.getDefault().getSize() / 2.0);
+		shapeSplitCenter.setFill(Color.WHITESMOKE);
+		shapeSplitCenter.setOpacity(0.8);
+		shapeSplitCenter.setCursor(Cursor.MOVE);
+		shapeSplitCenter.visibleProperty().bind(multiLayerMode);
+		shapeSplitCenter.setManaged(false);
+		shapeSplitCenter.setOnMousePressed(event ->
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				isSplitCenterDrag = true;
+			}
+		});
+		shapeSplitCenter.setOnMouseDragged(event ->
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				final double x = event.getX();
+				final double y = event.getY();
+				splitCenterX.set(x);
+				shapeSplitCenter.setCenterX(x);
+				splitCenterY.set(y);
+				shapeSplitCenter.setCenterY(y);
+			}
+		});
+		shapeSplitCenter.setOnMouseReleased(event ->
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				isSplitCenterDrag = false;
+			}
+		});
+	}
+
+	void centerSplit()
+	{
+		shapeSplitCenter.setCenterX(paneViewport.getWidth() / 2.0);
+		shapeSplitCenter.setCenterY(paneViewport.getHeight() / 2.0);
 	}
 
 	void addLayer(int index, ImageLayer imageLayer)

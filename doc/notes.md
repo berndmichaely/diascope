@@ -18,6 +18,10 @@ Example:
     !
     #org.gradle.java.installations.fromEnv=JDK20,JDK21
     #org.gradle.java.installations.paths=/path/to/jdk22,/path/to/jdk23
+    !
+    ! Custom semantic version build identifier:
+    !
+    #diascope.build.identifier=my-linux-distro
 
 ## Storing Preferences
 

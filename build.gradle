@@ -33,11 +33,19 @@ tasks.withType(JavaExec).configureEach {
 	}
 }
 
-final String fileNameSemVer = 'src/main/resources/de/bernd_michaely/diascope/app/semantic_version.txt'
-final def fileSemVer = project(':module-gui-fx').file(fileNameSemVer)
+// project local properties:
+final String propVersion = 'diascope.version'
+final String versionBase = project.hasProperty(propVersion) ? project.getProperty(propVersion) : '0'
 
-final String propReadSvnRevision = 'diascope.isReadingSvnRevision'
+final String propPreRelease = 'diascope.pre-release'
+final String versionPreRelease  = project.hasProperty(propPreRelease) ?
+	"${versionBase}-${project.getProperty(propPreRelease)}" : versionBase
+
+// global (user) properties (build identifier supersedes reading subversion revision):
+final String propBuild = 'diascope.build.identifier'
+final String propReadSvnRevision = 'diascope.build.readSvnRevision'
 ext.isReadingSvnRevision = project.hasProperty(propReadSvnRevision) ? Boolean.valueOf(project.getProperty(propReadSvnRevision)) : false
+	
 logger.lifecycle "-> Getting semantic version build number from subversion revision (user property »${propReadSvnRevision}«) : " + isReadingSvnRevision
 
 def String readSvnRevision()
@@ -89,17 +97,16 @@ def String readSvnRevision()
 	return svnRev
 }
 
-final String versionBase = '0.2.0'
-
-final String propPreRelease = 'diascope.pre-release'
-final String versionPreRelease  = project.hasProperty(propPreRelease) ?
-	"${versionBase}-${project.getProperty(propPreRelease)}" : versionBase
-
-final String build_nr = readSvnRevision()
-final String semVer = build_nr ? "${versionPreRelease}+${build_nr}" : versionPreRelease
+final String build_id = project.hasProperty(propBuild) ? project.getProperty(propBuild) : readSvnRevision()
+final String semVer = build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease
 
 final def regexSemVer = ~/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 if (!(semVer =~ regexSemVer)) throw new StopExecutionException("Invalid semantic version »${semVer}«")
+
+// files:
+
+final String fileNameSemVer = 'src/main/resources/de/bernd_michaely/diascope/app/semantic_version.txt'
+final def fileSemVer = project(':module-gui-fx').file(fileNameSemVer)
 
 final def fileVersionShield = file("doc/shields/version.svg")
 		
@@ -110,12 +117,12 @@ allprojects {
 	ext.versionJUnit = '5.11.3'
 	ext.versionJUnitVintage = '4.13.2'
 	
-	ext.versionCheckerFramework = '3.48.4'
-	ext.versionCheckerFrameworkPlugin = '0.6.48'
+	ext.versionCheckerFramework = '3.49.0'
+	ext.versionCheckerFrameworkPlugin = '0.6.49'
 	
 	repositories {
 		mavenCentral()
-		mavenLocal()
+		//mavenLocal()
 	}
 
 	if (project == rootProject || name.equals("module-launcher") || name.endsWith('-fx')) {
@@ -185,11 +192,13 @@ task writeSemVer {
 	description "Write application semantic version to resource file »${fileSemVer}«"
 	group processResources.group
 	doFirst {
+		boolean do_write
 		if (isReadingSvnRevision) {
 			final def process = [ 'svn', 'status' ].execute(null, projectDir)
 			// only write new version if svn status is NOT clean:
-			if (!process.waitFor() && process.text) fileSemVer.write(semVer)
-		}
+			do_write = !process.waitFor() && process.text
+		} else do_write = true
+		if (do_write) fileSemVer.write(semVer)
 	}
 }
 processResources.dependsOn writeSemVer

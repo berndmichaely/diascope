@@ -38,6 +38,8 @@ class ImageLayerShape
 {
 	private static final Color COLOR_SELECTED = Color.CORNFLOWERBLUE;
 	private static final Color COLOR_UNSELECTED = Color.ALICEBLUE;
+	private static final double STROKE_WIDTH_SELECTED = 4.0;
+	private static final double STROKE_WIDTH_UNSELECTED = 1.0;
 	private final Polygon polygon = new Polygon();
 	private final BooleanProperty selected = new SimpleBooleanProperty();
 	private final BooleanProperty unselectedVisible = new SimpleBooleanProperty();
@@ -52,7 +54,8 @@ class ImageLayerShape
 		polygon.setStrokeType(StrokeType.INSIDE);
 		polygon.strokeProperty().bind(when(selected).then(COLOR_SELECTED).otherwise(
 			when(unselectedVisible).then(COLOR_UNSELECTED).otherwise(Color.TRANSPARENT)));
-		polygon.strokeWidthProperty().bind(when(selected).then(4.0).otherwise(1.0));
+		polygon.strokeWidthProperty().bind(when(selected).then(STROKE_WIDTH_SELECTED).otherwise(
+			when(unselectedVisible).then(STROKE_WIDTH_UNSELECTED).otherwise(0.0)));
 		polygon.setOnMouseDragged(event ->
 		{
 			mouseDragged = true;
