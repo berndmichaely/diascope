@@ -17,11 +17,9 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.util.function.BiConsumer;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.ReadOnlyListWrapper;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -46,7 +44,6 @@ class ImageLayers
 	private final ReadOnlyListWrapper<ImageLayer> layersProperty;
 	private final ImageTransforms imageTransforms;
 	private final ChangeListener<Number> listenerClippingPoints;
-	private final BooleanProperty dividersVisible;
 	private @MonotonicNonNull BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
 
 	ImageLayers(Viewport viewport)
@@ -55,7 +52,6 @@ class ImageLayers
 		this.layers = FXCollections.observableArrayList();
 		this.layersProperty = new ReadOnlyListWrapper<>(layers);
 		this.imageTransforms = new ImageTransforms();
-		this.dividersVisible = new SimpleBooleanProperty();
 		this.listenerClippingPoints = onChange(() ->
 		{
 			if (viewport.isClippingEnabled())
@@ -71,8 +67,8 @@ class ImageLayers
 					final int numPoints = 2 * (3 + numIntermediateCorners);
 					final Double[] points = new Double[numPoints];
 					int index = 0;
-					points[index++] = viewport.splitCenterXProperty().getValue();
-					points[index++] = viewport.splitCenterYProperty().getValue();
+					points[index++] = viewport.getSplitCenter().xProperty().getValue();
+					points[index++] = viewport.getSplitCenter().yProperty().getValue();
 					points[index++] = layer.getDivider().getBorderIntersectionX();
 					points[index++] = layer.getDivider().getBorderIntersectionY();
 					var c = corner;
@@ -136,7 +132,7 @@ class ImageLayers
 		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler);
 		getLayers().add(index, imageLayer);
 		viewport.addLayer(index, imageLayer);
-		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(dividersVisibleProperty());
+		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 		updateScrollRangeBindings();
 		final int numLayers = getLayers().size();
 		if (numLayers == 2)
@@ -144,8 +140,8 @@ class ImageLayers
 			viewport.multiLayerModeProperty().set(true);
 			viewport.widthProperty().addListener(listenerClippingPoints);
 			viewport.heightProperty().addListener(listenerClippingPoints);
-			viewport.splitCenterXProperty().addListener(listenerClippingPoints);
-			viewport.splitCenterYProperty().addListener(listenerClippingPoints);
+			viewport.getSplitCenter().xProperty().addListener(listenerClippingPoints);
+			viewport.getSplitCenter().yProperty().addListener(listenerClippingPoints);
 		}
 		imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
 		updateDividerDefaultAngles();
@@ -210,10 +206,5 @@ class ImageLayers
 			viewport.layersMaxWidthProperty().bind(getLayers().getLast().maxToPreviousWidthProperty());
 			viewport.layersMaxHeightProperty().bind(getLayers().getLast().maxToPreviousHeightProperty());
 		}
-	}
-
-	BooleanProperty dividersVisibleProperty()
-	{
-		return dividersVisible;
 	}
 }

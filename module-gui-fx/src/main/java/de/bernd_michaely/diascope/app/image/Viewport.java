@@ -24,14 +24,11 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.scene.Cursor;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
 
 import static java.lang.Double.max;
 import static java.lang.Double.min;
@@ -44,8 +41,8 @@ class Viewport
 {
 	private final Pane paneImageLayers = new Pane();
 	private final Pane paneImageLayerShapes = new Pane();
-	private final Circle shapeSplitCenter = new Circle();
-	private final ScrollBars scrollBars = new ScrollBars();
+	private final ScrollBars scrollBars;
+	private final SplitCenter splitCenter;
 	private final StackPane paneViewport;
 	private final CornerAngles cornerAngles;
 	private final BooleanProperty multiLayerMode;
@@ -54,15 +51,14 @@ class Viewport
 	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
 	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
-	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
-	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
+	private final BooleanProperty dividersVisible;
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
-	private boolean isSplitCenterDrag;
 
 	Viewport()
 	{
 		this.multiLayerMode = new SimpleBooleanProperty();
+		this.dividersVisible = new SimpleBooleanProperty();
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -71,13 +67,13 @@ class Viewport
 		this.scrollRangeMaxHeight = new ReadOnlyDoubleWrapper();
 		this.scrollPosX = new ReadOnlyDoubleWrapper();
 		this.scrollPosY = new ReadOnlyDoubleWrapper();
-		this.splitCenterX = new ReadOnlyDoubleWrapper();
-		this.splitCenterY = new ReadOnlyDoubleWrapper();
-		this.splitCenterDx = new ReadOnlyDoubleWrapper();
-		this.splitCenterDy = new ReadOnlyDoubleWrapper();
+		this.paneViewport = new StackPane(paneImageLayers, paneImageLayerShapes);
+		this.scrollBars = new ScrollBars(paneViewport.widthProperty(), paneViewport.heightProperty());
+		this.splitCenter = new SplitCenter(paneViewport.widthProperty(), paneViewport.heightProperty());
+		splitCenter.enabledProperty().bind(multiLayerMode.and(dividersVisible));
 		paneImageLayerShapes.setBackground(Background.EMPTY);
-		this.paneViewport = new StackPane(
-			paneImageLayers, paneImageLayerShapes, shapeSplitCenter, scrollBars.getPane());
+		paneImageLayerShapes.getChildren().addAll(scrollBars.getControls());
+		paneImageLayerShapes.getChildren().add(splitCenter.getShape());
 		paneViewport.setBackground(Background.fill(Color.BLACK));
 		paneViewport.setMinSize(0, 0);
 		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -95,11 +91,9 @@ class Viewport
 		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(paneViewport.heightProperty()));
 		scrollPosX.bind(scrollBars.valueHProperty().multiply(scrollRangeMaxWidth));
 		scrollPosY.bind(scrollBars.valueVProperty().multiply(scrollRangeMaxHeight));
-		splitCenterDx.bind(paneViewport.widthProperty().subtract(splitCenterX.getReadOnlyProperty()));
-		splitCenterDy.bind(paneViewport.heightProperty().subtract(splitCenterY.getReadOnlyProperty()));
 		this.cornerAngles = new CornerAngles(
-			splitCenterX.getReadOnlyProperty(), splitCenterY.getReadOnlyProperty(),
-			splitCenterDx.getReadOnlyProperty(), splitCenterDy.getReadOnlyProperty());
+			splitCenter.xProperty(), splitCenter.yProperty(),
+			splitCenter.dxProperty(), splitCenter.dyProperty());
 		paneViewport.setOnMousePressed(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
@@ -112,7 +106,7 @@ class Viewport
 		});
 		paneViewport.setOnMouseDragged(event ->
 		{
-			if (!isSplitCenterDrag && event.getButton().equals(MouseButton.PRIMARY))
+			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
 				final double px = scrollRangeMaxWidth.doubleValue();
 				final double py = scrollRangeMaxHeight.doubleValue();
@@ -124,44 +118,6 @@ class Viewport
 				scrollBars.valueVProperty().setValue(y);
 			}
 		});
-		shapeSplitCenter.setRadius(Font.getDefault().getSize() / 2.0);
-		shapeSplitCenter.setFill(Color.WHITESMOKE);
-		shapeSplitCenter.setOpacity(0.8);
-		shapeSplitCenter.setCursor(Cursor.MOVE);
-		shapeSplitCenter.visibleProperty().bind(multiLayerMode);
-		shapeSplitCenter.setManaged(false);
-		shapeSplitCenter.setOnMousePressed(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				isSplitCenterDrag = true;
-			}
-		});
-		shapeSplitCenter.setOnMouseDragged(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				final double x = event.getX();
-				final double y = event.getY();
-				splitCenterX.set(x);
-				shapeSplitCenter.setCenterX(x);
-				splitCenterY.set(y);
-				shapeSplitCenter.setCenterY(y);
-			}
-		});
-		shapeSplitCenter.setOnMouseReleased(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				isSplitCenterDrag = false;
-			}
-		});
-	}
-
-	void centerSplit()
-	{
-		shapeSplitCenter.setCenterX(paneViewport.getWidth() / 2.0);
-		shapeSplitCenter.setCenterY(paneViewport.getHeight() / 2.0);
 	}
 
 	void addLayer(int index, ImageLayer imageLayer)
@@ -174,6 +130,11 @@ class Viewport
 	{
 		paneImageLayerShapes.getChildren().remove(imageLayer.getImageLayerShape().getShape());
 		paneImageLayers.getChildren().remove(imageLayer.getRegion());
+	}
+
+	SplitCenter getSplitCenter()
+	{
+		return splitCenter;
 	}
 
 	BooleanProperty multiLayerModeProperty()
@@ -266,24 +227,9 @@ class Viewport
 		return scrollPosY.getReadOnlyProperty();
 	}
 
-	ReadOnlyDoubleWrapper splitCenterXProperty()
+	BooleanProperty dividersVisibleProperty()
 	{
-		return splitCenterX;
-	}
-
-	ReadOnlyDoubleWrapper splitCenterYProperty()
-	{
-		return splitCenterY;
-	}
-
-	ReadOnlyDoubleWrapper splitCenterDxProperty()
-	{
-		return splitCenterDx;
-	}
-
-	ReadOnlyDoubleWrapper splitCenterDyProperty()
-	{
-		return splitCenterDy;
+		return dividersVisible;
 	}
 
 	Pane getPaneViewport()

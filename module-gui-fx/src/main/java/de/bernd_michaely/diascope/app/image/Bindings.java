@@ -19,32 +19,31 @@ package de.bernd_michaely.diascope.app.image;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.value.ObservableNumberValue;
 
-/**
- * Utility class to create additional bindings.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Factory class for custom bindings.
+///
+/// @author Factory class for custom bindings.
+///
 class Bindings
 {
 	private static class TanBinding extends DoubleBinding
 	{
-		private final ObservableNumberValue value;
+		private final ObservableNumberValue angle;
 
-		private TanBinding(ObservableNumberValue value)
+		private TanBinding(ObservableNumberValue angle)
 		{
-			this.value = value;
+			this.angle = angle;
 		}
 
 		@Override
 		protected double computeValue()
 		{
-			return Math.tan(Math.toRadians(value.doubleValue()));
+			return Math.tan(Math.toRadians(angle.doubleValue()));
 		}
 
-		private static TanBinding newInstance(ObservableNumberValue value)
+		private static TanBinding newInstance(ObservableNumberValue angle)
 		{
-			final var binding = new TanBinding(value);
-			binding.bind(value);
+			final var binding = new TanBinding(angle);
+			binding.bind(angle);
 			return binding;
 		}
 	}
@@ -110,22 +109,28 @@ class Bindings
 		}
 	}
 
-	static DoubleBinding tan(ObservableNumberValue value)
+	/// Binding to calculate the tangent of an angle.
+	///
+	/// @param angle an angle in degrees
+	/// @return the tangent of the given angle
+	static DoubleBinding tan(ObservableNumberValue angle)
 	{
-		return TanBinding.newInstance(value);
+		return TanBinding.newInstance(angle);
 	}
 
+	/// Binding to calculate the arctangent.
+	///
+	/// @param value a given value
+	/// @return the arctangent of the given value in degrees
 	static DoubleBinding arctan(ObservableNumberValue value)
 	{
 		return ArcTanBinding.newInstance(value);
 	}
 
-	/**
-	 * Binding to normalize an angle.
-	 *
-	 * @param angle the given angle
-	 * @return the angle normalized to the range [0°..360°[
-	 */
+	/// Binding to normalize an angle.
+	///
+	/// @param angle an angle in degrees
+	/// @return the angle normalized to the range [0°..360°[
 	static DoubleBinding normalizeAngle(ObservableNumberValue angle)
 	{
 		return NormalizeAngleBinding.newInstance(angle);

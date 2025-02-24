@@ -162,6 +162,6 @@ public class MultiImageView
 
 	public BooleanProperty dividersVisibleProperty()
 	{
-		return imageLayers.dividersVisibleProperty();
+		return viewport.dividersVisibleProperty();
 	}
 }

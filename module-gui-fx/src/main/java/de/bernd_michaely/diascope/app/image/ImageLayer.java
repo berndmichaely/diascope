@@ -104,10 +104,8 @@ class ImageLayer
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
 		this.divider = new Divider(viewport.getCornerAngles(),
 			viewport.widthProperty(), viewport.heightProperty(),
-			viewport.splitCenterXProperty().getReadOnlyProperty(),
-			viewport.splitCenterYProperty().getReadOnlyProperty(),
-			viewport.splitCenterDxProperty().getReadOnlyProperty(),
-			viewport.splitCenterDyProperty().getReadOnlyProperty());
+			viewport.getSplitCenter().xProperty(), viewport.getSplitCenter().yProperty(),
+			viewport.getSplitCenter().dxProperty(), viewport.getSplitCenter().dyProperty());
 		imageIsNull.bind(isNull(imageView.imageProperty()));
 		this.zoomModeIsFit = new SimpleBooleanProperty();
 		zoomModeIsFit.bind(imageTransforms.zoomModeProperty().isEqualTo(FIT));

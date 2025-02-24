@@ -16,19 +16,16 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Orientation;
+import javafx.scene.control.Control;
 import javafx.scene.control.ScrollBar;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.Pane;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static javafx.scene.layout.AnchorPane.setBottomAnchor;
-import static javafx.scene.layout.AnchorPane.setLeftAnchor;
-import static javafx.scene.layout.AnchorPane.setRightAnchor;
-import static javafx.scene.layout.AnchorPane.setTopAnchor;
 
 /// Class to handle viewport scrollbars.
 ///
@@ -36,10 +33,10 @@ import static javafx.scene.layout.AnchorPane.setTopAnchor;
 ///
 class ScrollBars
 {
-	private final AnchorPane pane;
 	private final ScrollBar scrollBarH, scrollBarV;
+	private final BooleanProperty enabled = new SimpleBooleanProperty();
 
-	ScrollBars()
+	ScrollBars(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
 	{
 		this.scrollBarH = new ScrollBar();
 		initScrollBar(scrollBarH);
@@ -47,16 +44,25 @@ class ScrollBars
 		this.scrollBarV = new ScrollBar();
 		initScrollBar(scrollBarV);
 		scrollBarV.setOrientation(Orientation.VERTICAL);
-		setLeftAnchor(scrollBarH, 0.0);
-		scrollBarV.widthProperty().addListener(onChange(w -> setRightAnchor(scrollBarH, w.doubleValue())));
-		setBottomAnchor(scrollBarH, 0.0);
-		setTopAnchor(scrollBarV, 0.0);
-		setRightAnchor(scrollBarV, 0.0);
-		scrollBarH.heightProperty().addListener(onChange(h -> setBottomAnchor(scrollBarV, h.doubleValue())));
-		this.pane = new AnchorPane(scrollBarH, scrollBarV);
-		pane.setBackground(Background.EMPTY);
-		scrollBarH.visibleProperty().bind(pane.visibleProperty());
-		scrollBarV.visibleProperty().bind(pane.visibleProperty());
+		scrollBarH.visibleProperty().bind(enabled);
+		scrollBarV.visibleProperty().bind(enabled);
+		// anchor:
+		final Runnable changeWidth = () ->
+		{
+			final double w = viewportWidth.get() - scrollBarV.getWidth();
+			scrollBarH.setPrefWidth(w);
+			scrollBarV.relocate(w, 0);
+		};
+		final Runnable changeHeight = () ->
+		{
+			final double h = viewportHeight.get() - scrollBarH.getHeight();
+			scrollBarV.setPrefHeight(h);
+			scrollBarH.relocate(0, h);
+		};
+		scrollBarH.heightProperty().addListener(onChange(changeHeight));
+		scrollBarV.widthProperty().addListener(onChange(changeWidth));
+		viewportWidth.addListener(onChange(changeWidth));
+		viewportHeight.addListener(onChange(changeHeight));
 	}
 
 	private static void initScrollBar(ScrollBar scrollBar)
@@ -81,7 +87,7 @@ class ScrollBars
 
 	BooleanProperty enabledProperty()
 	{
-		return getPane().visibleProperty();
+		return enabled;
 	}
 
 	BooleanProperty horizontalVisibleProperty()
@@ -94,8 +100,8 @@ class ScrollBars
 		return scrollBarV.visibleProperty();
 	}
 
-	Pane getPane()
+	List<Control> getControls()
 	{
-		return pane;
+		return List.of(scrollBarH, scrollBarV);
 	}
 }
