@@ -27,6 +27,8 @@ import javafx.scene.shape.Shape;
 import javafx.scene.text.Font;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /// Class to handle split center shape.
 ///
@@ -37,7 +39,7 @@ class SplitCenter
 	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
 	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
 	private final Circle shapeSplitCenter;
-	private boolean posInitialized;
+	private boolean positionInitialized;
 
 	SplitCenter(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
 	{
@@ -47,33 +49,47 @@ class SplitCenter
 		this.splitCenterDy = new ReadOnlyDoubleWrapper();
 		splitCenterDx.bind(viewportWidth.subtract(splitCenterX));
 		splitCenterDy.bind(viewportHeight.subtract(splitCenterY));
-		final double radius = Font.getDefault().getSize() / 2.0;
-		this.shapeSplitCenter = new Circle();
-		shapeSplitCenter.setRadius(radius);
+		final double diameter = Font.getDefault().getSize();
+		final double radius = diameter / 2.0;
+		this.shapeSplitCenter = new Circle(radius);
 		shapeSplitCenter.setFill(Color.WHITESMOKE);
 		shapeSplitCenter.setOpacity(0.8);
 		shapeSplitCenter.setCursor(Cursor.MOVE);
 		shapeSplitCenter.centerXProperty().bind(splitCenterX);
 		shapeSplitCenter.centerYProperty().bind(splitCenterY);
+		viewportWidth.addListener(onChange(newWidth ->
+			splitCenterX.set(normX(newWidth.doubleValue(), splitCenterX.get(), diameter, radius))));
+		viewportHeight.addListener(onChange(newHeight ->
+			splitCenterY.set(normY(newHeight.doubleValue(), splitCenterY.get(), diameter, radius))));
 		shapeSplitCenter.setOnMouseDragged(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
-				splitCenterX.set(event.getX());
-				splitCenterY.set(event.getY());
+				splitCenterX.set(normX(viewportWidth.get(), event.getX(), diameter, radius));
+				splitCenterY.set(normY(viewportHeight.get(), event.getY(), diameter, radius));
 				event.consume();
 			}
 		});
 		shapeSplitCenter.visibleProperty().addListener(onChange(visible ->
 		{
-			if (!posInitialized && visible)
+			if (!positionInitialized && visible)
 			{
 				// center:
-				splitCenterX.set(viewportWidth.doubleValue() / 2.0);
-				splitCenterY.set(viewportHeight.doubleValue() / 2.0);
-				posInitialized = true;
+				splitCenterX.set(viewportWidth.get() / 2.0);
+				splitCenterY.set(viewportHeight.get() / 2.0);
+				positionInitialized = true;
 			}
 		}));
+	}
+
+	static double normX(double width, double x, double diameter, double radius)
+	{
+		return width < diameter ? width / 2.0 : max(radius, min(x, width - radius));
+	}
+
+	static double normY(double height, double y, double diameter, double radius)
+	{
+		return height < diameter ? height / 2.0 : max(radius, min(y, height - radius));
 	}
 
 	BooleanProperty enabledProperty()

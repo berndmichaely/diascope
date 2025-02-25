@@ -47,22 +47,22 @@ class ScrollBars
 		scrollBarH.visibleProperty().bind(enabled);
 		scrollBarV.visibleProperty().bind(enabled);
 		// anchor:
-		final Runnable changeWidth = () ->
+		final Runnable adjustWidth = () ->
 		{
 			final double w = viewportWidth.get() - scrollBarV.getWidth();
 			scrollBarH.setPrefWidth(w);
 			scrollBarV.relocate(w, 0);
 		};
-		final Runnable changeHeight = () ->
+		final Runnable adjustHeight = () ->
 		{
 			final double h = viewportHeight.get() - scrollBarH.getHeight();
 			scrollBarV.setPrefHeight(h);
 			scrollBarH.relocate(0, h);
 		};
-		scrollBarH.heightProperty().addListener(onChange(changeHeight));
-		scrollBarV.widthProperty().addListener(onChange(changeWidth));
-		viewportWidth.addListener(onChange(changeWidth));
-		viewportHeight.addListener(onChange(changeHeight));
+		scrollBarH.heightProperty().addListener(onChange(adjustHeight));
+		scrollBarV.widthProperty().addListener(onChange(adjustWidth));
+		viewportWidth.addListener(onChange(adjustWidth));
+		viewportHeight.addListener(onChange(adjustHeight));
 	}
 
 	private static void initScrollBar(ScrollBar scrollBar)
