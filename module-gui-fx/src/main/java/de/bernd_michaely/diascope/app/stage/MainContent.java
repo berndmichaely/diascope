@@ -244,7 +244,7 @@ class MainContent
 		final var labelZoom = new Label("100.0%");
 		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
 		labelZoom.textProperty().bind(
-			multiImageView.zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
+			multiImageView.getImageTransforms().zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
 		final var labelZoomWidth = new Label("8888.8% ");
 		labelZoomWidth.setVisible(false);
 		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);

@@ -19,6 +19,8 @@ package de.bernd_michaely.diascope.app.image;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -31,6 +33,7 @@ public class ImageTransforms
 {
 	private final ObjectProperty<ZoomMode> zoomModeProperty;
 	private final DoubleProperty zoomFixedProperty;
+	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final DoubleProperty rotateProperty;
 	private final BooleanProperty mirrorXProperty, mirrorYProperty;
 
@@ -38,6 +41,7 @@ public class ImageTransforms
 	{
 		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
 		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
+		this.zoomFactor = new ReadOnlyDoubleWrapper();
 		this.rotateProperty = new SimpleDoubleProperty(0.0);
 		this.mirrorXProperty = new SimpleBooleanProperty();
 		this.mirrorYProperty = new SimpleBooleanProperty();
@@ -51,6 +55,7 @@ public class ImageTransforms
 	{
 		this.zoomModeProperty.bind(other.zoomModeProperty);
 		this.zoomFixedProperty.bind(other.zoomFixedProperty);
+		other.zoomFactorWrapperProperty().bind(this.zoomFactor);
 		this.rotateProperty.bind(other.rotateProperty);
 		this.mirrorXProperty.bind(other.mirrorXProperty);
 		this.mirrorYProperty.bind(other.mirrorYProperty);
@@ -62,6 +67,7 @@ public class ImageTransforms
 	{
 		this.zoomModeProperty.unbind();
 		this.zoomFixedProperty.unbind();
+		this.zoomFactor.unbind();
 		this.rotateProperty.unbind();
 		this.mirrorXProperty.unbind();
 		this.mirrorYProperty.unbind();
@@ -75,6 +81,16 @@ public class ImageTransforms
 	public DoubleProperty zoomFixedProperty()
 	{
 		return zoomFixedProperty;
+	}
+
+	ReadOnlyDoubleWrapper zoomFactorWrapperProperty()
+	{
+		return zoomFactor;
+	}
+
+	public ReadOnlyDoubleProperty zoomFactorProperty()
+	{
+		return zoomFactor.getReadOnlyProperty();
 	}
 
 	public DoubleProperty rotateProperty()

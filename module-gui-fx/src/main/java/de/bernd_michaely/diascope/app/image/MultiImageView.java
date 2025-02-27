@@ -18,8 +18,6 @@ package de.bernd_michaely.diascope.app.image;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
@@ -37,7 +35,6 @@ public class MultiImageView
 {
 	private final ImageLayers imageLayers;
 	private final SelectionModel selectionModel;
-	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final Viewport viewport;
 	private final BooleanProperty scrollBarsEnabled;
 
@@ -50,7 +47,6 @@ public class MultiImageView
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
-		this.zoomFactor = new ReadOnlyDoubleWrapper();
 	}
 
 	/**
@@ -143,11 +139,6 @@ public class MultiImageView
 	public BooleanProperty scrollBarsEnabledProperty()
 	{
 		return scrollBarsEnabled;
-	}
-
-	public ReadOnlyDoubleProperty zoomFactorProperty()
-	{
-		return zoomFactor.getReadOnlyProperty();
 	}
 
 	public ReadOnlyBooleanProperty multiLayerModeProperty()

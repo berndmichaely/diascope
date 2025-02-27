@@ -70,7 +70,6 @@ class ImageLayer
 	private final ImageTransforms imageTransforms;
 	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
 	private final DoubleProperty zoomFill;
-	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final ReadOnlyBooleanWrapper imageIsNull;
 	private final BooleanProperty zoomModeIsFit;
 	private final BooleanProperty zoomModeIsFill;
@@ -100,7 +99,6 @@ class ImageLayer
 		this.zoomFitHeight = new SimpleDoubleProperty();
 		this.zoomFit = new SimpleDoubleProperty();
 		this.zoomFill = new SimpleDoubleProperty();
-		this.zoomFactor = new ReadOnlyDoubleWrapper();
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
 		this.divider = new Divider(viewport.getCornerAngles(),
 			viewport.widthProperty(), viewport.heightProperty(),
@@ -121,17 +119,17 @@ class ImageLayer
 		zoomFitHeight.bind(viewport.heightProperty().divide(imageHeightRotated));
 		zoomFit.bind(min(zoomFitWidth, zoomFitHeight));
 		zoomFill.bind(max(zoomFitWidth, zoomFitHeight));
-		zoomFactor.bind(
+		imageTransforms.zoomFactorWrapperProperty().bind(
 			when(imageIsNull).then(0.0)
 				.otherwise(when(zoomModeIsFit).then(zoomFit)
 					.otherwise(when(zoomModeIsFill).then(zoomFill)
 						.otherwise(imageTransforms.zoomFixedProperty()))));
 		imageRotated.rotateProperty().bind(imageTransforms.rotateProperty());
 		this.scale = new Scale();
-		scale.xProperty().bind(zoomFactor);
-		scale.yProperty().bind(zoomFactor);
-		imageWidthTransformed.bind(imageWidthRotated.multiply(zoomFactor));
-		imageHeightTransformed.bind(imageHeightRotated.multiply(zoomFactor));
+		scale.xProperty().bind(imageTransforms.zoomFactorProperty());
+		scale.yProperty().bind(imageTransforms.zoomFactorProperty());
+		imageWidthTransformed.bind(imageWidthRotated.multiply(imageTransforms.zoomFactorProperty()));
+		imageHeightTransformed.bind(imageHeightRotated.multiply(imageTransforms.zoomFactorProperty()));
 		this.rotate = new Rotate();
 		rotate.angleProperty().bind(imageRotated.rotateProperty());
 		final var mirror = new Scale();
@@ -203,11 +201,6 @@ class ImageLayer
 	ImageTransforms getImageTransforms()
 	{
 		return imageTransforms;
-	}
-
-	ReadOnlyDoubleProperty zoomFactorProperty()
-	{
-		return zoomFactor.getReadOnlyProperty();
 	}
 
 	ReadOnlyDoubleProperty layerWidthProperty()
