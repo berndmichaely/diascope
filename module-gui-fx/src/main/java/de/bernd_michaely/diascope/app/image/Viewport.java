@@ -29,6 +29,7 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 
 import static java.lang.Double.max;
 import static java.lang.Double.min;
@@ -52,6 +53,7 @@ class Viewport
 	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
 	private final BooleanProperty dividersVisible;
+	private final BooleanProperty dividersEnabled;
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
@@ -59,6 +61,8 @@ class Viewport
 	{
 		this.multiLayerMode = new SimpleBooleanProperty();
 		this.dividersVisible = new SimpleBooleanProperty();
+		this.dividersEnabled = new SimpleBooleanProperty();
+		dividersEnabled.bind(multiLayerMode.and(dividersVisible));
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -70,7 +74,7 @@ class Viewport
 		this.paneViewport = new StackPane(paneImageLayers, paneImageLayerShapes);
 		this.scrollBars = new ScrollBars(paneViewport.widthProperty(), paneViewport.heightProperty());
 		this.splitCenter = new SplitCenter(paneViewport.widthProperty(), paneViewport.heightProperty());
-		splitCenter.enabledProperty().bind(multiLayerMode.and(dividersVisible));
+		splitCenter.enabledProperty().bind(dividersEnabled);
 		paneImageLayerShapes.setBackground(Background.EMPTY);
 		paneImageLayerShapes.getChildren().addAll(scrollBars.getControls());
 		paneImageLayerShapes.getChildren().add(splitCenter.getShape());
@@ -120,14 +124,18 @@ class Viewport
 		});
 	}
 
-	void addLayer(int index, ImageLayer imageLayer)
+	void addLayer(int numLayersAfterAdd, int index, ImageLayer imageLayer)
 	{
 		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
 		paneImageLayerShapes.getChildren().add(index, imageLayer.getImageLayerShape().getShape());
+		final Line dividerLine = imageLayer.getDivider().getLine();
+		dividerLine.visibleProperty().bind(dividersEnabled);
+		paneImageLayerShapes.getChildren().add(numLayersAfterAdd + index, dividerLine);
 	}
 
 	void removeLayer(ImageLayer imageLayer)
 	{
+		paneImageLayerShapes.getChildren().remove(imageLayer.getDivider().getLine());
 		paneImageLayerShapes.getChildren().remove(imageLayer.getImageLayerShape().getShape());
 		paneImageLayers.getChildren().remove(imageLayer.getRegion());
 	}

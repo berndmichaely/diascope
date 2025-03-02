@@ -63,11 +63,11 @@ public class ImageTransforms
 
 	/// Unbind this transforms.
 	///
-	void unbindProperties()
+	void unbindProperties(ImageTransforms other)
 	{
 		this.zoomModeProperty.unbind();
 		this.zoomFixedProperty.unbind();
-		this.zoomFactor.unbind();
+		other.zoomFactorWrapperProperty().unbind();
 		this.rotateProperty.unbind();
 		this.mirrorXProperty.unbind();
 		this.mirrorYProperty.unbind();

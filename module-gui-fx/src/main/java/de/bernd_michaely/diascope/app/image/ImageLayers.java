@@ -129,9 +129,18 @@ class ImageLayers
 			throw new IllegalStateException(getClass().getName() +
 				"::createImageLayer : layerSelectionHandler not initialized!");
 		}
-		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler);
+		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler,
+			(Divider divider, Double angle) ->
+		{
+			final double da = angle - divider.getAngle();
+			for (var layer : layers)
+			{
+				final var d = layer.getDivider();
+				d.setAngle(d.getAngle() + da);
+			}
+		});
 		getLayers().add(index, imageLayer);
-		viewport.addLayer(index, imageLayer);
+		viewport.addLayer(getLayers().size(), index, imageLayer);
 		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 		updateScrollRangeBindings();
 		final int numLayers = getLayers().size();
