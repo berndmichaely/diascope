@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -124,18 +125,24 @@ class Viewport
 		});
 	}
 
-	void addLayer(int numLayersAfterAdd, int index, ImageLayer imageLayer)
+	void addLayer(int index, ImageLayer imageLayer)
 	{
 		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
 		paneImageLayerShapes.getChildren().add(index, imageLayer.getImageLayerShape().getShape());
-		final Line dividerLine = imageLayer.getDivider().getLine();
-		dividerLine.visibleProperty().bind(dividersEnabled);
-		paneImageLayerShapes.getChildren().add(numLayersAfterAdd + index, dividerLine);
+		final List<Line> lines = imageLayer.getDivider().getLines();
+		final int n = lines.size();
+		final int offset = n * index;
+		for (int i = 0; i < n; i++)
+		{
+			final var line = lines.get(i);
+			line.visibleProperty().bind(dividersEnabled);
+			paneImageLayerShapes.getChildren().add(offset + i, line);
+		}
 	}
 
 	void removeLayer(ImageLayer imageLayer)
 	{
-		paneImageLayerShapes.getChildren().remove(imageLayer.getDivider().getLine());
+		paneImageLayerShapes.getChildren().removeAll(imageLayer.getDivider().getLines());
 		paneImageLayerShapes.getChildren().remove(imageLayer.getImageLayerShape().getShape());
 		paneImageLayers.getChildren().remove(imageLayer.getRegion());
 	}

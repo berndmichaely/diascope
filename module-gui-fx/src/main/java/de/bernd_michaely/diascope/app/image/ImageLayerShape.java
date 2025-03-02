@@ -37,9 +37,9 @@ import static javafx.beans.binding.Bindings.when;
 class ImageLayerShape
 {
 	private static final Color COLOR_SELECTED = Color.CORNFLOWERBLUE;
-	private static final Color COLOR_UNSELECTED = Color.ALICEBLUE;
 	private static final double STROKE_WIDTH_SELECTED = 4.0;
-	private static final double STROKE_WIDTH_UNSELECTED = 1.0;
+	static final Color COLOR_UNSELECTED = Color.ALICEBLUE;
+	static final double STROKE_WIDTH_UNSELECTED = 1.0;
 	private final Polygon polygon = new Polygon();
 	private final BooleanProperty selected = new SimpleBooleanProperty();
 	private final BooleanProperty unselectedVisible = new SimpleBooleanProperty();

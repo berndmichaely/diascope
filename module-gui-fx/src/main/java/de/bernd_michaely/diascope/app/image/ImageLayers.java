@@ -140,8 +140,8 @@ class ImageLayers
 			}
 		});
 		getLayers().add(index, imageLayer);
-		viewport.addLayer(getLayers().size(), index, imageLayer);
-		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
+		viewport.addLayer(index, imageLayer);
+//		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 		updateScrollRangeBindings();
 		final int numLayers = getLayers().size();
 		if (numLayers == 2)
