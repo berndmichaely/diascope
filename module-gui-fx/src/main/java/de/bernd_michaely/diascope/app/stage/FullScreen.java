@@ -36,6 +36,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -63,6 +64,7 @@ class FullScreen
 	private @Nullable ChangeListener<Boolean> thumbnailsFullscreenListener;
 	private @Nullable Stage stageFullScreen;
 	private @Nullable Region detachedComponent;
+	private @MonotonicNonNull ContextMenu contextMenu;
 
 	FullScreen(BorderPane borderPane, MultiImageView multiImageView)
 	{
@@ -182,17 +184,26 @@ class FullScreen
 			final var scene = new Scene(rootPane);
 			scene.setOnContextMenuRequested(contextMenuEvent ->
 			{
-				final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
-				menuItemToolbar.selectedProperty().bindBidirectional(toolBarFullscreenProperty);
-				final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
-				menuItemThumbnails.selectedProperty().bindBidirectional(thumbnailsFullscreenProperty);
-				final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
-				menuItemScrollbars.selectedProperty().bindBidirectional(multiImageView.scrollBarsEnabledProperty());
-				final var menuItemExit = new MenuItem("Exit Fullscreen");
-				menuItemExit.setOnAction(_ -> closeFullScreen());
-				final var contextMenu = new ContextMenu(
-					menuItemToolbar, menuItemThumbnails, menuItemScrollbars, new SeparatorMenuItem(), menuItemExit);
-				contextMenu.show(stage, contextMenuEvent.getSceneX(), contextMenuEvent.getSceneY());
+				if (this.contextMenu == null)
+				{
+					final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
+					menuItemToolbar.selectedProperty().bindBidirectional(toolBarFullscreenProperty);
+					final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
+					menuItemThumbnails.selectedProperty().bindBidirectional(thumbnailsFullscreenProperty);
+					final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
+					menuItemDivider.selectedProperty().bindBidirectional(multiImageView.dividersVisibleProperty());
+					final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
+					menuItemScrollbars.selectedProperty().bindBidirectional(multiImageView.scrollBarsEnabledProperty());
+					final var menuItemExit = new MenuItem("Exit Fullscreen");
+					menuItemExit.setOnAction(_ -> closeFullScreen());
+					this.contextMenu = new ContextMenu(
+						menuItemToolbar, menuItemThumbnails,
+						new SeparatorMenuItem(),
+						menuItemDivider, menuItemScrollbars,
+						new SeparatorMenuItem(),
+						menuItemExit);
+				}
+				this.contextMenu.show(stage, contextMenuEvent.getSceneX(), contextMenuEvent.getSceneY());
 			});
 			toolBarFullscreenListener = onChange(isFullscreen ->
 			{

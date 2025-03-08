@@ -184,7 +184,7 @@ class MainContent
 		buttonShowDividers.setTooltip(new Tooltip("Show/Hide dividers"));
 		buttonShowDividers.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
 		buttonShowDividers.setSelected(true);
-		multiImageView.dividersVisibleProperty().bind(buttonShowDividers.selectedProperty());
+		multiImageView.dividersVisibleProperty().bindBidirectional(buttonShowDividers.selectedProperty());
 		final var buttonZoomFitWindow = new Button();
 		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
 		if (iconZoomFitWindow != null)
