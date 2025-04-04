@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.List;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +33,21 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class DividerTest
 {
+	@Test
+	public void recap_atan2()
+	{
+		assertEquals(Math.atan2(0.0, 0.0), 0.0); // ensure result is not NaN
+		final var values = List.of(1.0, +0.0, -0.0, -1.0);
+		for (var y : values)
+		{
+			for (var x : values)
+			{
+				System.out.println("atan2(%+4.1f, %+4.1f) == %+6.1f°"
+					.formatted(y, x, Math.toDegrees(Math.atan2(y, x))));
+			}
+		}
+	}
+
 	@Test
 	public void test_getDividerBorder()
 	{

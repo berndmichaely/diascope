@@ -35,10 +35,11 @@ import java.nio.file.Paths;
 import java.util.prefs.Preferences;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -78,8 +79,8 @@ import static de.bernd_michaely.diascope.app.dialog.ResizableDialog.DialogType.*
 import static de.bernd_michaely.diascope.app.stage.GlobalConstants.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
+import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
 import static java.lang.System.Logger.Level.*;
-import static java.util.Objects.requireNonNullElse;
 import static javafx.beans.binding.Bindings.not;
 
 /**
@@ -93,23 +94,22 @@ public class MainWindow
 	private static final double INITIAL_WINDOW_SIZE = 2.0 / 3.0;
 	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
 	private final FileSystemTreeView fileSystemTreeView;
+	private final ObjectProperty<@Nullable Path> selectedPathPersistedProperty;
 	private final ResizableDialog dialogSystemEnvironment =
 		new ResizableDialog(CLOSEABLE_DIALOG, NONE, false);
 	private final ResizableDialog dialogInfoAbout =
 		new ResizableDialog(CLOSEABLE_DIALOG, SCALING, true);
 	private final BooleanProperty sidePaneVisibleProperty = new SimpleBooleanProperty();
-	private final ChangeListener<Number> changeListenerSplitDividerFstv = onChange(splitPos ->
-		preferences.putDouble(PREF_KEY_MAIN_SPLIT_POS.getKey(), splitPos.doubleValue()));
-	private boolean showingHiddenDirs;
+	private final DoubleProperty mainSplitPosPersistedProperty;
+	private final BooleanProperty showingHiddenDirsProperty;
 	private final CheckMenuItem menuItemShowStatusLine;
+	private final BooleanProperty showStatusLinePersistedProperty;
 	private final MainContent mainContent;
-
-	private static final ChangeListener<@Nullable Path> changeListenerPathPref = onChange(
-		path -> preferences.put(PREF_KEY_SELECTED_PATH.getKey(),
-			requireNonNullElse(path, PATH_USER_HOME).toString()));
 
 	public MainWindow()
 	{
+		this.showingHiddenDirsProperty = newPersistedBooleanProperty(
+			PREF_KEY_SHOW_HIDDEN_DIRS, MainWindow.class, false);
 		this.fileSystemTreeView = FileSystemTreeView.createInstance(
 			Configuration.builder().setUserNodeConfiguration(new UserNodeConfiguration()
 			{
@@ -118,7 +118,7 @@ public class MainWindow
 				{
 					try
 					{
-						return showingHiddenDirs || !Files.isHidden(directory);
+						return showingHiddenDirsProperty.get() || !Files.isHidden(directory);
 					}
 					catch (IOException ex)
 					{
@@ -133,15 +133,17 @@ public class MainWindow
 					return this;
 				}
 			}).build());
+		this.selectedPathPersistedProperty = newPersistedObjectProperty(
+			PREF_KEY_SELECTED_PATH, getClass(), PATH_USER_HOME.toString(), Paths::get);
+		this.mainSplitPosPersistedProperty = newPersistedDoubleProperty(
+			PREF_KEY_MAIN_SPLIT_POS, getClass(), 1.0 / 3.0);
 		this.menuItemShowStatusLine = new CheckMenuItem("Show status line");
+		this.showStatusLinePersistedProperty = newPersistedBooleanProperty(
+			PREF_KEY_SHOW_STATUS_LINE, getClass(), true);
+		this.menuItemShowStatusLine.selectedProperty().bindBidirectional(showStatusLinePersistedProperty);
 		this.mainContent = new MainContent(
 			this.fileSystemTreeView.selectedPathProperty(),
 			this.menuItemShowStatusLine.selectedProperty());
-		this.menuItemShowStatusLine.setSelected(
-			preferences.getBoolean(PREF_KEY_SHOW_STATUS_LINE.getKey(), true));
-		this.menuItemShowStatusLine.setOnAction(event ->
-			preferences.putBoolean(PREF_KEY_SHOW_STATUS_LINE.getKey(),
-				this.menuItemShowStatusLine.isSelected()));
 	}
 
 	/**
@@ -158,21 +160,15 @@ public class MainWindow
 		final boolean isTestMode = launchType == UNIT_TEST;
 		dialogSystemEnvironment.setTitle("System Environment");
 		dialogInfoAbout.setTitle("Info About");
-		this.showingHiddenDirs = preferences.getBoolean(PREF_KEY_SHOW_HIDDEN_DIRS.getKey(), false);
 		final var menuItemShowHidden = new CheckMenuItem("Show hidden directories");
-		menuItemShowHidden.setSelected(this.showingHiddenDirs);
 		final var paneFstv = new BorderPane(fileSystemTreeView.getComponent());
 		final var tabFstv = new Tab("Filesystem", paneFstv);
 		tabFstv.setClosable(false);
 		final var tabPane = new TabPane(tabFstv);
 		final var menuItemUpdate = new MenuItem("Update");
 		menuItemUpdate.setOnAction(e -> fileSystemTreeView.updateTree());
-		menuItemShowHidden.selectedProperty().addListener(onChange(() ->
-		{
-			this.showingHiddenDirs = !this.showingHiddenDirs;
-			preferences.putBoolean(PREF_KEY_SHOW_HIDDEN_DIRS.getKey(), this.showingHiddenDirs);
-			fileSystemTreeView.updateTree();
-		}));
+		menuItemShowHidden.selectedProperty().bindBidirectional(showingHiddenDirsProperty);
+		showingHiddenDirsProperty.addListener(onChange(fileSystemTreeView::updateTree));
 		final var menuFstv = new Menu("View");
 		menuFstv.getItems().addAll(menuItemUpdate, menuItemShowHidden);
 		paneFstv.setTop(new VBox(new MenuBar(menuFstv)));
@@ -183,7 +179,11 @@ public class MainWindow
 		final EventHandler<ActionEvent> actionOpen = e ->
 		{
 			final var directoryChooser = new DirectoryChooser();
-			directoryChooser.setInitialDirectory(new File(getSelectedPath()));
+			final var selectedPath = selectedPathPersistedProperty.get();
+			if (selectedPath != null)
+			{
+				directoryChooser.setInitialDirectory(selectedPath.toFile());
+			}
 			final File result = directoryChooser.showDialog(stage);
 			if (result != null)
 			{
@@ -241,11 +241,11 @@ public class MainWindow
 			menuItemShowSidePane.setGraphic(new ImageView(iconFstv));
 		}
 		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisibleProperty);
-		final var menuItemFullscreen = new MenuItem("Fullscreen");
-		menuItemFullscreen.setOnAction(_ -> mainContent.setFullScreen());
+		final var menuItemFullscreen = new CheckMenuItem("Fullscreen");
+		menuItemFullscreen.selectedProperty().bindBidirectional(mainContent.fullScreenProperty());
 		menuItemFullscreen.disableProperty().bind(getListViewProperty().emptyProperty());
 		menuItemFullscreen.setAccelerator(new KeyCodeCombination(KeyCode.F11));
-		final Button buttonViewFullscreen = new Button();
+		final var buttonViewFullscreen = new ToggleButton();
 		if (iconViewFullscreen != null)
 		{
 			menuItemFullscreen.setGraphic(new ImageView(iconViewFullscreen));
@@ -255,7 +255,9 @@ public class MainWindow
 		{
 			buttonViewFullscreen.setText("FullScreen");
 		}
-		adaptActionState(menuItemFullscreen, buttonViewFullscreen, "Show image in fullscreen mode");
+		buttonViewFullscreen.disableProperty().bind(menuItemFullscreen.disableProperty());
+		buttonViewFullscreen.selectedProperty().bindBidirectional(mainContent.fullScreenProperty());
+		buttonViewFullscreen.setTooltip(new Tooltip("Show image in fullscreen mode"));
 		menuView.getItems().addAll(menuItemFullscreen, menuItemShowSidePane);
 		// Menu("Navigation")
 		final var menuNavigation = new Menu("Navigation");
@@ -422,8 +424,7 @@ public class MainWindow
 					{
 						items.add(0, tabPane);
 						final SplitPane.Divider divider = dividers.get(0);
-						divider.setPosition(preferences.getDouble(PREF_KEY_MAIN_SPLIT_POS.getKey(), 1.0 / 3.0));
-						divider.positionProperty().addListener(changeListenerSplitDividerFstv);
+						divider.positionProperty().bindBidirectional(mainSplitPosPersistedProperty);
 					}
 					else
 					{
@@ -435,8 +436,7 @@ public class MainWindow
 					if (items.size() == 2)
 					{
 						final SplitPane.Divider divider = dividers.get(0);
-						divider.positionProperty().removeListener(changeListenerSplitDividerFstv);
-						preferences.putDouble(PREF_KEY_MAIN_SPLIT_POS.getKey(), divider.getPosition());
+						divider.positionProperty().unbind();
 						items.remove(tabPane);
 					}
 					else
@@ -448,12 +448,8 @@ public class MainWindow
 			}));
 			this.sidePaneVisibleProperty.setValue(
 				preferences.getBoolean(PREF_KEY_FSTV_VISIBLE.getKey(), true));
-			final String selectedPath = getSelectedPath();
-			if (!selectedPath.isBlank())
-			{
-				fileSystemTreeView.expandPath(Paths.get(selectedPath), true, true);
-			}
-			fileSystemTreeView.selectedPathProperty().addListener(changeListenerPathPref);
+			fileSystemTreeView.expandPath(selectedPathPersistedProperty.get(), true, true);
+			selectedPathPersistedProperty.bind(fileSystemTreeView.selectedPathProperty());
 			if (menuItemDevelopmentMode != null)
 			{
 				menuItemDevelopmentMode.selectedProperty().set(true);
@@ -489,18 +485,13 @@ public class MainWindow
 		logger.log(TRACE, "Closing main window …");
 		try (fileSystemTreeView)
 		{
-			fileSystemTreeView.selectedPathProperty().removeListener(changeListenerPathPref);
+			selectedPathPersistedProperty.unbind();
 			mainContent.onApplicationClose();
 		}
 		catch (IOException ex)
 		{
 			logger.log(WARNING, ex);
 		}
-	}
-
-	private static String getSelectedPath()
-	{
-		return preferences.get(PREF_KEY_SELECTED_PATH.getKey(), PATH_USER_HOME.toString());
 	}
 
 	private static void initStageBounds(Stage stage)

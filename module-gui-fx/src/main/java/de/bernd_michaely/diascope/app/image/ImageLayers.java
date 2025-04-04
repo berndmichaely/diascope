@@ -130,7 +130,7 @@ class ImageLayers
 				"::createImageLayer : layerSelectionHandler not initialized!");
 		}
 		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler,
-			(Divider divider, Double angle) ->
+			(Divider divider, double angle) ->
 		{
 			final double da = angle - divider.getAngle();
 			for (var layer : layers)

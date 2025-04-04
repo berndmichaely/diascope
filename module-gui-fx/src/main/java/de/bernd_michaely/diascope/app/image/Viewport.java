@@ -54,7 +54,7 @@ class Viewport
 	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
 	private final BooleanProperty dividersVisible;
-	private final BooleanProperty dividersEnabled;
+	private final ReadOnlyBooleanWrapper dividersEnabled;
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
@@ -62,7 +62,7 @@ class Viewport
 	{
 		this.multiLayerMode = new SimpleBooleanProperty();
 		this.dividersVisible = new SimpleBooleanProperty();
-		this.dividersEnabled = new SimpleBooleanProperty();
+		this.dividersEnabled = new ReadOnlyBooleanWrapper();
 		dividersEnabled.bind(multiLayerMode.and(dividersVisible));
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
@@ -75,7 +75,7 @@ class Viewport
 		this.paneViewport = new StackPane(paneImageLayers, paneImageLayerShapes);
 		this.scrollBars = new ScrollBars(paneViewport.widthProperty(), paneViewport.heightProperty());
 		this.splitCenter = new SplitCenter(paneViewport.widthProperty(), paneViewport.heightProperty());
-		splitCenter.enabledProperty().bind(dividersEnabled);
+		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
 		paneImageLayerShapes.setBackground(Background.EMPTY);
 		paneImageLayerShapes.getChildren().addAll(scrollBars.getControls());
 		paneImageLayerShapes.getChildren().add(splitCenter.getShape());
@@ -135,7 +135,7 @@ class Viewport
 		for (int i = 0; i < n; i++)
 		{
 			final var line = lines.get(i);
-			line.visibleProperty().bind(dividersEnabled);
+			line.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 			paneImageLayerShapes.getChildren().add(offset + i, line);
 		}
 	}

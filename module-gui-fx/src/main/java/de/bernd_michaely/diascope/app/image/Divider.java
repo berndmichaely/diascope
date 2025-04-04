@@ -28,7 +28,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
 import static de.bernd_michaely.diascope.app.image.Bindings.tan;
@@ -36,9 +36,8 @@ import static de.bernd_michaely.diascope.app.image.Border.BOTTOM;
 import static de.bernd_michaely.diascope.app.image.Border.LEFT;
 import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
 import static de.bernd_michaely.diascope.app.image.Border.TOP;
-import static java.lang.Math.PI;
-import static java.lang.Math.atan;
-import static java.lang.Math.signum;
+import static java.lang.Math.atan2;
+import static java.lang.Math.ceil;
 import static java.lang.Math.toDegrees;
 import static javafx.beans.binding.Bindings.when;
 
@@ -49,14 +48,13 @@ import static javafx.beans.binding.Bindings.when;
  */
 class Divider
 {
-	private static final double PI_2 = PI / 2;
 	private final DoubleProperty angle;
 	private final ReadOnlyDoubleWrapper angleNorm;
 	private final ReadOnlyDoubleProperty angleNormalized;
 	private final ReadOnlyObjectWrapper<Border> border;
 	private final ReadOnlyDoubleWrapper borderIntersectionX, borderIntersectionY;
 	private final Line lineShape, lineEvent;
-	private @Nullable DoubleConsumer onRotate;
+	private @MonotonicNonNull DoubleConsumer onRotate;
 
 	Divider(CornerAngles cornerAngles,
 		ReadOnlyDoubleProperty viewportWidth,
@@ -107,16 +105,17 @@ class Divider
 							tan(angleNormalized.subtract(180.0))
 								.multiply(splitCenterX)))
 						.otherwise(0.0)))); // TOP
+		final double sizeDefault = Font.getDefault().getSize();
 		lineShape = new Line();
 		lineShape.setStroke(ImageLayerShape.COLOR_UNSELECTED);
-		lineShape.setStrokeWidth(ImageLayerShape.STROKE_WIDTH_UNSELECTED);
+		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * ImageLayerShape.STROKE_WIDTH_UNSELECTED);
 		lineShape.startXProperty().bind(splitCenterX);
 		lineShape.startYProperty().bind(splitCenterY);
 		lineShape.endXProperty().bind(borderIntersectionX);
 		lineShape.endYProperty().bind(borderIntersectionY);
 		lineEvent = new Line();
 		lineEvent.setStroke(Color.TRANSPARENT);
-		lineEvent.setStrokeWidth(Math.round(Font.getDefault().getSize() / 2));
+		lineEvent.setStrokeWidth(lineShape.getStrokeWidth() * 3);
 		lineEvent.startXProperty().bind(lineShape.startXProperty());
 		lineEvent.startYProperty().bind(lineShape.startYProperty());
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
@@ -131,8 +130,7 @@ class Divider
 				event.consume();
 				if (onRotate != null)
 				{
-					onRotate.accept(toDegrees(dx == 0.0 ? signum(dy) * PI_2 :
-						dx > 0.0 ? atan(dy / dx) : PI - atan(dy / -dx)));
+					onRotate.accept(toDegrees(atan2(dy, dx)));
 				}
 				else
 				{

@@ -117,8 +117,8 @@ allprojects {
 	ext.versionJUnit = '5.11.3'
 	ext.versionJUnitVintage = '4.13.2'
 	
-	ext.versionCheckerFramework = '3.49.1'
-	ext.versionCheckerFrameworkPlugin = '0.6.52'
+	ext.versionCheckerFramework = '3.49.2'
+	ext.versionCheckerFrameworkPlugin = '0.6.53'
 	
 	repositories {
 		mavenCentral()

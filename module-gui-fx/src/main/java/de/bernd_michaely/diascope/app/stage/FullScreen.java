@@ -42,6 +42,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static javafx.scene.input.KeyCode.ESCAPE;
 import static javafx.scene.input.KeyCode.F11;
+import static javafx.scene.input.KeyCode.L;
 import static javafx.scene.input.KeyCode.S;
 import static javafx.scene.input.KeyCode.T;
 
@@ -58,6 +59,7 @@ class FullScreen
 	private final BorderPane imageContainer;
 	private final ToolBar toolBarImage;
 	private final Region listView;
+	private @MonotonicNonNull BooleanProperty enabled;
 	private final BooleanProperty toolBarFullscreenProperty;
 	private @Nullable ChangeListener<Boolean> toolBarFullscreenListener;
 	private final BooleanProperty thumbnailsFullscreenProperty;
@@ -142,130 +144,143 @@ class FullScreen
 		}
 	}
 
-	boolean isFullScreen()
+	BooleanProperty enabledProperty()
 	{
-		return this.stageFullScreen != null;
-	}
-
-	void closeFullScreen()
-	{
-		final Stage stFullScreen = stageFullScreen;
-		if (stFullScreen != null)
+		if (enabled == null)
 		{
-			final ChangeListener<Boolean> listenertoolBar = toolBarFullscreenListener;
-			if (listenertoolBar != null)
-			{
-				toolBarFullscreenProperty.set(false);
-				toolBarFullscreenProperty.removeListener(listenertoolBar);
-			}
-			final ChangeListener<Boolean> listenerThumbnails = thumbnailsFullscreenListener;
-			if (listenerThumbnails != null)
-			{
-				thumbnailsFullscreenProperty.set(false);
-				thumbnailsFullscreenProperty.removeListener(listenerThumbnails);
-			}
-			stFullScreen.close();
-			reAttachFullscreenComponent();
-			multiImageView.scrollBarsEnabledProperty().set(false);
-			stageFullScreen = null;
+			final var property = new SimpleBooleanProperty();
+			enabled = property;
+			property.addListener(onChange(this::setFullScreen));
 		}
+		return enabled;
 	}
 
-	void setFullScreen()
+	private void _closeFullScreen()
 	{
-		if (!isFullScreen())
+		enabledProperty().set(false);
+	}
+
+	private void setFullScreen(boolean enable)
+	{
+		if (enable)
 		{
-			final var stage = new Stage();
-			stage.setOnCloseRequest(_ -> closeFullScreen());
-			stageFullScreen = stage;
-			multiImageView.scrollBarsEnabledProperty().set(false);
-			final var root = detachFullscreenComponent();
-			final var rootPane = new BorderPane(root);
-			final var scene = new Scene(rootPane);
-			scene.setOnContextMenuRequested(contextMenuEvent ->
+			if (this.stageFullScreen == null)
 			{
-				if (this.contextMenu == null)
+				final var stage = new Stage();
+				stage.setOnCloseRequest(_ -> _closeFullScreen());
+				stageFullScreen = stage;
+				multiImageView.scrollBarsEnabledProperty().set(false);
+				final var root = detachFullscreenComponent();
+				final var rootPane = new BorderPane(root);
+				final var scene = new Scene(rootPane);
+				scene.setOnContextMenuRequested(contextMenuEvent ->
 				{
-					final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
-					menuItemToolbar.selectedProperty().bindBidirectional(toolBarFullscreenProperty);
-					final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
-					menuItemThumbnails.selectedProperty().bindBidirectional(thumbnailsFullscreenProperty);
-					final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
-					menuItemDivider.selectedProperty().bindBidirectional(multiImageView.dividersVisibleProperty());
-					final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
-					menuItemScrollbars.selectedProperty().bindBidirectional(multiImageView.scrollBarsEnabledProperty());
-					final var menuItemExit = new MenuItem("Exit Fullscreen");
-					menuItemExit.setOnAction(_ -> closeFullScreen());
-					this.contextMenu = new ContextMenu(
-						menuItemToolbar, menuItemThumbnails,
-						new SeparatorMenuItem(),
-						menuItemDivider, menuItemScrollbars,
-						new SeparatorMenuItem(),
-						menuItemExit);
-				}
-				this.contextMenu.show(stage, contextMenuEvent.getSceneX(), contextMenuEvent.getSceneY());
-			});
-			toolBarFullscreenListener = onChange(isFullscreen ->
+					if (this.contextMenu == null)
+					{
+						final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
+						menuItemToolbar.selectedProperty().bindBidirectional(toolBarFullscreenProperty);
+						final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
+						menuItemThumbnails.selectedProperty().bindBidirectional(thumbnailsFullscreenProperty);
+						final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
+						menuItemDivider.selectedProperty().bindBidirectional(multiImageView.dividersVisibleProperty());
+						final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
+						menuItemScrollbars.selectedProperty().bindBidirectional(multiImageView.scrollBarsEnabledProperty());
+						final var menuItemExit = new MenuItem("Exit Fullscreen");
+						menuItemExit.setOnAction(_ -> _closeFullScreen());
+						this.contextMenu = new ContextMenu(
+							menuItemToolbar, menuItemThumbnails,
+							new SeparatorMenuItem(),
+							menuItemDivider, menuItemScrollbars,
+							new SeparatorMenuItem(),
+							menuItemExit);
+					}
+					this.contextMenu.show(stage, contextMenuEvent.getSceneX(), contextMenuEvent.getSceneY());
+				});
+				toolBarFullscreenListener = onChange(isFullscreen ->
+				{
+					if (isFullscreen)
+					{
+						borderPane.getChildren().remove(toolBarImage);
+						rootPane.setTop(toolBarImage);
+					}
+					else
+					{
+						rootPane.getChildren().remove(toolBarImage);
+						borderPane.setTop(toolBarImage);
+					}
+				});
+				toolBarFullscreenProperty.addListener(toolBarFullscreenListener);
+				thumbnailsFullscreenListener = onChange(isFullscreen ->
+				{
+					if (isFullscreen)
+					{
+						splitPane.getItems().remove(listView);
+						rootPane.setRight(listView);
+					}
+					else
+					{
+						splitPane.getItems().remove(listView);
+						borderPane.setRight(listView);
+					}
+				});
+				thumbnailsFullscreenProperty.addListener(thumbnailsFullscreenListener);
+				scene.addEventFilter(KeyEvent.KEY_PRESSED, event ->
+				{
+					switch (event.getCode())
+					{
+						case L ->
+						{
+							thumbnailsFullscreenProperty.set(!thumbnailsFullscreenProperty.get());
+							event.consume();
+						}
+						case S ->
+						{
+							multiImageView.scrollBarsEnabledProperty().set(
+								!multiImageView.scrollBarsEnabledProperty().get());
+							event.consume();
+						}
+						case T ->
+						{
+							toolBarFullscreenProperty.set(!toolBarFullscreenProperty.get());
+							event.consume();
+						}
+						case ESCAPE, F11 ->
+						{
+							_closeFullScreen();
+							event.consume();
+						}
+					}
+				});
+				SceneStylesheetUtil.setStylesheet(scene);
+				stage.setScene(scene);
+				stage.setFullScreen(true);
+				stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
+				stage.setFullScreenExitHint("");
+				stage.show();
+			}
+		}
+		else // close fullscreen
+		{
+			final Stage stFullScreen = stageFullScreen;
+			if (stFullScreen != null)
 			{
-				if (isFullscreen)
+				final ChangeListener<Boolean> listenertoolBar = toolBarFullscreenListener;
+				if (listenertoolBar != null)
 				{
-					borderPane.getChildren().remove(toolBarImage);
-					rootPane.setTop(toolBarImage);
+					toolBarFullscreenProperty.set(false);
+					toolBarFullscreenProperty.removeListener(listenertoolBar);
 				}
-				else
+				final ChangeListener<Boolean> listenerThumbnails = thumbnailsFullscreenListener;
+				if (listenerThumbnails != null)
 				{
-					rootPane.getChildren().remove(toolBarImage);
-					borderPane.setTop(toolBarImage);
+					thumbnailsFullscreenProperty.set(false);
+					thumbnailsFullscreenProperty.removeListener(listenerThumbnails);
 				}
-			});
-			toolBarFullscreenProperty.addListener(toolBarFullscreenListener);
-			thumbnailsFullscreenListener = onChange(isFullscreen ->
-			{
-				if (isFullscreen)
-				{
-					splitPane.getItems().remove(listView);
-					rootPane.setRight(listView);
-				}
-				else
-				{
-					splitPane.getItems().remove(listView);
-					borderPane.setRight(listView);
-				}
-			});
-			thumbnailsFullscreenProperty.addListener(thumbnailsFullscreenListener);
-			scene.addEventFilter(KeyEvent.KEY_PRESSED, event ->
-			{
-				switch (event.getCode())
-				{
-					case L ->
-					{
-						thumbnailsFullscreenProperty.set(!thumbnailsFullscreenProperty.get());
-						event.consume();
-					}
-					case S ->
-					{
-						multiImageView.scrollBarsEnabledProperty().set(
-							!multiImageView.scrollBarsEnabledProperty().get());
-						event.consume();
-					}
-					case T ->
-					{
-						toolBarFullscreenProperty.set(!toolBarFullscreenProperty.get());
-						event.consume();
-					}
-					case ESCAPE, F11 ->
-					{
-						closeFullScreen();
-						event.consume();
-					}
-				}
-			});
-			SceneStylesheetUtil.setStylesheet(scene);
-			stage.setScene(scene);
-			stage.setFullScreen(true);
-			stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
-			stage.setFullScreenExitHint("");
-			stage.showAndWait();
+				stFullScreen.close();
+				reAttachFullscreenComponent();
+				multiImageView.scrollBarsEnabledProperty().set(false);
+				stageFullScreen = null;
+			}
 		}
 	}
 }

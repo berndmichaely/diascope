@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNullElse;
  */
 public class SemanticVersion implements Comparable<SemanticVersion>
 {
-	private static final SemanticVersion VERSION_SEMVER = new SemanticVersion("2.0.0");
+	private static @MonotonicNonNull SemanticVersion VERSION_SEMVER;
 
 	/**
 	 * Official regular expression for semantic versioning.
@@ -62,32 +62,32 @@ public class SemanticVersion implements Comparable<SemanticVersion>
 	 * Creates a new instance.
 	 *
 	 * @param semanticVersion a String containing a semantic version
-	 * @throws IllegalArgumentException if the given semantic version is invalid
-	 *                                  or null
+	 * @throws IllegalArgumentException if the given semantic version String is
+	 *                                  invalid (including null)
 	 */
 	public SemanticVersion(String semanticVersion)
 	{
-		if (semanticVersion != null)
+		final var matcher = getRegExSemanticVersion().matcher(requireNonNullElse(semanticVersion, ""));
+		if (matcher.matches())
 		{
-			final var matcher = getRegExSemanticVersion().matcher(semanticVersion);
-			if (matcher.matches())
+			try
 			{
-				try
-				{
-					this.major = parseInt(requireNonNullElse(matcher.group(1), ""));
-					this.minor = parseInt(requireNonNullElse(matcher.group(2), ""));
-					this.patch = parseInt(requireNonNullElse(matcher.group(3), ""));
-					this.preRelease = new PreRelease(requireNonNullElse(matcher.group(4), ""));
-					this.build = new Build(requireNonNullElse(matcher.group(5), ""));
-					return;
-				}
-				catch (NumberFormatException ex)
-				{
-					throw new IllegalStateException(ex);
-				}
+				this.major = parseInt(requireNonNullElse(matcher.group(1), ""));
+				this.minor = parseInt(requireNonNullElse(matcher.group(2), ""));
+				this.patch = parseInt(requireNonNullElse(matcher.group(3), ""));
+				this.preRelease = new PreRelease(requireNonNullElse(matcher.group(4), ""));
+				this.build = new Build(requireNonNullElse(matcher.group(5), ""));
+			}
+			catch (NumberFormatException ex)
+			{
+				throw new IllegalStateException(ex);
 			}
 		}
-		throw new IllegalArgumentException("Invalid Semantic Version String");
+		else
+		{
+			throw new IllegalArgumentException(
+				"»" + semanticVersion + "« is not a valid Semantic Version String");
+		}
 	}
 
 	SemanticVersion(int major, int minor, int patch, PreRelease preRelease, Build build)
@@ -106,6 +106,10 @@ public class SemanticVersion implements Comparable<SemanticVersion>
 	 */
 	public static SemanticVersion getSupportedVersion()
 	{
+		if (VERSION_SEMVER == null)
+		{
+			VERSION_SEMVER = new SemanticVersion("2.0.0");
+		}
 		return VERSION_SEMVER;
 	}
 

@@ -29,11 +29,13 @@ import java.nio.file.Path;
 import java.util.prefs.Preferences;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Cursor;
 import javafx.scene.control.Button;
@@ -93,11 +95,11 @@ class MainContent
 	private final Cursor cursorDefault;
 	private @MonotonicNonNull Paint paintDefaultText;
 	private int indexSelectedPrevious = INDEX_NO_SELECTION;
-	private final ToolBar toolBarImage;
-	private final FullScreen fullScreen;
+	private final BooleanProperty showStatusLineProperty;
+	private final MainContentComponents components;
 
 	MainContent(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
-		ReadOnlyBooleanProperty propertyShowStatusLine)
+		ReadOnlyBooleanProperty showStatusLinePersistedProperty)
 	{
 		this.selectedPathProperty = selectedPathProperty;
 		this.listView = new ListView<>();
@@ -284,7 +286,8 @@ class MainContent
 		}
 		buttonMirrorY.setTooltip(new Tooltip("Mirror image vertically"));
 		multiImageView.getImageTransforms().mirrorYProperty().bind(buttonMirrorY.selectedProperty());
-		this.toolBarImage = new ToolBar();
+		final ToolBar toolBarImage = new ToolBar();
+//		toolBarImage.visibleProperty();
 		if (Platform.isSupported(ConditionalFeature.SHAPE_CLIP))
 		{
 			toolBarImage.getItems().addAll(buttonLayerAdd, buttonLayerRemove, buttonShowDividers);
@@ -297,7 +300,7 @@ class MainContent
 		this.multiImageView.getImageTransforms().rotateProperty().bind(sliderRotation.valueProperty());
 		this.borderPane.setCenter(this.splitPane);
 		this.borderPane.setTop(toolBarImage);
-		this.fullScreen = new FullScreen(borderPane, multiImageView);
+		final var fullScreen = new FullScreen(borderPane, multiImageView);
 		this.progressControl = new ProgressControl(this.statusLine);
 		final var statusLines = new VBox();
 		this.borderPane.setBottom(statusLines);
@@ -317,7 +320,8 @@ class MainContent
 		this.imageDirectoryReader = new ImageDirectoryReader(listView.getItems(), this.progressControl);
 		this.pathChangeListener = onChange(imageDirectoryReader::accept);
 		selectedPathProperty.addListener(this.pathChangeListener);
-		propertyShowStatusLine.addListener(onChange(newValue ->
+		this.showStatusLineProperty = new SimpleBooleanProperty();
+		this.showStatusLineProperty.addListener(onChange(newValue ->
 		{
 			if (newValue)
 			{
@@ -328,7 +332,9 @@ class MainContent
 				statusLines.getChildren().remove(statusLine);
 			}
 		}));
+		this.showStatusLineProperty.bind(showStatusLinePersistedProperty);
 		cursorDefault = borderPane.getCursor();
+		this.components = new MainContentComponents(toolBarImage, fullScreen);
 	}
 
 	private void updateSelectedIndex(Number selectedIndex)
@@ -483,14 +489,7 @@ class MainContent
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2 &&
 				(!multiImageView.isMultiLayerMode() || event.isShiftDown()))
 			{
-				if (fullScreen.isFullScreen())
-				{
-					fullScreen.closeFullScreen();
-				}
-				else
-				{
-					setFullScreen();
-				}
+				fullScreenProperty().set(!fullScreenProperty().get());
 				event.consume();
 			}
 		});
@@ -514,8 +513,8 @@ class MainContent
 		return borderPane;
 	}
 
-	void setFullScreen()
+	BooleanProperty fullScreenProperty()
 	{
-		fullScreen.setFullScreen();
+		return components.getFullScreen().enabledProperty();
 	}
 }
