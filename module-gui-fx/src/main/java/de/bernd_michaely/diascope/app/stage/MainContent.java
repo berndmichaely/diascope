@@ -17,17 +17,12 @@
 package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
-import de.bernd_michaely.diascope.app.PreferencesUtil;
-import de.bernd_michaely.diascope.app.icons.Icons;
 import de.bernd_michaely.diascope.app.image.ImageDescriptor;
 import de.bernd_michaely.diascope.app.image.MultiImageView;
-import de.bernd_michaely.diascope.app.image.ZoomMode;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameters;
 import java.lang.System.Logger;
 import java.nio.file.Path;
-import java.util.prefs.Preferences;
-import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -38,50 +33,35 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.Cursor;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Slider;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToolBar;
-import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_IMAGE_SPLIT_POS;
 import static de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.RequestType.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static java.lang.System.Logger.Level.*;
-import static javafx.beans.binding.Bindings.not;
 import static javafx.geometry.Pos.*;
 
-/**
- * Content area of main window.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Content area of main window.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class MainContent
 {
 	private static final Logger logger = System.getLogger(MainContent.class.getName());
 	private static final int INDEX_NO_SELECTION = -1;
 	private static final String MSG_FMT_LOADING_IMG = "%s ← loading…";
-	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
-	private final BorderPane borderPane;
-	private final SplitPane splitPane;
+	private final BorderPane outerPane;
 	private final MultiImageView multiImageView;
-	private final BorderPane imageContainer;
 	private final BorderPane statusLine;
 	private final Label labelStatus;
 	private final Label labelStatusIndex;
@@ -142,171 +122,15 @@ class MainContent
 				}
 			}
 		});
-		this.imageContainer = new BorderPane(multiImageView.getRegion());
-		this.splitPane = new SplitPane(this.imageContainer, this.listView);
-		SplitPane.setResizableWithParent(this.listView, false);
-		this.borderPane = new BorderPane();
-		// ToolBar:
-		final var buttonLayerAdd = new Button();
-		final Image iconLayerAdd = Icons.LayerAdd.getIconImage();
-		if (iconLayerAdd != null)
-		{
-			buttonLayerAdd.setGraphic(new ImageView(iconLayerAdd));
-		}
-		else
-		{
-			buttonLayerAdd.setText("+");
-		}
-		buttonLayerAdd.setTooltip(new Tooltip("Add a new image view"));
-		buttonLayerAdd.setOnAction(event -> multiImageView.addLayer());
-		final var buttonLayerRemove = new Button();
-		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
-		if (iconLayerRemove != null)
-		{
-			buttonLayerRemove.setGraphic(new ImageView(iconLayerRemove));
-		}
-		else
-		{
-			buttonLayerRemove.setText("-");
-		}
-		buttonLayerRemove.setTooltip(new Tooltip("Remove selected image view"));
-		buttonLayerRemove.disableProperty().bind(
-			not(multiImageView.multiLayerModeProperty().and(multiImageView.isSingleSelectedProperty())));
-		buttonLayerRemove.setOnAction(event -> multiImageView.removeLayer());
-		final var buttonShowDividers = new ToggleButton();
-		final Image iconShowDividers = Icons.ShowDividers.getIconImage();
-		if (iconShowDividers != null)
-		{
-			buttonShowDividers.setGraphic(new ImageView(iconShowDividers));
-		}
-		else
-		{
-			buttonShowDividers.setText("X");
-		}
-		buttonShowDividers.setTooltip(new Tooltip("Show/Hide dividers"));
-		buttonShowDividers.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
-		buttonShowDividers.setSelected(true);
-		multiImageView.dividersVisibleProperty().bindBidirectional(buttonShowDividers.selectedProperty());
-		final var buttonZoomFitWindow = new Button();
-		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
-		if (iconZoomFitWindow != null)
-		{
-			buttonZoomFitWindow.setGraphic(new ImageView(iconZoomFitWindow));
-		}
-		else
-		{
-			buttonZoomFitWindow.setText("Fit");
-		}
-		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
-		buttonZoomFitWindow.setOnAction(event -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIT));
-		final var buttonZoomFillWindow = new Button();
-		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
-		if (iconZoomFillWindow != null)
-		{
-			buttonZoomFillWindow.setGraphic(new ImageView(iconZoomFillWindow));
-		}
-		else
-		{
-			buttonZoomFillWindow.setText("Fill");
-		}
-		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
-		buttonZoomFillWindow.setOnAction(event -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FILL));
-		final var buttonZoom100 = new Button();
-		final Image iconZoom100 = Icons.Zoom100.getIconImage();
-		if (iconZoom100 != null)
-		{
-			buttonZoom100.setGraphic(new ImageView(iconZoom100));
-		}
-		else
-		{
-			buttonZoom100.setText("100%");
-		}
-		buttonZoom100.setTooltip(new Tooltip("Zoom image to 100%"));
-		final var sliderZoom = new Slider(0.01, 4, 1);
-		buttonZoom100.setOnAction(event ->
-		{
-			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
-			sliderZoom.setValue(1.0);
-		});
-		sliderZoom.setTooltip(new Tooltip("Zoom factor"));
-		sliderZoom.valueProperty().addListener(onChange(value ->
-		{
-			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
-			multiImageView.getImageTransforms().zoomFixedProperty().set(value.doubleValue());
-		}));
-		sliderZoom.setTooltip(new Tooltip("Set zoom factor"));
-		sliderZoom.setOnMouseClicked(event ->
-		{
-			if (event.getClickCount() == 2)
-			{
-				multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
-				multiImageView.getImageTransforms().zoomFixedProperty().set(sliderZoom.getValue());
-			}
-		});
-		final var labelZoom = new Label("100.0%");
-		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
-		labelZoom.textProperty().bind(
-			multiImageView.getImageTransforms().zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
-		final var labelZoomWidth = new Label("8888.8% ");
-		labelZoomWidth.setVisible(false);
-		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);
-		stackPaneZoom.setAlignment(CENTER_RIGHT);
-//		stackPaneZoom.setBackground(Background.fill(Color.ROSYBROWN));
-		final var sliderRotation = new Slider(0, 360, 0);
-		sliderRotation.setTooltip(new Tooltip("Set image rotation"));
-		final var labelRotation = new Label("0°");
-		labelRotation.setTooltip(new Tooltip("Current image rotation"));
-		labelRotation.textProperty().bind(multiImageView.getImageTransforms().rotateProperty().asString("%.0f° "));
-		final var labelRotationWidth = new Label(" 360° ");
-		labelRotationWidth.setVisible(false);
-		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);
-		stackPaneRotation.setAlignment(CENTER_RIGHT);
-//		stackPaneRotation.setBackground(Background.fill(Color.DARKKHAKI));
-		final var buttonMirrorX = new ToggleButton();
-		final Image iconMirrorX = Icons.MirrorX.getIconImage();
-		if (iconMirrorX != null)
-		{
-			buttonMirrorX.setGraphic(new ImageView(iconMirrorX));
-		}
-		else
-		{
-			buttonMirrorX.setText("Mirr. horiz.");
-		}
-		buttonMirrorX.setTooltip(new Tooltip("Mirror image horizontally"));
-		multiImageView.getImageTransforms().mirrorXProperty().bind(buttonMirrorX.selectedProperty());
-		final var buttonMirrorY = new ToggleButton();
-		final Image iconMirrorY = Icons.MirrorY.getIconImage();
-		if (iconMirrorY != null)
-		{
-			buttonMirrorY.setGraphic(new ImageView(iconMirrorY));
-		}
-		else
-		{
-			buttonMirrorY.setText("Mirr. vert.");
-		}
-		buttonMirrorY.setTooltip(new Tooltip("Mirror image vertically"));
-		multiImageView.getImageTransforms().mirrorYProperty().bind(buttonMirrorY.selectedProperty());
-		final ToolBar toolBarImage = new ToolBar();
-//		toolBarImage.visibleProperty();
-		if (Platform.isSupported(ConditionalFeature.SHAPE_CLIP))
-		{
-			toolBarImage.getItems().addAll(buttonLayerAdd, buttonLayerRemove, buttonShowDividers);
-		}
-		toolBarImage.getItems().addAll(
-			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
-			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
-			buttonMirrorX, buttonMirrorY);
-//		toolBarImage.disableProperty().bind(not(multiImageView.isSingleSelectedProperty()));
-		this.multiImageView.getImageTransforms().rotateProperty().bind(sliderRotation.valueProperty());
-		this.borderPane.setCenter(this.splitPane);
-		this.borderPane.setTop(toolBarImage);
-		final var fullScreen = new FullScreen(borderPane, multiImageView);
 		this.progressControl = new ProgressControl(this.statusLine);
 		final var statusLines = new VBox();
-		this.borderPane.setBottom(statusLines);
-		final var statusLineDevelopment = new Label("Command line arguments passed: " +
-			ApplicationConfiguration.getState().commandLineArguments().toString());
-		ApplicationConfiguration.getState().developmentModeProperty().addListener(onChange(newValue ->
+		this.components = new MainContentComponents(multiImageView, listView);
+		this.outerPane = new BorderPane(components.getRegion());
+		this.outerPane.setBottom(statusLines);
+		final var state = ApplicationConfiguration.getState();
+		final var statusLineDevelopment = new Label(
+			"Command line arguments passed: " + state.commandLineArguments().toString());
+		state.developmentModeProperty().addListener(onChange(newValue ->
 		{
 			if (newValue)
 			{
@@ -333,8 +157,7 @@ class MainContent
 			}
 		}));
 		this.showStatusLineProperty.bind(showStatusLinePersistedProperty);
-		cursorDefault = borderPane.getCursor();
-		this.components = new MainContentComponents(toolBarImage, fullScreen);
+		cursorDefault = outerPane.getCursor();
 	}
 
 	private void updateSelectedIndex(Number selectedIndex)
@@ -345,7 +168,7 @@ class MainContent
 		if (index >= 0)
 		{
 			labelStatusIndex.setText("[" + (index + 1) + "/" + n + "]");
-			borderPane.setCursor(Cursor.WAIT);
+			getRegion().setCursor(Cursor.WAIT);
 			final var selectedItem = items.get(selectedIndex.intValue());
 			final Path pathSelected = selectedItem.getPath();
 			labelStatus.setText(MSG_FMT_LOADING_IMG.formatted(pathSelected));
@@ -472,18 +295,6 @@ class MainContent
 				updateSelectedIndex(INDEX_NO_SELECTION);
 			}
 		});
-		final var dividers = this.splitPane.getDividers();
-		if (!dividers.isEmpty())
-		{
-			final var divider = dividers.get(0);
-			divider.setPosition(preferences.getDouble(PREF_KEY_IMAGE_SPLIT_POS.getKey(), 200));
-			divider.positionProperty().addListener(onChange(position ->
-				preferences.putDouble(PREF_KEY_IMAGE_SPLIT_POS.getKey(), position.doubleValue())));
-		}
-		else
-		{
-			logger.log(WARNING, "No image split pane available");
-		}
 		multiImageView.getRegion().setOnMouseClicked(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2 &&
@@ -510,11 +321,11 @@ class MainContent
 	 */
 	Region getRegion()
 	{
-		return borderPane;
+		return outerPane;
 	}
 
 	BooleanProperty fullScreenProperty()
 	{
-		return components.getFullScreen().enabledProperty();
+		return components.fullScreenProperty();
 	}
 }

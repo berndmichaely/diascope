@@ -26,11 +26,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 
-/**
- * Facade of a component to display multiple images.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Facade of a component to display multiple images.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class MultiImageView
 {
 	private final ImageLayers imageLayers;

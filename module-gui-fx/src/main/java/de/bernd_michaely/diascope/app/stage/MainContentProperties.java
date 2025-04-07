@@ -16,11 +16,12 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
-import de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
+import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
+import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
 
 /// Persisted properties for main content parts.
@@ -28,148 +29,111 @@ import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProper
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-interface MainContentProperties
+class MainContentProperties
 {
-	BooleanProperty toolBarVisibleProperty();
+	private final BooleanProperty toolBarVisible;
+	private final BooleanProperty thumbnailsVisible;
+	private final BooleanProperty dividersVisible;
+	private final BooleanProperty scrollBarsVisible;
 
-	BooleanProperty thumbnailsVisibleProperty();
+	private record PersistanceParams(PreferencesKeys key, boolean defaultValue)
+		{
+	}
 
-	BooleanProperty dividersVisibleProperty();
-
-	BooleanProperty scrollBarsVisibleProperty();
-
-	ReadOnlyBooleanProperty fullScreenEnabledProperty();
-
-	static MainContentProperties newInstance(ReadOnlyBooleanProperty fullScreenEnabled)
+	MainContentProperties()
 	{
-		record PersistedBooleanPropertyParams(PreferencesKeys key, boolean defaultValue)
-			{
-		}
-		class PropertiesImpl implements MainContentProperties
+		this.toolBarVisible = new SimpleBooleanProperty();
+		this.thumbnailsVisible = new SimpleBooleanProperty();
+		this.dividersVisible = new SimpleBooleanProperty();
+		this.scrollBarsVisible = new SimpleBooleanProperty();
+	}
+
+	private MainContentProperties(
+		PersistanceParams paramsToolBar, PersistanceParams paramsThumbnails,
+		PersistanceParams paramsDividers, PersistanceParams paramsScrollBars)
+	{
+		final var c = MainContentProperties.class;
+		this.toolBarVisible = newPersistedBooleanProperty(
+			paramsToolBar.key(), c, paramsToolBar.defaultValue());
+		this.thumbnailsVisible = newPersistedBooleanProperty(
+			paramsThumbnails.key(), c, paramsThumbnails.defaultValue());
+		this.dividersVisible = newPersistedBooleanProperty(
+			paramsDividers.key(), c, paramsDividers.defaultValue());
+		this.scrollBarsVisible = newPersistedBooleanProperty(
+			paramsScrollBars.key(), c, paramsScrollBars.defaultValue());
+	}
+
+	BooleanProperty toolBarVisibleProperty()
+	{
+		return toolBarVisible;
+	}
+
+	BooleanProperty thumbnailsVisibleProperty()
+	{
+		return thumbnailsVisible;
+	}
+
+	BooleanProperty dividersVisibleProperty()
+	{
+		return dividersVisible;
+	}
+
+	BooleanProperty scrollBarsVisibleProperty()
+	{
+		return scrollBarsVisible;
+	}
+
+	void bindBidirectional(MainContentProperties other)
+	{
+		this.toolBarVisible.bindBidirectional(other.toolBarVisible);
+		this.thumbnailsVisible.bindBidirectional(other.thumbnailsVisible);
+		this.dividersVisible.bindBidirectional(other.dividersVisible);
+		this.scrollBarsVisible.bindBidirectional(other.scrollBarsVisible);
+	}
+
+	void unbindBidirectional(MainContentProperties other)
+	{
+		this.toolBarVisible.unbindBidirectional(other.toolBarVisible);
+		this.thumbnailsVisible.unbindBidirectional(other.thumbnailsVisible);
+		this.dividersVisible.unbindBidirectional(other.dividersVisible);
+		this.scrollBarsVisible.unbindBidirectional(other.scrollBarsVisible);
+	}
+
+	static MainContentProperties newPersistedProperties(ReadOnlyBooleanProperty fullScreenEnabled)
+	{
+		final var persistedProperties = new MainContentProperties()
 		{
-			private final BooleanProperty toolBarVisible, thumbnailsVisible, dividersVisible, scrollBarsVisible;
-
-			public PropertiesImpl(
-				PersistedBooleanPropertyParams paramsToolBar,
-				PersistedBooleanPropertyParams paramsThumbnails,
-				PersistedBooleanPropertyParams paramsDividers,
-				PersistedBooleanPropertyParams paramsScrollBars)
-			{
-				this.toolBarVisible = newPersistedBooleanProperty(
-					paramsToolBar.key(), MainContentProperties.class, paramsToolBar.defaultValue());
-				this.thumbnailsVisible = newPersistedBooleanProperty(
-					paramsThumbnails.key(), MainContentProperties.class, paramsThumbnails.defaultValue());
-				this.dividersVisible = newPersistedBooleanProperty(
-					paramsDividers.key(), MainContentProperties.class, paramsDividers.defaultValue());
-				this.scrollBarsVisible = newPersistedBooleanProperty(
-					paramsScrollBars.key(), MainContentProperties.class, paramsScrollBars.defaultValue());
-			}
-
-			@Override
-			public BooleanProperty toolBarVisibleProperty()
-			{
-				return toolBarVisible;
-			}
-
-			@Override
-			public BooleanProperty thumbnailsVisibleProperty()
-			{
-				return thumbnailsVisible;
-			}
-
-			@Override
-			public BooleanProperty dividersVisibleProperty()
-			{
-				return dividersVisible;
-			}
-
-			@Override
-			public BooleanProperty scrollBarsVisibleProperty()
-			{
-				return scrollBarsVisible;
-			}
-
-			@Override
-			public ReadOnlyBooleanProperty fullScreenEnabledProperty()
-			{
-				return fullScreenEnabled;
-			}
-		}
-		return new MainContentProperties()
-		{
-			private final PropertiesImpl propertiesWindow;
-			private final PropertiesImpl propertiesFullScreen;
-			private final BooleanProperty toolBarVisible;
-			private final BooleanProperty thumbnailsVisible;
-			private final BooleanProperty dividersVisible;
-			private final BooleanProperty scrollBarsVisible;
-
-
-			{
-				propertiesWindow = new PropertiesImpl(
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_WINDOW_TOOLBAR, true),
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_WINDOW_THUMBNAILS, true),
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_WINDOW_DIVIDERS, false),
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_WINDOW_SCROLLBARS, false)
+			private final MainContentProperties propertiesWindow =
+				new MainContentProperties(
+					new PersistanceParams(PREF_KEY_WINDOW_TOOLBAR, true),
+					new PersistanceParams(PREF_KEY_WINDOW_THUMBNAILS, true),
+					new PersistanceParams(PREF_KEY_WINDOW_DIVIDERS, false),
+					new PersistanceParams(PREF_KEY_WINDOW_SCROLLBARS, false)
 				);
-				propertiesFullScreen = new PropertiesImpl(
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_FULLSCREEN_TOOLBAR, true),
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_FULLSCREEN_THUMBNAILS, true),
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_FULLSCREEN_DIVIDERS, false),
-					new PersistedBooleanPropertyParams(PreferencesKeys.PREF_KEY_FULLSCREEN_SCROLLBARS, false)
+			private final MainContentProperties propertiesFullScreen =
+				new MainContentProperties(
+					new PersistanceParams(PREF_KEY_FULLSCREEN_TOOLBAR, false),
+					new PersistanceParams(PREF_KEY_FULLSCREEN_THUMBNAILS, false),
+					new PersistanceParams(PREF_KEY_FULLSCREEN_DIVIDERS, false),
+					new PersistanceParams(PREF_KEY_FULLSCREEN_SCROLLBARS, false)
 				);
-				toolBarVisible = new SimpleBooleanProperty();
-				thumbnailsVisible = new SimpleBooleanProperty();
-				dividersVisible = new SimpleBooleanProperty();
-				scrollBarsVisible = new SimpleBooleanProperty();
-				fullScreenEnabled.addListener(ChangeListenerUtil.onChange(isFullScreen ->
+
+			private void bindBidirectional(boolean isFullScreen)
+			{
+				if (isFullScreen)
 				{
-					if (isFullScreen)
-					{
-						toolBarVisible.bindBidirectional(propertiesFullScreen.toolBarVisible);
-						thumbnailsVisible.bindBidirectional(propertiesFullScreen.thumbnailsVisible);
-						dividersVisible.bindBidirectional(propertiesFullScreen.dividersVisible);
-						scrollBarsVisible.bindBidirectional(propertiesFullScreen.scrollBarsVisible);
-					}
-					else
-					{
-						toolBarVisible.bindBidirectional(propertiesWindow.toolBarVisible);
-						thumbnailsVisible.bindBidirectional(propertiesWindow.thumbnailsVisible);
-						dividersVisible.bindBidirectional(propertiesWindow.dividersVisible);
-						scrollBarsVisible.bindBidirectional(propertiesWindow.scrollBarsVisible);
-					}
-				}));
-			}
-
-			@Override
-			public BooleanProperty toolBarVisibleProperty()
-			{
-				return toolBarVisible;
-			}
-
-			@Override
-			public BooleanProperty thumbnailsVisibleProperty()
-			{
-				return thumbnailsVisible;
-			}
-
-			@Override
-			public BooleanProperty dividersVisibleProperty()
-			{
-				return dividersVisible;
-			}
-
-			@Override
-			public BooleanProperty scrollBarsVisibleProperty()
-			{
-				return scrollBarsVisible;
-			}
-
-			@Override
-			public ReadOnlyBooleanProperty fullScreenEnabledProperty()
-			{
-				return fullScreenEnabled;
+					unbindBidirectional(propertiesWindow);
+					bindBidirectional(propertiesFullScreen);
+				}
+				else
+				{
+					unbindBidirectional(propertiesFullScreen);
+					bindBidirectional(propertiesWindow);
+				}
 			}
 		};
+		persistedProperties.bindBidirectional(fullScreenEnabled.get());
+		fullScreenEnabled.addListener(onChange(persistedProperties::bindBidirectional));
+		return persistedProperties;
 	}
 }

@@ -31,11 +31,10 @@ import javafx.beans.property.SimpleObjectProperty;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
 
-/**
- * Factory class to create properties which are persisted by preferences.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Factory class to create properties which are persisted by preferences.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class PersistedProperties
 {
 	private static final Logger logger = System.getLogger(PersistedProperties.class.getName());

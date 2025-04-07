@@ -99,7 +99,8 @@ public class MainWindow
 		new ResizableDialog(CLOSEABLE_DIALOG, NONE, false);
 	private final ResizableDialog dialogInfoAbout =
 		new ResizableDialog(CLOSEABLE_DIALOG, SCALING, true);
-	private final BooleanProperty sidePaneVisibleProperty = new SimpleBooleanProperty();
+	private final BooleanProperty sidePaneVisibleProperty;
+	private final BooleanProperty sidePaneVisiblePersistedProperty;
 	private final DoubleProperty mainSplitPosPersistedProperty;
 	private final BooleanProperty showingHiddenDirsProperty;
 	private final CheckMenuItem menuItemShowStatusLine;
@@ -109,7 +110,7 @@ public class MainWindow
 	public MainWindow()
 	{
 		this.showingHiddenDirsProperty = newPersistedBooleanProperty(
-			PREF_KEY_SHOW_HIDDEN_DIRS, MainWindow.class, false);
+			PREF_KEY_SHOW_HIDDEN_DIRS, getClass(), false);
 		this.fileSystemTreeView = FileSystemTreeView.createInstance(
 			Configuration.builder().setUserNodeConfiguration(new UserNodeConfiguration()
 			{
@@ -133,6 +134,9 @@ public class MainWindow
 					return this;
 				}
 			}).build());
+		this.sidePaneVisibleProperty = new SimpleBooleanProperty();
+		this.sidePaneVisiblePersistedProperty = newPersistedBooleanProperty(
+			PREF_KEY_FSTV_VISIBLE, getClass(), true);
 		this.selectedPathPersistedProperty = newPersistedObjectProperty(
 			PREF_KEY_SELECTED_PATH, getClass(), PATH_USER_HOME.toString(), Paths::get);
 		this.mainSplitPosPersistedProperty = newPersistedDoubleProperty(
@@ -240,7 +244,7 @@ public class MainWindow
 		{
 			menuItemShowSidePane.setGraphic(new ImageView(iconFstv));
 		}
-		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisibleProperty);
+		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
 		final var menuItemFullscreen = new CheckMenuItem("Fullscreen");
 		menuItemFullscreen.selectedProperty().bindBidirectional(mainContent.fullScreenProperty());
 		menuItemFullscreen.disableProperty().bind(getListViewProperty().emptyProperty());
@@ -341,7 +345,7 @@ public class MainWindow
 			toggleButtonSidePane.setText("Sidepane");
 		}
 		toggleButtonSidePane.setTooltip(new Tooltip("Show/Hide side pane"));
-		toggleButtonSidePane.selectedProperty().bindBidirectional(this.sidePaneVisibleProperty);
+		toggleButtonSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
 		// Menu and ToolBar:
 		final var menuBar = new MenuBar(menuFile, menuView, menuNavigation, menuOptions, menuHelp);
 		final var toolBar = new ToolBar(toggleButtonSidePane, buttonDirOpen,
@@ -444,10 +448,8 @@ public class MainWindow
 						logger.log(WARNING, "Inconsistent state when setting FileSystemTreeView invisible");
 					}
 				}
-				preferences.putBoolean(PREF_KEY_FSTV_VISIBLE.getKey(), visible);
 			}));
-			this.sidePaneVisibleProperty.setValue(
-				preferences.getBoolean(PREF_KEY_FSTV_VISIBLE.getKey(), true));
+			sidePaneVisibleProperty.bind(sidePaneVisiblePersistedProperty);
 			fileSystemTreeView.expandPath(selectedPathPersistedProperty.get(), true, true);
 			selectedPathPersistedProperty.bind(fileSystemTreeView.selectedPathProperty());
 			if (menuItemDevelopmentMode != null)

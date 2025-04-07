@@ -16,11 +16,10 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
-/**
- * Enum to keep keys for preferences.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Enum to keep keys for preferences.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public enum PreferencesKeys
 {
 	PREF_KEY_X,
