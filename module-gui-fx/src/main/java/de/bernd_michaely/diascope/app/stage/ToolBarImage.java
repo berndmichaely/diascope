@@ -21,6 +21,9 @@ import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -42,6 +45,9 @@ import static javafx.geometry.Pos.CENTER_RIGHT;
 class ToolBarImage
 {
 	private final ToolBar toolBar;
+	private ObjectProperty<EventHandler<ActionEvent>> onActionPropertyFitWindow;
+	private ObjectProperty<EventHandler<ActionEvent>> onActionPropertyFillWindow;
+	private ObjectProperty<EventHandler<ActionEvent>> onActionPropertyZoom100;
 
 	ToolBarImage(MultiImageView multiImageView)
 	{
@@ -97,6 +103,7 @@ class ToolBarImage
 		}
 		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
 		buttonZoomFitWindow.setOnAction(_ -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIT));
+		onActionPropertyFitWindow = buttonZoomFitWindow.onActionProperty();
 		final var buttonZoomFillWindow = new Button();
 		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
 		if (iconZoomFillWindow != null)
@@ -109,6 +116,7 @@ class ToolBarImage
 		}
 		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
 		buttonZoomFillWindow.setOnAction(_ -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FILL));
+		onActionPropertyFillWindow = buttonZoomFillWindow.onActionProperty();
 		final var buttonZoom100 = new Button();
 		final Image iconZoom100 = Icons.Zoom100.getIconImage();
 		if (iconZoom100 != null)
@@ -126,6 +134,7 @@ class ToolBarImage
 			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
 			sliderZoom.setValue(1.0);
 		});
+		onActionPropertyZoom100 = buttonZoom100.onActionProperty();
 		sliderZoom.setTooltip(new Tooltip("Zoom factor"));
 		sliderZoom.valueProperty().addListener(onChange(value ->
 		{
@@ -194,6 +203,21 @@ class ToolBarImage
 			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
 			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
 			buttonMirrorX, buttonMirrorY);
+	}
+
+	ObjectProperty<EventHandler<ActionEvent>> getOnActionPropertyFitWindow()
+	{
+		return onActionPropertyFitWindow;
+	}
+
+	ObjectProperty<EventHandler<ActionEvent>> getOnActionPropertyFillWindow()
+	{
+		return onActionPropertyFillWindow;
+	}
+
+	ObjectProperty<EventHandler<ActionEvent>> getOnActionPropertyZoom100()
+	{
+		return onActionPropertyZoom100;
 	}
 
 	ToolBar getToolBar()

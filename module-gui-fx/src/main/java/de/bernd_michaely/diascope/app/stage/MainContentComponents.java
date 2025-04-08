@@ -35,8 +35,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_IMAGE_SPLIT_POS;
+import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_SPLIT_POS_IMAGE;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
 import static javafx.beans.binding.Bindings.not;
@@ -54,14 +55,14 @@ import static javafx.scene.input.KeyCode.T;
 class MainContentComponents
 {
 	private static final Logger logger = System.getLogger(MainContentComponents.class.getName());
-	private static final double DEFAULT_SPLIT_WIDTH = 0.9;
+	private static final double DEFAULT_SPLIT_WIDTH = 0.8;
 	private final MultiImageView multiImageView;
 	private final ListView<ImageGroupDescriptor> listView;
-	private final BorderPane outerPane;
-	private final BorderPane contentPane;
-	private final BorderPane toolBarPane;
-	private final BorderPane listViewPane;
-	private final SplitPane splitPane;
+	private final BorderPane paneOuter;
+	private final BorderPane paneContent;
+	private final BorderPane paneToolBar;
+	private final BorderPane paneListView;
+	private @Nullable SplitPane splitPane;
 	private final DoubleProperty splitPosProperty;
 	private final ToolBarImage toolBarImage;
 	private final FullScreen fullScreen;
@@ -73,23 +74,23 @@ class MainContentComponents
 	{
 		this.multiImageView = multiImageView;
 		this.listView = listView;
-		this.splitPane = new SplitPane(multiImageView.getRegion());
-		this.listViewPane = new BorderPane(splitPane);
-		this.toolBarPane = new BorderPane(listViewPane);
-		this.contentPane = new BorderPane(toolBarPane);
-		this.outerPane = new BorderPane(contentPane);
+		this.paneListView = new BorderPane(multiImageView.getRegion());
+		this.paneToolBar = new BorderPane(paneListView);
+		this.paneContent = new BorderPane(paneToolBar);
+		this.paneOuter = new BorderPane(paneContent);
 //		this.outerPane = new BorderPane(createFullScreenDummy());
 		this.splitPosProperty = newPersistedDoubleProperty(
-			PREF_KEY_IMAGE_SPLIT_POS, getClass(), DEFAULT_SPLIT_WIDTH);
+			PREF_KEY_SPLIT_POS_IMAGE, getClass(), DEFAULT_SPLIT_WIDTH);
 		this.fullScreen = new FullScreen(() ->
 		{
-			outerPane.getChildren().remove(contentPane);
-			outerPane.setCenter(createFullScreenDummy());
-			return contentPane;
-		}, () -> outerPane.setCenter(contentPane));
+			paneOuter.getChildren().remove(paneContent);
+//			paneOuter.setCenter(createFullScreenDummy());
+			return paneContent;
+		}, () -> paneOuter.setCenter(paneContent));
 		this.properties = new MainContentProperties();
-		this.contextMenu = createContextMenu(properties, fullScreen, multiImageView);
-		contentPane.setOnContextMenuRequested(contextMenuEvent ->
+		this.toolBarImage = new ToolBarImage(multiImageView);
+		this.contextMenu = createContextMenu(properties, fullScreen, multiImageView, toolBarImage);
+		paneContent.setOnContextMenuRequested(contextMenuEvent ->
 		{
 			if (contextMenu.isShowing())
 			{
@@ -97,35 +98,47 @@ class MainContentComponents
 			}
 			else
 			{
-				contextMenu.show(contentPane, contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY());
+				contextMenu.show(paneContent, contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY());
 			}
 		});
-		createEventFilter(contentPane, properties, fullScreen);
-		this.toolBarImage = new ToolBarImage(multiImageView);
+		createEventFilter(paneContent, properties, fullScreen);
+		// window and fullscreen modes properties bindings:
 		properties.toolBarVisibleProperty().addListener(onChange(visible ->
 		{
 			final var toolBar = toolBarImage.getToolBar();
 			if (visible)
 			{
-				toolBarPane.setTop(toolBar);
+				paneToolBar.setTop(toolBar);
 			}
 			else
 			{
-				toolBarPane.getChildren().remove(toolBar);
+				paneToolBar.getChildren().remove(toolBar);
 			}
 		}));
+		SplitPane.setResizableWithParent(multiImageView.getRegion(), false);
+		SplitPane.setResizableWithParent(listView, false);
 		properties.thumbnailsVisibleProperty().addListener(onChange(visible ->
 		{
+			final var imgView = multiImageView.getRegion();
 			if (visible)
 			{
-				splitPane.getItems().addLast(listView);
-				splitPane.getDividers().getFirst().positionProperty().bindBidirectional(splitPosProperty);
-				SplitPane.setResizableWithParent(listView, false);
+				paneListView.getChildren().remove(imgView);
+				final var sp = new SplitPane(imgView, listView);
+				splitPane = sp;
+				paneListView.setCenter(sp);
+				sp.getDividers().getFirst().positionProperty().bindBidirectional(splitPosProperty);
 			}
 			else
 			{
-				splitPane.getDividers().getFirst().positionProperty().unbind();
-				splitPane.getItems().remove(listView);
+				if (splitPane != null)
+				{
+					final var sp = splitPane;
+					sp.getDividers().getFirst().positionProperty().unbindBidirectional(splitPosProperty);
+					sp.getItems().clear();
+					paneListView.getChildren().remove(sp);
+					paneListView.setCenter(imgView);
+					splitPane = null;
+				}
 			}
 		}));
 		properties.dividersVisibleProperty().bindBidirectional(multiImageView.dividersVisibleProperty());
@@ -144,8 +157,14 @@ class MainContentComponents
 	}
 
 	private static ContextMenu createContextMenu(MainContentProperties properties,
-		FullScreen fullScreen, MultiImageView multiImageView)
+		FullScreen fullScreen, MultiImageView multiImageView, ToolBarImage toolBarImage)
 	{
+		final var menuItemFit = new MenuItem("Zoom to fit window");
+		menuItemFit.onActionProperty().bind(toolBarImage.getOnActionPropertyFitWindow());
+		final var menuItemFill = new MenuItem("Zoom to fill window");
+		menuItemFill.onActionProperty().bind(toolBarImage.getOnActionPropertyFillWindow());
+		final var menuItemFixed = new MenuItem("Zoom to actual size");
+		menuItemFixed.onActionProperty().bind(toolBarImage.getOnActionPropertyZoom100());
 		final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
 		menuItemToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
 		final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
@@ -161,6 +180,8 @@ class MainContentComponents
 				.then("Exit Fullscreen").otherwise("Enter Fullscreen"));
 		menuItemFullScreen.setOnAction(_ -> fullScreen.toggle());
 		return new ContextMenu(
+			menuItemFit, menuItemFill, menuItemFixed,
+			new SeparatorMenuItem(),
 			menuItemToolbar, menuItemThumbnails,
 			new SeparatorMenuItem(),
 			menuItemDivider, menuItemScrollbars,
@@ -189,7 +210,7 @@ class MainContentComponents
 					fullScreen.enabledProperty().set(false);
 					event.consume();
 				}
-			};
+			}
 		});
 	}
 
@@ -200,6 +221,6 @@ class MainContentComponents
 
 	Region getRegion()
 	{
-		return outerPane;
+		return paneOuter;
 	}
 }

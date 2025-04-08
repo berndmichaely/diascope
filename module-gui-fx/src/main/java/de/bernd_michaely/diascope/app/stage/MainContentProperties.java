@@ -107,14 +107,14 @@ class MainContentProperties
 				new MainContentProperties(
 					new PersistanceParams(PREF_KEY_WINDOW_TOOLBAR, true),
 					new PersistanceParams(PREF_KEY_WINDOW_THUMBNAILS, true),
-					new PersistanceParams(PREF_KEY_WINDOW_DIVIDERS, false),
+					new PersistanceParams(PREF_KEY_WINDOW_DIVIDERS, true),
 					new PersistanceParams(PREF_KEY_WINDOW_SCROLLBARS, false)
 				);
 			private final MainContentProperties propertiesFullScreen =
 				new MainContentProperties(
 					new PersistanceParams(PREF_KEY_FULLSCREEN_TOOLBAR, false),
 					new PersistanceParams(PREF_KEY_FULLSCREEN_THUMBNAILS, false),
-					new PersistanceParams(PREF_KEY_FULLSCREEN_DIVIDERS, false),
+					new PersistanceParams(PREF_KEY_FULLSCREEN_DIVIDERS, true),
 					new PersistanceParams(PREF_KEY_FULLSCREEN_SCROLLBARS, false)
 				);
 

@@ -140,7 +140,7 @@ public class MainWindow
 		this.selectedPathPersistedProperty = newPersistedObjectProperty(
 			PREF_KEY_SELECTED_PATH, getClass(), PATH_USER_HOME.toString(), Paths::get);
 		this.mainSplitPosPersistedProperty = newPersistedDoubleProperty(
-			PREF_KEY_MAIN_SPLIT_POS, getClass(), 1.0 / 3.0);
+			PREF_KEY_SPLIT_POS_MAIN, getClass(), 1.0 / 3.0);
 		this.menuItemShowStatusLine = new CheckMenuItem("Show status line");
 		this.showStatusLinePersistedProperty = newPersistedBooleanProperty(
 			PREF_KEY_SHOW_STATUS_LINE, getClass(), true);

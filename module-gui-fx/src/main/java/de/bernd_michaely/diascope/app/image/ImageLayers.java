@@ -182,9 +182,10 @@ class ImageLayers
 		if (numLayers > 0)
 		{
 			final double da = 360.0 / numLayers;
-			for (int i = 0; i < numLayers; i++)
+			double a = 90.0;
+			for (int i = 0; i < numLayers; i++, a += da)
 			{
-				getLayers().get(i).getDivider().setAngle(i * da);
+				getLayers().get(i).getDivider().setAngle(a);
 			}
 		}
 	}
