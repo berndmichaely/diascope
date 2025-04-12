@@ -18,7 +18,6 @@ package de.bernd_michaely.diascope.app.image;
 
 import java.util.function.BiConsumer;
 import javafx.beans.property.ReadOnlyIntegerProperty;
-import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
@@ -40,18 +39,15 @@ class ImageLayers
 {
 	private static final Double ZERO = 0.0;
 	private final Viewport viewport;
-	private final ObservableList<ImageLayer> layers;
-	private final ReadOnlyListWrapper<ImageLayer> layersProperty;
-	private final ImageTransforms imageTransforms;
+	private final ObservableList<ImageLayer> layers = FXCollections.observableArrayList();
+	private final ReadOnlyListWrapper<ImageLayer> layersProperty = new ReadOnlyListWrapper<>(layers);
+	private final ImageTransforms imageTransforms = new ImageTransforms();
 	private final ChangeListener<Number> listenerClippingPoints;
 	private @MonotonicNonNull BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
 
 	ImageLayers(Viewport viewport)
 	{
 		this.viewport = viewport;
-		this.layers = FXCollections.observableArrayList();
-		this.layersProperty = new ReadOnlyListWrapper<>(layers);
-		this.imageTransforms = new ImageTransforms();
 		this.listenerClippingPoints = onChange(() ->
 		{
 			if (viewport.isClippingEnabled())
@@ -107,11 +103,6 @@ class ImageLayers
 		return layers;
 	}
 
-	ReadOnlyListProperty<ImageLayer> layersProperty()
-	{
-		return layersProperty.getReadOnlyProperty();
-	}
-
 	ImageTransforms getImageTransforms()
 	{
 		return imageTransforms;
@@ -119,7 +110,7 @@ class ImageLayers
 
 	ReadOnlyIntegerProperty numberOfLayersProperty()
 	{
-		return layersProperty().sizeProperty();
+		return layersProperty.sizeProperty();
 	}
 
 	ImageLayer createImageLayer(int index)
@@ -139,11 +130,11 @@ class ImageLayers
 				d.setAngle(d.getAngle() + da);
 			}
 		});
-		getLayers().add(index, imageLayer);
+		layers.add(index, imageLayer);
 		viewport.addLayer(index, imageLayer);
 //		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 		updateScrollRangeBindings();
-		final int numLayers = getLayers().size();
+		final int numLayers = layers.size();
 		if (numLayers == 2)
 		{
 			viewport.multiLayerModeProperty().set(true);
@@ -160,11 +151,11 @@ class ImageLayers
 
 	void removeLayer(ImageLayer imageLayer)
 	{
-		if (getLayers().remove(imageLayer))
+		if (layers.remove(imageLayer))
 		{
 			imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
 			imageLayer.getDivider().angleProperty().unbind();
-			if (getLayers().size() == 1)
+			if (layers.size() == 1)
 			{
 				viewport.multiLayerModeProperty().set(false);
 				viewport.widthProperty().removeListener(listenerClippingPoints);
@@ -178,21 +169,21 @@ class ImageLayers
 
 	private void updateDividerDefaultAngles()
 	{
-		final int numLayers = getLayers().size();
+		final int numLayers = layers.size();
 		if (numLayers > 0)
 		{
 			final double da = 360.0 / numLayers;
 			double a = 90.0;
 			for (int i = 0; i < numLayers; i++, a += da)
 			{
-				getLayers().get(i).getDivider().setAngle(a);
+				layers.get(i).getDivider().setAngle(a);
 			}
 		}
 	}
 
 	private void updateScrollRangeBindings()
 	{
-		if (getLayers().isEmpty())
+		if (layers.isEmpty())
 		{
 			viewport.layersMaxWidthProperty().unbind();
 			viewport.layersMaxWidthProperty().set(0.0);
@@ -201,20 +192,20 @@ class ImageLayers
 		}
 		else
 		{
-			final ImageLayer first = getLayers().getFirst();
+			final ImageLayer first = layers.getFirst();
 			first.maxToPreviousWidthProperty().bind(max(first.layerWidthProperty(), 0.0));
 			first.maxToPreviousHeightProperty().bind(max(first.layerHeightProperty(), 0.0));
-			for (int i = 1; i < getLayers().size(); i++)
+			for (int i = 1; i < layers.size(); i++)
 			{
-				final ImageLayer lPrev = getLayers().get(i - 1);
-				final ImageLayer lNext = getLayers().get(i);
+				final ImageLayer lPrev = layers.get(i - 1);
+				final ImageLayer lNext = layers.get(i);
 				lNext.maxToPreviousWidthProperty().bind(
 					max(lPrev.maxToPreviousWidthProperty(), lNext.layerWidthProperty()));
 				lNext.maxToPreviousHeightProperty().bind(
 					max(lPrev.maxToPreviousHeightProperty(), lNext.layerHeightProperty()));
 			}
-			viewport.layersMaxWidthProperty().bind(getLayers().getLast().maxToPreviousWidthProperty());
-			viewport.layersMaxHeightProperty().bind(getLayers().getLast().maxToPreviousHeightProperty());
+			viewport.layersMaxWidthProperty().bind(layers.getLast().maxToPreviousWidthProperty());
+			viewport.layersMaxHeightProperty().bind(layers.getLast().maxToPreviousHeightProperty());
 		}
 	}
 }

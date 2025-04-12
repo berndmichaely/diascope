@@ -17,12 +17,12 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.lang.System.Logger;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.collections.ObservableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -57,11 +57,6 @@ class SelectionModel
 		return singleLayerSelected.getReadOnlyProperty();
 	}
 
-	boolean isSingleLayerSelected()
-	{
-		return singleLayerSelectedProperty().get();
-	}
-
 	ReadOnlyObjectProperty<@Nullable ImageLayer> singleSelectedLayerProperty()
 	{
 		return singleSelectedLayer.getReadOnlyProperty();
@@ -73,32 +68,25 @@ class SelectionModel
 		return singleSelectedLayerProperty().get();
 	}
 
-	private ObservableList<ImageLayer> getLayers()
+	void toggleLayerSelection(ImageLayer imageLayer, boolean multiSelect)
 	{
-		return imageLayers.getLayers();
-	}
-
-	void toggleLayerSelection(ImageLayer layer, boolean multiSelect)
-	{
-//		if (getLayers().contains(layer))
+		final BooleanProperty p = imageLayer.selectedProperty();
+		p.set(!p.get());
+		int count = 0;
+		ImageLayer selected = null;
+		for (ImageLayer l : imageLayers.getLayers())
 		{
-			layer.setSelected(!layer.isSelected());
-			int count = 0;
-			ImageLayer selected = null;
-			for (ImageLayer l : getLayers())
+			if (!multiSelect && l != imageLayer)
 			{
-				if (!multiSelect && l != layer)
-				{
-					l.setSelected(false);
-				}
-				if (l.isSelected())
-				{
-					count++;
-					selected = l;
-				}
+				l.selectedProperty().set(false);
 			}
-			numSelectedLayers.set(count);
-			singleSelectedLayer.set(count == 1 ? selected : null);
+			if (l.selectedProperty().get())
+			{
+				count++;
+				selected = l;
+			}
 		}
+		numSelectedLayers.set(count);
+		singleSelectedLayer.set(count == 1 ? selected : null);
 	}
 }

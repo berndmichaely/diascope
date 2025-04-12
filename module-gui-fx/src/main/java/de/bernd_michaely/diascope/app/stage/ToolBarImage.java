@@ -45,9 +45,9 @@ import static javafx.geometry.Pos.CENTER_RIGHT;
 class ToolBarImage
 {
 	private final ToolBar toolBar;
-	private ObjectProperty<EventHandler<ActionEvent>> onActionPropertyFitWindow;
-	private ObjectProperty<EventHandler<ActionEvent>> onActionPropertyFillWindow;
-	private ObjectProperty<EventHandler<ActionEvent>> onActionPropertyZoom100;
+	private final ObjectProperty<EventHandler<ActionEvent>> onActionPropertyFitWindow;
+	private final ObjectProperty<EventHandler<ActionEvent>> onActionPropertyFillWindow;
+	private final ObjectProperty<EventHandler<ActionEvent>> onActionPropertyZoom100;
 
 	ToolBarImage(MultiImageView multiImageView)
 	{

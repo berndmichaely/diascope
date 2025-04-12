@@ -186,6 +186,7 @@ public class MainWindow
 			final var selectedPath = selectedPathPersistedProperty.get();
 			if (selectedPath != null)
 			{
+				directoryChooser.setTitle("Open directory");
 				directoryChooser.setInitialDirectory(selectedPath.toFile());
 			}
 			final File result = directoryChooser.showDialog(stage);
@@ -220,12 +221,11 @@ public class MainWindow
 		final Image iconViewShowLast = Icons.ViewShowLast.getIconImage();
 		// Menu("File")
 		final var menuFile = new Menu("File");
-		final var menuItemDirOpen = new MenuItem("Open directory");
+		final var menuItemDirOpen = new MenuItem("Open directory …");
 		menuItemDirOpen.setOnAction(actionOpen);
 		menuItemDirOpen.setAccelerator(new KeyCharacterCombination("o", KeyCombination.CONTROL_DOWN));
 		final var buttonDirOpen = new Button();
-		buttonDirOpen.setOnAction(menuItemDirOpen.getOnAction());
-		buttonDirOpen.setTooltip(new Tooltip(menuItemDirOpen.getText()));
+		adaptActionState(menuItemDirOpen, buttonDirOpen, menuItemDirOpen.getText());
 		if (iconFileOpen != null)
 		{
 			buttonDirOpen.setGraphic(new ImageView(iconFileOpen));
@@ -357,8 +357,7 @@ public class MainWindow
 		final var buttonExit = new Button("Exit");
 		final var buttonExitSeparator = new Separator();
 		buttonExit.prefHeightProperty().bind(toggleButtonSidePane.heightProperty());
-		buttonExit.setTooltip(new Tooltip("Exit application"));
-		buttonExit.setOnAction(actionExit);
+		adaptActionState(menuItemExit, buttonExit, "Exit application");
 		developmentModeProperty.addListener(onChange(isDevel ->
 		{
 			if (isDevel)
@@ -477,7 +476,7 @@ public class MainWindow
 
 	private void adaptActionState(MenuItem from, Button to, String textTooltip)
 	{
-		to.setOnAction(from.getOnAction());
+		to.onActionProperty().bindBidirectional(from.onActionProperty());
 		to.disableProperty().bind(from.disableProperty());
 		to.setTooltip(new Tooltip(textTooltip));
 	}

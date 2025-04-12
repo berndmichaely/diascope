@@ -265,11 +265,6 @@ class ImageLayer
 		imageView.setImage(image);
 	}
 
-	BooleanProperty clippingEnabledProperty()
-	{
-		return clippingEnabled;
-	}
-
 	@SuppressWarnings("argument")
 	private void setNullableClip(@Nullable Node clip)
 	{
@@ -282,16 +277,6 @@ class ImageLayer
 	BooleanProperty selectedProperty()
 	{
 		return getImageLayerShape().selectedProperty();
-	}
-
-	boolean isSelected()
-	{
-		return selectedProperty().get();
-	}
-
-	void setSelected(boolean selected)
-	{
-		selectedProperty().set(selected);
 	}
 
 	Divider getDivider()

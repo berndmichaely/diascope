@@ -160,11 +160,11 @@ class MainContentComponents
 		FullScreen fullScreen, MultiImageView multiImageView, ToolBarImage toolBarImage)
 	{
 		final var menuItemFit = new MenuItem("Zoom to fit window");
-		menuItemFit.onActionProperty().bind(toolBarImage.getOnActionPropertyFitWindow());
+		menuItemFit.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyFitWindow());
 		final var menuItemFill = new MenuItem("Zoom to fill window");
-		menuItemFill.onActionProperty().bind(toolBarImage.getOnActionPropertyFillWindow());
+		menuItemFill.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyFillWindow());
 		final var menuItemFixed = new MenuItem("Zoom to actual size");
-		menuItemFixed.onActionProperty().bind(toolBarImage.getOnActionPropertyZoom100());
+		menuItemFixed.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyZoom100());
 		final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
 		menuItemToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
 		final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");

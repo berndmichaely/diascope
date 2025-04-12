@@ -105,7 +105,7 @@ public class MultiImageView
 
 	public ReadOnlyIntegerProperty numberOfLayersProperty()
 	{
-		return imageLayers.layersProperty().sizeProperty();
+		return imageLayers.numberOfLayersProperty();
 	}
 
 	public ReadOnlyBooleanProperty isSingleSelectedProperty()
