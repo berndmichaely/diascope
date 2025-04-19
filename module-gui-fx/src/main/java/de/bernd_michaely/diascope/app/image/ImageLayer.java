@@ -80,13 +80,7 @@ class ImageLayer
 	private final Translate translateScroll;
 	private String imageTitle = "";
 
-	@FunctionalInterface
-	interface DividerRotateConsumer
-	{
-		void accept(Divider divider, double angle);
-	}
-
-	private ImageLayer(Viewport viewport, DividerRotateConsumer onDividerRotate)
+	private ImageLayer(Viewport viewport, Consumer<Divider> onDividerRotate)
 	{
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
@@ -162,14 +156,14 @@ class ImageLayer
 			when(viewport.scrollBarEnabledVerticalProperty())
 				.then(negate(viewport.scrollPosYProperty()))
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
-		divider.setOnRotate(angle -> onDividerRotate.accept(divider, angle));
+		divider.setOnRotate(() -> onDividerRotate.accept(divider));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
 	}
 
 	static ImageLayer createInstance(Viewport viewport,
 		BiConsumer<ImageLayer, Boolean> layerSelectionHandler,
-		DividerRotateConsumer onDividerRotate)
+		Consumer<Divider> onDividerRotate)
 	{
 		final var imageLayer = new ImageLayer(viewport, onDividerRotate);
 		// post init:

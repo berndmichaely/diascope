@@ -41,6 +41,7 @@ class ImageLayers
 	private final Viewport viewport;
 	private final ObservableList<ImageLayer> layers = FXCollections.observableArrayList();
 	private final ReadOnlyListWrapper<ImageLayer> layersProperty = new ReadOnlyListWrapper<>(layers);
+	private final DividerRotationControl dividerRotationControl = new DividerRotationControl(layers);
 	private final ImageTransforms imageTransforms = new ImageTransforms();
 	private final ChangeListener<Number> listenerClippingPoints;
 	private @MonotonicNonNull BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
@@ -120,16 +121,7 @@ class ImageLayers
 			throw new IllegalStateException(getClass().getName() +
 				"::createImageLayer : layerSelectionHandler not initialized!");
 		}
-		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler,
-			(Divider divider, double angle) ->
-		{
-			final double da = angle - divider.getAngle();
-			for (var layer : layers)
-			{
-				final var d = layer.getDivider();
-				d.setAngle(d.getAngle() + da);
-			}
-		});
+		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler, dividerRotationControl);
 		layers.add(index, imageLayer);
 		viewport.addLayer(index, imageLayer);
 //		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());

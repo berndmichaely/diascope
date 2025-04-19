@@ -37,7 +37,8 @@ public class BindingsTest
 		final ReadOnlyDoubleProperty result = resultWrapper.getReadOnlyProperty();
 		resultWrapper.bind(Bindings.normalizeAngle(angle));
 		final double r = result.get();
-		System.out.println("normalize(%8.2f°) = %6.2f°".formatted(value, r));
+		System.out.println("normalize(%9.2f°) = %6.2f°".formatted(value, r));
+		assertTrue(Double.isNaN(r) || r >= 0.0 && r < 360.0);
 		assertEquals(expected, r);
 	}
 
@@ -62,5 +63,8 @@ public class BindingsTest
 		_testNormalizeAngle(540.0, 180.0);
 		_testNormalizeAngle(720.0, 0.0);
 		_testNormalizeAngle(1800.0, 0.0);
+		_testNormalizeAngle(Double.NEGATIVE_INFINITY, Double.NaN);
+		_testNormalizeAngle(Double.POSITIVE_INFINITY, Double.NaN);
+		_testNormalizeAngle(Double.NaN, Double.NaN);
 	}
 }

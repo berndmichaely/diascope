@@ -71,10 +71,25 @@ class Bindings
 		}
 	}
 
+	static final double C = 360.0;
+
+	/// Returns the normalized angle.
+	///
+	/// @param angle an angle in degrees
+	/// @return the angle normalized to the range [0°..360°[
+	///
+	static double normalizeAngle(double angle)
+	{
+		double a = angle % C;
+		if (a < 0.0)
+		{
+			a += C;
+		}
+		return a == -0.0 ? 0.0 : a;
+	}
+
 	private static class NormalizeAngleBinding extends DoubleBinding
 	{
-		private static final double C = 360.0;
-		private static final double L = 2 * C;
 		private final ObservableNumberValue angle;
 
 		private NormalizeAngleBinding(ObservableNumberValue angle)
@@ -85,20 +100,7 @@ class Bindings
 		@Override
 		protected double computeValue()
 		{
-			double a = angle.doubleValue();
-			if (a <= -L || a >= L)
-			{
-				a = Math.IEEEremainder(a, C);
-			}
-			while (a >= C)
-			{
-				a -= C;
-			}
-			while (a < 0.0)
-			{
-				a += C;
-			}
-			return a == -0.0 ? 0.0 : a;
+			return normalizeAngle(angle.doubleValue());
 		}
 
 		private static NormalizeAngleBinding newInstance(ObservableNumberValue angle)
@@ -113,6 +115,7 @@ class Bindings
 	///
 	/// @param angle an angle in degrees
 	/// @return the tangent of the given angle
+	///
 	static DoubleBinding tan(ObservableNumberValue angle)
 	{
 		return TanBinding.newInstance(angle);
@@ -122,6 +125,7 @@ class Bindings
 	///
 	/// @param value a given value
 	/// @return the arctangent of the given value in degrees
+	///
 	static DoubleBinding arctan(ObservableNumberValue value)
 	{
 		return ArcTanBinding.newInstance(value);
@@ -131,6 +135,7 @@ class Bindings
 	///
 	/// @param angle an angle in degrees
 	/// @return the angle normalized to the range [0°..360°[
+	///
 	static DoubleBinding normalizeAngle(ObservableNumberValue angle)
 	{
 		return NormalizeAngleBinding.newInstance(angle);

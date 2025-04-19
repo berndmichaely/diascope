@@ -17,7 +17,6 @@
 package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
-import java.lang.System.Logger;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -54,10 +53,7 @@ import static javafx.scene.input.KeyCode.T;
 ///
 class MainContentComponents
 {
-	private static final Logger logger = System.getLogger(MainContentComponents.class.getName());
 	private static final double DEFAULT_SPLIT_WIDTH = 0.8;
-	private final MultiImageView multiImageView;
-	private final ListView<ImageGroupDescriptor> listView;
 	private final BorderPane paneOuter;
 	private final BorderPane paneContent;
 	private final BorderPane paneToolBar;
@@ -72,8 +68,6 @@ class MainContentComponents
 
 	MainContentComponents(MultiImageView multiImageView, ListView<ImageGroupDescriptor> listView)
 	{
-		this.multiImageView = multiImageView;
-		this.listView = listView;
 		this.paneListView = new BorderPane(multiImageView.getRegion());
 		this.paneToolBar = new BorderPane(paneListView);
 		this.paneContent = new BorderPane(paneToolBar);
@@ -180,9 +174,9 @@ class MainContentComponents
 				.then("Exit Fullscreen").otherwise("Enter Fullscreen"));
 		menuItemFullScreen.setOnAction(_ -> fullScreen.toggle());
 		return new ContextMenu(
-			menuItemFit, menuItemFill, menuItemFixed,
-			new SeparatorMenuItem(),
 			menuItemToolbar, menuItemThumbnails,
+			new SeparatorMenuItem(),
+			menuItemFixed, menuItemFit, menuItemFill,
 			new SeparatorMenuItem(),
 			menuItemDivider, menuItemScrollbars,
 			new SeparatorMenuItem(),
