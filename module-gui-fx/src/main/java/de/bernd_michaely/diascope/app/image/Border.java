@@ -16,6 +16,9 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import static de.bernd_michaely.diascope.app.image.Bindings.C;
+import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
+
 /// Enumeration of borders and corners of a rectangular area.
 /// Borders are ordered in ascending order of angles.
 /// Corners are associated to a pair of a border and its following border.
@@ -45,14 +48,22 @@ enum Border
 	/// in ascending order of angles.
 	///
 	/// @param border1 the first given Border
+	/// @param angle1 the first given angle
 	/// @param border2 the second given Border
+	/// @param angle2 the second given angle
 	/// @return the number of corner points between the given borders
 	///
-	static int numberOfCornerPointsBetween(Border border1, Border border2)
+	static int numberOfCornerPointsBetween(
+		Border border1, double angle1, Border border2, double angle2)
 	{
+		final double a1 = normalizeAngle(angle1);
+		final double _a2 = normalizeAngle(angle2);
+		final double a2 = _a2 < a1 ? _a2 + C : _a2;
+		final double d = a2 - a1;
 		final int i1 = border1.ordinal();
 		final int i2 = border2.ordinal();
 		final int n = values().length;
-		return i1 <= i2 ? i2 - i1 : n + i2 - i1;
+		final int c = i1 <= i2 ? i2 - i1 : n + i2 - i1;
+		return (c == 0 && d >= 180.0) ? 4 : c;
 	}
 }

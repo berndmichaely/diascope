@@ -90,11 +90,11 @@ class DividerRotationControl implements Consumer<Divider>
 		final boolean isDragStart = mouseDragState.isDragStart();
 		final double angle = divider.getAngle();
 		final double rotationAngle = mouseDragState.getRotationAngle();
-		final double da = rotationAngle - angle;
 		switch (rotationType)
 		{
 			case ALL_SYNCHRONOUS ->
 			{
+				final double da = rotationAngle - angle;
 				for (var layer : layers)
 				{
 					final var d = layer.getDivider();
@@ -105,6 +105,7 @@ class DividerRotationControl implements Consumer<Divider>
 			{
 				if (isDragStart)
 				{
+					// initialize angleMin, angleMax:
 					final int n = layers.size();
 					final int index = getDividerIndex(divider);
 					if (n > 1 && index >= 0)
@@ -125,14 +126,19 @@ class DividerRotationControl implements Consumer<Divider>
 						final double gap = getDividerMinGap();
 						angleMin = anglePrev + gap;
 						angleMax = angleNext - gap;
-						System.out.println("Set angleMin/Max: %f / %f".formatted(angleMin, angleMax));
 					}
 				}
+				// final double fMin = angleMin - (C - (angleMax - angleMin)) / 2;
+				final double fMin = (angleMax + angleMin - C) / 2;
+				final double fMax = fMin + C;
 				double a = rotationAngle;
-				final double m = angleMin - (angleMax + angleMin) / 2;
-				while (a < m)
+				while (a < fMin)
 				{
 					a += C;
+				}
+				while (a >= fMax)
+				{
+					a -= C;
 				}
 				divider.setAngle(clamp(a, angleMin, angleMax));
 			}
@@ -148,7 +154,6 @@ class DividerRotationControl implements Consumer<Divider>
 			case RELEASED ->
 			{
 				normalizeDividerAngles();
-				System.out.println("Mouse rotation → RELEASED");
 			}
 			default -> throw new AssertionError("Invalid Divider.RotationType: " + rotationType);
 		}

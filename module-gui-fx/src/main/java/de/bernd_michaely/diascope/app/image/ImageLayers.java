@@ -57,17 +57,20 @@ class ImageLayers
 				for (int i = 0; i < n; i++)
 				{
 					final var layer = layers.get(i);
+					final var divider = layer.getDivider();
+					final var corner = divider.getBorder();
 					final var layerNext = layers.get(i == n - 1 ? 0 : i + 1);
-					final var corner = layer.getDivider().getBorder();
-					final var cornerNext = layerNext.getDivider().getBorder();
-					final int numIntermediateCorners = Border.numberOfCornerPointsBetween(corner, cornerNext);
+					final var dividerNext = layerNext.getDivider();
+					final var cornerNext = dividerNext.getBorder();
+					final int numIntermediateCorners = Border.numberOfCornerPointsBetween(
+						corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
 					final int numPoints = 2 * (3 + numIntermediateCorners);
 					final Double[] points = new Double[numPoints];
 					int index = 0;
 					points[index++] = viewport.getSplitCenter().xProperty().getValue();
 					points[index++] = viewport.getSplitCenter().yProperty().getValue();
-					points[index++] = layer.getDivider().getBorderIntersectionX();
-					points[index++] = layer.getDivider().getBorderIntersectionY();
+					points[index++] = divider.getBorderIntersectionX();
+					points[index++] = divider.getBorderIntersectionY();
 					var c = corner;
 					for (int k = 0; k < numIntermediateCorners; k++, c = c.next())
 					{
@@ -86,8 +89,8 @@ class ImageLayers
 								ZERO;
 						};
 					}
-					points[index++] = layerNext.getDivider().getBorderIntersectionX();
-					points[index++] = layerNext.getDivider().getBorderIntersectionY();
+					points[index++] = dividerNext.getBorderIntersectionX();
+					points[index++] = dividerNext.getBorderIntersectionY();
 					layer.setShapePoints(points);
 				}
 			}

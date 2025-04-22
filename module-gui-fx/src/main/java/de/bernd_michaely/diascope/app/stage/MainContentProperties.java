@@ -48,17 +48,15 @@ class MainContentProperties
 		this.scrollBarsVisible = new SimpleBooleanProperty();
 	}
 
-	private MainContentProperties(
-		PersistanceParams paramsToolBar, PersistanceParams paramsThumbnails,
-		PersistanceParams paramsDividers, PersistanceParams paramsScrollBars)
+	private MainContentProperties(PersistanceParams paramsToolBar,
+		PersistanceParams paramsThumbnails, PersistanceParams paramsScrollBars)
 	{
 		final var c = MainContentProperties.class;
 		this.toolBarVisible = newPersistedBooleanProperty(
 			paramsToolBar.key(), c, paramsToolBar.defaultValue());
 		this.thumbnailsVisible = newPersistedBooleanProperty(
 			paramsThumbnails.key(), c, paramsThumbnails.defaultValue());
-		this.dividersVisible = newPersistedBooleanProperty(
-			paramsDividers.key(), c, paramsDividers.defaultValue());
+		this.dividersVisible = new SimpleBooleanProperty(true);
 		this.scrollBarsVisible = newPersistedBooleanProperty(
 			paramsScrollBars.key(), c, paramsScrollBars.defaultValue());
 	}
@@ -107,14 +105,12 @@ class MainContentProperties
 				new MainContentProperties(
 					new PersistanceParams(PREF_KEY_WINDOW_TOOLBAR, true),
 					new PersistanceParams(PREF_KEY_WINDOW_THUMBNAILS, true),
-					new PersistanceParams(PREF_KEY_WINDOW_DIVIDERS, true),
 					new PersistanceParams(PREF_KEY_WINDOW_SCROLLBARS, false)
 				);
 			private final MainContentProperties propertiesFullScreen =
 				new MainContentProperties(
 					new PersistanceParams(PREF_KEY_FULLSCREEN_TOOLBAR, false),
 					new PersistanceParams(PREF_KEY_FULLSCREEN_THUMBNAILS, false),
-					new PersistanceParams(PREF_KEY_FULLSCREEN_DIVIDERS, true),
 					new PersistanceParams(PREF_KEY_FULLSCREEN_SCROLLBARS, false)
 				);
 
