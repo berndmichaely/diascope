@@ -144,6 +144,7 @@ class Viewport
 	{
 		paneImageLayerShapes.getChildren().removeAll(imageLayer.getDivider().getLines());
 		paneImageLayerShapes.getChildren().remove(imageLayer.getImageLayerShape().getShape());
+		imageLayer.clearClip();
 		paneImageLayers.getChildren().remove(imageLayer.getRegion());
 	}
 

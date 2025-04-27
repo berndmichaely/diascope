@@ -16,18 +16,20 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.ListSelectionHandler;
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
-import javafx.beans.property.ReadOnlyListWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-import static de.bernd_michaely.diascope.app.image.Border.BOTTOM;
-import static de.bernd_michaely.diascope.app.image.Border.LEFT;
-import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
-import static de.bernd_michaely.diascope.app.image.Border.TOP;
+import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
+import static de.bernd_michaely.diascope.app.image.Border.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static javafx.beans.binding.Bindings.max;
 
@@ -39,16 +41,54 @@ class ImageLayers
 {
 	private static final Double ZERO = 0.0;
 	private final Viewport viewport;
-	private final ObservableList<ImageLayer> layers = FXCollections.observableArrayList();
-	private final ReadOnlyListWrapper<ImageLayer> layersProperty = new ReadOnlyListWrapper<>(layers);
-	private final DividerRotationControl dividerRotationControl = new DividerRotationControl(layers);
-	private final ImageTransforms imageTransforms = new ImageTransforms();
+	private final SelectableList<ImageLayer> layers;
+	private final ListSelectionHandler<ImageLayer> layersProperty;
+	private final ReadOnlyBooleanWrapper singleLayerSelected;
+	private final ReadOnlyObjectWrapper<Optional<ImageLayer>> singleSelectedLayer;
+	private final DividerRotationControl dividerRotationControl;
+	private final ImageTransforms imageTransforms;
 	private final ChangeListener<Number> listenerClippingPoints;
-	private @MonotonicNonNull BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
+	private final BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
 
 	ImageLayers(Viewport viewport)
 	{
 		this.viewport = viewport;
+		this.layers = SelectableListFactory.selectableList();
+		this.layersProperty = SelectableListFactory.listSelectionHandler(layers);
+		this.singleSelectedLayer = new ReadOnlyObjectWrapper<>(Optional.empty());
+		this.singleLayerSelected = new ReadOnlyBooleanWrapper();
+		this.singleLayerSelected.bind(layersProperty.numSelectedProperty().isEqualTo(1));
+		this.dividerRotationControl = new DividerRotationControl(layers);
+		this.imageTransforms = new ImageTransforms();
+		this.layers.addSelectionListener(change ->
+		{
+			if (!change.isEmptyRange())
+			{
+				for (int i = change.getFrom(); i <= change.getTo(); i++)
+				{
+					if (i >= 0 && i < layers.size())
+					{
+						layers.get(i).selectedProperty().set(layers.isSelected(i));
+					}
+				}
+				singleSelectedLayer.set(singleLayerSelected.get() ?
+					layers.stream().filter(ImageLayer::isSelected).findAny() : Optional.empty());
+			}
+		});
+		this.layerSelectionHandler = (imageLayer, multiSelect) ->
+		{
+			for (int i = 0; i < layers.size(); i++)
+			{
+				if (layers.get(i) == imageLayer)
+				{
+					layers.select(i, SELECTION_TOGGLE);
+				}
+				else if (!multiSelect)
+				{
+					layers.select(i, SELECTION_UNSET);
+				}
+			}
+		};
 		this.listenerClippingPoints = onChange(() ->
 		{
 			if (viewport.isClippingEnabled())
@@ -62,7 +102,7 @@ class ImageLayers
 					final var layerNext = layers.get(i == n - 1 ? 0 : i + 1);
 					final var dividerNext = layerNext.getDivider();
 					final var cornerNext = dividerNext.getBorder();
-					final int numIntermediateCorners = Border.numberOfCornerPointsBetween(
+					final int numIntermediateCorners = numberOfCornerPointsBetween(
 						corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
 					final int numPoints = 2 * (3 + numIntermediateCorners);
 					final Double[] points = new Double[numPoints];
@@ -97,19 +137,39 @@ class ImageLayers
 		});
 	}
 
-	void setLayerSelectionHandler(BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
-	{
-		this.layerSelectionHandler = layerSelectionHandler;
-	}
-
-	ObservableList<ImageLayer> getLayers()
+	SelectableList<ImageLayer> getLayers()
 	{
 		return layers;
+	}
+
+	BiConsumer<ImageLayer, Boolean> getLayerSelectionHandler()
+	{
+		return layerSelectionHandler;
+	}
+
+	ListSelectionHandler<ImageLayer> getLayersProperty()
+	{
+		return layersProperty;
+	}
+
+	ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty()
+	{
+		return singleSelectedLayer.getReadOnlyProperty();
+	}
+
+	Optional<ImageLayer> getSingleSelectedLayer()
+	{
+		return singleSelectedLayerProperty().get();
 	}
 
 	ImageTransforms getImageTransforms()
 	{
 		return imageTransforms;
+	}
+
+	DividerRotationControl getDividerRotationControl()
+	{
+		return dividerRotationControl;
 	}
 
 	ReadOnlyIntegerProperty numberOfLayersProperty()
@@ -127,7 +187,7 @@ class ImageLayers
 		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler, dividerRotationControl);
 		layers.add(index, imageLayer);
 		viewport.addLayer(index, imageLayer);
-//		imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
+		// imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 		updateScrollRangeBindings();
 		final int numLayers = layers.size();
 		if (numLayers == 2)
@@ -139,41 +199,42 @@ class ImageLayers
 			viewport.getSplitCenter().yProperty().addListener(listenerClippingPoints);
 		}
 		imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
-		updateDividerDefaultAngles();
+		dividerRotationControl.initializeDividerAngles();
 		imageLayer.getImageTransforms().bindProperties(getImageTransforms());
 		return imageLayer;
 	}
 
-	void removeLayer(ImageLayer imageLayer)
+	/// Removes the given layers.
+	///
+	/// @param imageLayers the layers to remove
+	/// @return true, iff anything has been changed
+	///
+	boolean removeLayers(List<ImageLayer> imageLayers)
 	{
-		if (layers.remove(imageLayer))
+		boolean anyRemoved = false;
+		for (var imageLayer : imageLayers)
 		{
-			imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
-			imageLayer.getDivider().angleProperty().unbind();
-			if (layers.size() == 1)
+			final boolean removed = layers.remove(imageLayer);
+			anyRemoved |= removed;
+			if (removed)
 			{
-				viewport.multiLayerModeProperty().set(false);
-				viewport.widthProperty().removeListener(listenerClippingPoints);
-				viewport.heightProperty().removeListener(listenerClippingPoints);
+				imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
+				imageLayer.getDivider().angleProperty().unbind();
+				if (layers.size() == 1)
+				{
+					viewport.multiLayerModeProperty().set(false);
+					viewport.widthProperty().removeListener(listenerClippingPoints);
+					viewport.heightProperty().removeListener(listenerClippingPoints);
+				}
+				viewport.removeLayer(imageLayer);
 			}
-			viewport.removeLayer(imageLayer);
+		}
+		if (anyRemoved)
+		{
 			updateScrollRangeBindings();
-			updateDividerDefaultAngles();
+			dividerRotationControl.initializeDividerAngles();
 		}
-	}
-
-	private void updateDividerDefaultAngles()
-	{
-		final int numLayers = layers.size();
-		if (numLayers > 0)
-		{
-			final double da = 360.0 / numLayers;
-			double a = 90.0;
-			for (int i = 0; i < numLayers; i++, a += da)
-			{
-				layers.get(i).getDivider().setAngle(a);
-			}
-		}
+		return anyRemoved;
 	}
 
 	private void updateScrollRangeBindings()

@@ -41,6 +41,7 @@ class SplitCenter
 	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
 	private final Circle shapeSplitCenter;
 	private final double diameter, radius;
+	private final Runnable center;
 	private boolean positionInitialized;
 
 	SplitCenter(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
@@ -59,10 +60,18 @@ class SplitCenter
 		shapeSplitCenter.setCursor(Cursor.MOVE);
 		shapeSplitCenter.centerXProperty().bind(splitCenterX);
 		shapeSplitCenter.centerYProperty().bind(splitCenterY);
-		viewportWidth.addListener(onChange(newWidth ->
-			splitCenterX.set(normX(newWidth.doubleValue(), splitCenterX.get()))));
-		viewportHeight.addListener(onChange(newHeight ->
-			splitCenterY.set(normY(newHeight.doubleValue(), splitCenterY.get()))));
+		viewportWidth.addListener(onChange((oldWidth, newWidth) ->
+		{
+			final double w = newWidth.doubleValue();
+			final double x = splitCenterX.get() * w / oldWidth.doubleValue();
+			splitCenterX.set(normX(w, x));
+		}));
+		viewportHeight.addListener(onChange((oldHeight, newHeight) ->
+		{
+			final double h = newHeight.doubleValue();
+			final double y = splitCenterY.get() * h / oldHeight.doubleValue();
+			splitCenterY.set(normY(h, y));
+		}));
 		shapeSplitCenter.setOnMouseDragged(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
@@ -72,13 +81,16 @@ class SplitCenter
 				event.consume();
 			}
 		});
+		this.center = () ->
+		{
+			splitCenterX.set(viewportWidth.get() / 2.0);
+			splitCenterY.set(viewportHeight.get() / 2.0);
+		};
 		shapeSplitCenter.visibleProperty().addListener(onChange(visible ->
 		{
 			if (!positionInitialized && visible)
 			{
-				// center:
-				splitCenterX.set(viewportWidth.get() / 2.0);
-				splitCenterY.set(viewportHeight.get() / 2.0);
+				center.run();
 				positionInitialized = true;
 			}
 		}));
@@ -94,6 +106,12 @@ class SplitCenter
 		double height, double y)
 	{
 		return height < diameter ? height / 2.0 : max(radius, min(y, height - radius));
+	}
+
+	/// Centers the split center in the viewport.
+	void center()
+	{
+		this.center.run();
 	}
 
 	BooleanProperty enabledProperty()

@@ -25,6 +25,7 @@ module de.bernd_michaely.diascope.gui.fx
 	requires de.bernd_michaely.common.filesystem.view.base;
 	requires de.bernd_michaely.common.filesystem.view.fx;
 	requires de.bernd_michaely.common.semver;
+	requires de.bernd_michaely.common.selectable.list.fx;
 	requires java.prefs;
 	requires javafx.controls;
 	requires javafx.graphics;

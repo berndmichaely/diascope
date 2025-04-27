@@ -153,32 +153,55 @@ class MainContentComponents
 	private static ContextMenu createContextMenu(MainContentProperties properties,
 		FullScreen fullScreen, MultiImageView multiImageView, ToolBarImage toolBarImage)
 	{
+		final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
+		menuItemToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
+		final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
+		menuItemThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
+		// ---
 		final var menuItemFit = new MenuItem("Zoom to fit window");
 		menuItemFit.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyFitWindow());
 		final var menuItemFill = new MenuItem("Zoom to fill window");
 		menuItemFill.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyFillWindow());
 		final var menuItemFixed = new MenuItem("Zoom to actual size");
 		menuItemFixed.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyZoom100());
-		final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
-		menuItemToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
-		final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
-		menuItemThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
+		// ---
 		final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
 		menuItemDivider.selectedProperty().bindBidirectional(properties.dividersVisibleProperty());
 		menuItemDivider.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
 		final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
 		menuItemScrollbars.selectedProperty().bindBidirectional(properties.scrollBarsVisibleProperty());
+		// ---
+		final var numberLayers = multiImageView.numberOfLayersProperty();
+		final var numSelectedLayers = multiImageView.numberOfSelectedLayersProperty();
+		final var menuItemSelectAll = new MenuItem("Select all layers");
+		menuItemSelectAll.disableProperty().bind(
+			not(multiImageView.multiLayerModeProperty()).or(numberLayers.isEqualTo(numSelectedLayers)));
+		menuItemSelectAll.setOnAction(_ -> multiImageView.selectAll());
+		final var menuItemSelectNone = new MenuItem("Unselect all layers");
+		menuItemSelectNone.disableProperty().bind(
+			not(multiImageView.multiLayerModeProperty()).or(numSelectedLayers.isEqualTo(0)));
+		menuItemSelectNone.setOnAction(_ -> multiImageView.selectNone());
+		final var menuItemToggleLayerSelection = new MenuItem("Toggle layers selection");
+		menuItemToggleLayerSelection.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
+		menuItemToggleLayerSelection.setOnAction(_ -> multiImageView.invertSelection());
+		final var menuItemResetAngles = new MenuItem("Reset dividers");
+		menuItemResetAngles.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
+		menuItemResetAngles.setOnAction(_ -> multiImageView.resetDividers());
+		// ---
 		final var menuItemFullScreen = new MenuItem();
-		menuItemFullScreen.textProperty().bind(
-			when(fullScreen.enabledProperty())
-				.then("Exit Fullscreen").otherwise("Enter Fullscreen"));
+		menuItemFullScreen.textProperty().bind(when(fullScreen.enabledProperty())
+			.then("Exit Fullscreen").otherwise("Enter Fullscreen"));
 		menuItemFullScreen.setOnAction(_ -> fullScreen.toggle());
+		// ->
 		return new ContextMenu(
 			menuItemToolbar, menuItemThumbnails,
 			new SeparatorMenuItem(),
-			menuItemFixed, menuItemFit, menuItemFill,
+			menuItemFit, menuItemFill, menuItemFixed,
 			new SeparatorMenuItem(),
 			menuItemDivider, menuItemScrollbars,
+			new SeparatorMenuItem(),
+			menuItemToggleLayerSelection, menuItemSelectAll, menuItemSelectNone,
+			menuItemResetAngles,
 			new SeparatorMenuItem(),
 			menuItemFullScreen);
 	}
@@ -188,17 +211,17 @@ class MainContentComponents
 	{
 		node.addEventFilter(KeyEvent.KEY_PRESSED, event ->
 		{
-			final Consumer<BooleanProperty> toggleProperty = prop ->
+			final Consumer<BooleanProperty> propertyToggle = prop ->
 			{
 				prop.set(!prop.get());
 				event.consume();
 			};
 			switch (event.getCode())
 			{
-				case L -> toggleProperty.accept(properties.thumbnailsVisibleProperty());
-				case S -> toggleProperty.accept(properties.scrollBarsVisibleProperty());
-				case T -> toggleProperty.accept(properties.toolBarVisibleProperty());
-				case F11 -> toggleProperty.accept(fullScreen.enabledProperty());
+				case L -> propertyToggle.accept(properties.thumbnailsVisibleProperty());
+				case S -> propertyToggle.accept(properties.scrollBarsVisibleProperty());
+				case T -> propertyToggle.accept(properties.toolBarVisibleProperty());
+				case F11 -> propertyToggle.accept(fullScreen.enabledProperty());
 				case ESCAPE ->
 				{
 					fullScreen.enabledProperty().set(false);

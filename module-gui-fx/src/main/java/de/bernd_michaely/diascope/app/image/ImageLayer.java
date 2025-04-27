@@ -23,7 +23,6 @@ import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
@@ -193,8 +192,7 @@ class ImageLayer
 			}
 			else
 			{
-				imageLayer.setNullableClip(null);
-				imageLayer.clearShapePoints();
+				imageLayer.clearClip();
 			}
 		}));
 		imageLayer.clippingEnabled.bind(viewport.multiLayerModeProperty());
@@ -214,11 +212,6 @@ class ImageLayer
 	ReadOnlyDoubleProperty layerHeightProperty()
 	{
 		return imageHeightTransformed.getReadOnlyProperty();
-	}
-
-	ReadOnlyBooleanProperty imageIsNullProperty()
-	{
-		return imageIsNull.getReadOnlyProperty();
 	}
 
 	DoubleProperty maxToPreviousWidthProperty()
@@ -273,6 +266,11 @@ class ImageLayer
 		return getImageLayerShape().selectedProperty();
 	}
 
+	boolean isSelected()
+	{
+		return selectedProperty().get();
+	}
+
 	Divider getDivider()
 	{
 		return divider;
@@ -287,6 +285,12 @@ class ImageLayer
 	{
 		clippingShape.getPoints().clear();
 		getImageLayerShape().clearPoints();
+	}
+
+	void clearClip()
+	{
+		clearShapePoints();
+		setNullableClip(null);
 	}
 
 	void setShapePoints(Double... points)

@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
@@ -24,7 +25,9 @@ import javafx.collections.ObservableList;
 import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 /// Facade of a component to display multiple images.
 ///
@@ -33,7 +36,6 @@ import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 public class MultiImageView
 {
 	private final ImageLayers imageLayers;
-	private final SelectionModel selectionModel;
 	private final Viewport viewport;
 	private final BooleanProperty scrollBarsEnabled;
 
@@ -41,8 +43,6 @@ public class MultiImageView
 	{
 		this.viewport = new Viewport();
 		this.imageLayers = new ImageLayers(viewport);
-		this.selectionModel = new SelectionModel(imageLayers);
-		imageLayers.setLayerSelectionHandler(selectionModel::toggleLayerSelection);
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
@@ -63,43 +63,61 @@ public class MultiImageView
 		return imageLayers.getImageTransforms();
 	}
 
+	public void selectAll()
+	{
+		imageLayers.getLayersProperty().selectAll();
+	}
+
+	public void selectNone()
+	{
+		imageLayers.getLayersProperty().selectNone();
+	}
+
+	public void invertSelection()
+	{
+		imageLayers.getLayersProperty().invertSelection();
+	}
+
+	/// Centers the split center in the viewport and
+	/// re-initializes the divider angles.
+	public void resetDividers()
+	{
+		viewport.getSplitCenter().center();
+		imageLayers.getDividerRotationControl().initializeDividerAngles();
+	}
+
 	private ObservableList<ImageLayer> getLayers()
 	{
 		return imageLayers.getLayers();
 	}
 
+	public int getMaximumNumberOfLayers()
+	{
+		return (int) (C / imageLayers.getDividerRotationControl().getDividerMinGap());
+	}
+
 	public void addLayer()
 	{
-		final var singleSelectedLayer = selectionModel.getSingleSelectedLayer();
-		if (singleSelectedLayer != null)
-		{
-			addLayer(getLayers().indexOf(singleSelectedLayer) + 1);
-		}
-		else
-		{
-			addLayer(getLayers().size());
-		}
+		final Optional<ImageLayer> singleSelectedLayer = imageLayers.getSingleSelectedLayer();
+		final var layers = getLayers();
+		addLayer(singleSelectedLayer.isPresent() ?
+			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
 	}
 
 	private void addLayer(int index)
 	{
-		final ImageLayer layer = imageLayers.createImageLayer(index);
-		selectionModel.toggleLayerSelection(layer, false);
+		final var imageLayer = imageLayers.createImageLayer(index);
+		imageLayers.getLayerSelectionHandler().accept(imageLayer, false);
 	}
 
-	public void removeLayer()
+	public void removeSelectedLayers()
 	{
-		if (isSingleSelected())
+		final var layers = getLayers();
+		final boolean anyRemoved = imageLayers.removeLayers(layers.stream()
+			.filter(ImageLayer::isSelected).collect(toUnmodifiableList()));
+		if (anyRemoved && layers.size() == 1)
 		{
-			final var imageLayer = selectionModel.singleSelectedLayerProperty().get();
-			if (imageLayer != null)
-			{
-				imageLayers.removeLayer(imageLayer);
-			}
-			if (getLayers().size() == 1)
-			{
-				selectionModel.toggleLayerSelection(getLayers().get(0), false);
-			}
+			imageLayers.getLayerSelectionHandler().accept(layers.getFirst(), false);
 		}
 	}
 
@@ -108,14 +126,9 @@ public class MultiImageView
 		return imageLayers.numberOfLayersProperty();
 	}
 
-	public ReadOnlyBooleanProperty isSingleSelectedProperty()
+	public ReadOnlyIntegerProperty numberOfSelectedLayersProperty()
 	{
-		return selectionModel.singleLayerSelectedProperty();
-	}
-
-	public boolean isSingleSelected()
-	{
-		return isSingleSelectedProperty().get();
+		return imageLayers.getLayersProperty().numSelectedProperty();
 	}
 
 	/**
@@ -125,14 +138,8 @@ public class MultiImageView
 	 */
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
-		if (isSingleSelected())
-		{
-			final var imageLayer = selectionModel.getSingleSelectedLayer();
-			if (imageLayer != null)
-			{
-				imageLayer.setImageDescriptor(imageDescriptor);
-			}
-		}
+		imageLayers.getSingleSelectedLayer().ifPresent(imageLayer ->
+			imageLayer.setImageDescriptor(imageDescriptor));
 	}
 
 	public BooleanProperty scrollBarsEnabledProperty()

@@ -14,6 +14,7 @@ logger.lifecycle "   -> Using common-filesystem-view internal snapshot (v${fstv_
 
 dependencies {
 	implementation project (':lib-common-semver')
+	implementation project (':lib-selectable-list-fx')
 	
 	//implementation "de.bernd_michaely:common-filesystem-view-base:${fstv_version}"
 	//implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"

@@ -51,6 +51,8 @@ class ToolBarImage
 
 	ToolBarImage(MultiImageView multiImageView)
 	{
+		final var numLayers = multiImageView.numberOfLayersProperty();
+		final var numSelectedLayers = multiImageView.numberOfSelectedLayersProperty();
 		final var buttonLayerAdd = new Button();
 		final Image iconLayerAdd = Icons.LayerAdd.getIconImage();
 		if (iconLayerAdd != null)
@@ -61,7 +63,9 @@ class ToolBarImage
 		{
 			buttonLayerAdd.setText("+");
 		}
-		buttonLayerAdd.setTooltip(new Tooltip("Add a new image view"));
+		buttonLayerAdd.setTooltip(new Tooltip("Add a new layer"));
+		buttonLayerAdd.disableProperty().bind(
+			numLayers.greaterThanOrEqualTo(multiImageView.getMaximumNumberOfLayers()));
 		buttonLayerAdd.setOnAction(_ -> multiImageView.addLayer());
 		final var buttonLayerRemove = new Button();
 		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
@@ -73,10 +77,12 @@ class ToolBarImage
 		{
 			buttonLayerRemove.setText("-");
 		}
-		buttonLayerRemove.setTooltip(new Tooltip("Remove selected image view"));
-		buttonLayerRemove.disableProperty().bind(
-			not(multiImageView.multiLayerModeProperty().and(multiImageView.isSingleSelectedProperty())));
-		buttonLayerRemove.setOnAction(_ -> multiImageView.removeLayer());
+		buttonLayerRemove.setTooltip(new Tooltip("Remove selected layers"));
+		buttonLayerRemove.disableProperty().bind(not(
+			numLayers.greaterThan(1)
+				.and(numSelectedLayers.greaterThan(0)
+					.and(numSelectedLayers.lessThan(numLayers)))));
+		buttonLayerRemove.setOnAction(_ -> multiImageView.removeSelectedLayers());
 		final var buttonShowDividers = new ToggleButton();
 		final Image iconShowDividers = Icons.ShowDividers.getIconImage();
 		if (iconShowDividers != null)

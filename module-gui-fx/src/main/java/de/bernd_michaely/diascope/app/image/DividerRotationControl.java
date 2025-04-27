@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import static de.bernd_michaely.diascope.app.image.Bindings.*;
 import static de.bernd_michaely.diascope.app.image.Divider.RotationType.*;
 import static java.lang.Math.clamp;
+import static java.lang.Math.max;
 import static java.lang.System.Logger.Level.*;
 
 /// Class to handle divider rorations.
@@ -59,12 +60,27 @@ class DividerRotationControl implements Consumer<Divider>
 		return -1;
 	}
 
+	/// Initializes all dividers to aequidistant angles.
+	void initializeDividerAngles()
+	{
+		final int numLayers = layers.size();
+		if (numLayers > 0)
+		{
+			final double da = C / numLayers;
+			double a = 90.0;
+			for (int i = 0; i < numLayers; i++, a += da)
+			{
+				layers.get(i).getDivider().setAngle(a);
+			}
+		}
+	}
+
 	/// Normalizes all divider angles.
 	/// The first divider will be in the range `[0°..360°[`,
 	/// the following in the range `[0°..720°[`.
 	/// All angles are strictly increasing.
 	///
-	private void normalizeDividerAngles()
+	void normalizeDividerAngles()
 	{
 		if (!layers.isEmpty())
 		{
@@ -125,18 +141,19 @@ class DividerRotationControl implements Consumer<Divider>
 						}
 						final double gap = getDividerMinGap();
 						angleMin = anglePrev + gap;
-						angleMax = angleNext - gap;
+						angleMax = max(angleMin, (angleNext - gap));
+						//  max()  ^^^ due to possible rounding errors
 					}
 				}
-				// final double fMin = angleMin - (C - (angleMax - angleMin)) / 2;
-				final double fMin = (angleMax + angleMin - C) / 2;
-				final double fMax = fMin + C;
+				// rangeLow = angleMin - (C - (angleMax - angleMin)) / 2
+				final double rangeLow = (angleMax + angleMin - C) / 2;
+				final double rangeHigh = rangeLow + C;
 				double a = rotationAngle;
-				while (a < fMin)
+				while (a < rangeLow)
 				{
 					a += C;
 				}
-				while (a >= fMax)
+				while (a >= rangeHigh)
 				{
 					a -= C;
 				}
@@ -144,7 +161,7 @@ class DividerRotationControl implements Consumer<Divider>
 			}
 			case SINGLE_ADJUST_OTHERS ->
 			{
-				// TODO
+				// TODO : implement SINGLE_ADJUST_OTHERS RotationType
 				if (isDragStart)
 				{
 					logger.log(TRACE, () ->
