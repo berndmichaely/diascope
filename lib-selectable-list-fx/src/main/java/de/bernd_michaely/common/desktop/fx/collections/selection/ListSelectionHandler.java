@@ -16,8 +16,6 @@
 package de.bernd_michaely.common.desktop.fx.collections.selection;
 
 import java.util.stream.Stream;
-import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.collections.transformation.TransformationList;
@@ -30,157 +28,64 @@ import javafx.collections.transformation.TransformationList;
  * @param <E> the list element type
  * @see SelectableListFactory
  */
-public interface ListSelectionHandler<E> extends Selectable
+public interface ListSelectionHandler<E> extends SelectableProperties
 {
-  /**
-   * Property indicating the number of selected items.
-   *
-   * @return a property indicating the number of selected items
-   */
-  ReadOnlyIntegerProperty numSelectedProperty();
+	/**
+	 * Stream all selected elements.
+	 *
+	 * @return a stream of all selected elements
+	 */
+	Stream<? extends E> streamSelected();
 
-  /**
-   * Returns the number of selected items.
-   *
-   * @return the number of selected items
-   */
-  default int getNumSelected()
-  {
-    return numSelectedProperty().get();
-  }
+	/**
+	 * Stream all unselected elements.
+	 *
+	 * @return a stream of all unselected elements
+	 */
+	Stream<? extends E> streamUnselected();
 
-  /**
-   * Returns a property which evaluates to true, iff there are no selected
-   * items.
-   *
-   * @return true, iff there are no selected items
-   */
-  ReadOnlyBooleanProperty noneSelectedProperty();
+	/**
+	 * Returns the given source list.
+	 *
+	 * @return the given source list
+	 */
+	SelectableList<E> getSourceList();
 
-  /**
-   * Returns true, iff there are no selected items.
-   *
-   * @return true, iff there are no selected items
-   */
-  default boolean isNoneSelected()
-  {
-    return noneSelectedProperty().get();
-  }
+	/**
+	 * Returns the given transformation list.
+	 *
+	 * @return the given transformation list
+	 */
+	TransformationList<E, E> getTransformationList();
 
-  /**
-   * Returns a property which evaluates to true, iff there are no unselected
-   * items.
-   *
-   * @return true, iff there are no unselected items
-   */
-  ReadOnlyBooleanProperty allSelectedProperty();
+	/**
+	 * Returns the head of the transformation list or the source list, if no
+	 * transformations are in use.
+	 *
+	 * @return the head of the transformation list
+	 */
+	ReadOnlyObjectProperty<ReadOnlyListProperty<E>> headListProperty();
 
-  /**
-   * Returns true, iff there are no unselected items.
-   *
-   * @return true, iff there are no unselected items
-   */
-  default boolean isAllSelected()
-  {
-    return allSelectedProperty().get();
-  }
+	default ReadOnlyListProperty<E> getHeadList()
+	{
+		return headListProperty().get();
+	}
 
-  /**
-   * Property indicating the list size;
-   *
-   * @return a property indicating the list size
-   */
-  ReadOnlyIntegerProperty sizeProperty();
+	/**
+	 * Returns the head list item at the given index.
+	 *
+	 * @param index the given index, including any transformations
+	 * @return the head list item at the given index
+	 */
+	E get(int index);
 
-  /**
-   * Returns the value of the size property.
-   *
-   * @return the value of the size property
-   */
-  default int getSize()
-  {
-    return sizeProperty().get();
-  }
-
-  @Override
-  default int size()
-  {
-    return getSize();
-  }
-
-  /**
-   * Property to indicate an empty list.
-   *
-   * @return a property to indicate an empty list
-   */
-  ReadOnlyBooleanProperty emptyProperty();
-
-  /**
-   * Returns the value of the empty property.
-   *
-   * @return the value of the empty property
-   */
-  default boolean isEmpty()
-  {
-    return emptyProperty().get();
-  }
-
-  /**
-   * Stream all selected elements.
-   *
-   * @return a stream of all selected elements
-   */
-  Stream<? extends E> streamSelected();
-
-  /**
-   * Stream all unselected elements.
-   *
-   * @return a stream of all unselected elements
-   */
-  Stream<? extends E> streamUnselected();
-
-  /**
-   * Returns the given source list.
-   *
-   * @return the given source list
-   */
-  SelectableList<E> getSourceList();
-
-  /**
-   * Returns the given transformation list.
-   *
-   * @return the given transformation list
-   */
-  TransformationList<E, E> getTransformationList();
-
-  /**
-   * Returns the head of the transformation list or the source list, if no
-   * transformations are in use.
-   *
-   * @return the head of the transformation list
-   */
-  ReadOnlyObjectProperty<ReadOnlyListProperty<E>> headListProperty();
-
-  default ReadOnlyListProperty<E> getHeadList()
-  {
-    return headListProperty().get();
-  }
-
-  /**
-   * Returns the head list item at the given index.
-   *
-   * @param index the given index, including any transformations
-   * @return the head list item at the given index
-   */
-  E get(int index);
-
-  /**
-   * Returns true, iff a transformation list is set.
-   *
-   * @return true, iff a transformation list is set
-   */
-  default boolean isTransformed()
-  {
-    return getTransformationList() != null;
-  }
+	/**
+	 * Returns true, iff a transformation list is set.
+	 *
+	 * @return true, iff a transformation list is set
+	 */
+	default boolean isTransformed()
+	{
+		return getTransformationList() != null;
+	}
 }

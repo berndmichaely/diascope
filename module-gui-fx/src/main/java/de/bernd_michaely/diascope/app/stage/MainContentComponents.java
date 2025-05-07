@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import java.util.function.Consumer;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.scene.Node;
@@ -153,6 +154,9 @@ class MainContentComponents
 	private static ContextMenu createContextMenu(MainContentProperties properties,
 		FullScreen fullScreen, MultiImageView multiImageView, ToolBarImage toolBarImage)
 	{
+		final BooleanBinding notMultiLayerMode = not(multiImageView.multiLayerModeProperty());
+		final var selectionModel = multiImageView.getLayerSelectionModel();
+		// ---
 		final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
 		menuItemToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
 		final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
@@ -167,25 +171,21 @@ class MainContentComponents
 		// ---
 		final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
 		menuItemDivider.selectedProperty().bindBidirectional(properties.dividersVisibleProperty());
-		menuItemDivider.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
+		menuItemDivider.disableProperty().bind(notMultiLayerMode);
 		final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
 		menuItemScrollbars.selectedProperty().bindBidirectional(properties.scrollBarsVisibleProperty());
 		// ---
-		final var numberLayers = multiImageView.numberOfLayersProperty();
-		final var numSelectedLayers = multiImageView.numberOfSelectedLayersProperty();
 		final var menuItemSelectAll = new MenuItem("Select all layers");
-		menuItemSelectAll.disableProperty().bind(
-			not(multiImageView.multiLayerModeProperty()).or(numberLayers.isEqualTo(numSelectedLayers)));
-		menuItemSelectAll.setOnAction(_ -> multiImageView.selectAll());
+		menuItemSelectAll.disableProperty().bind(notMultiLayerMode.or(selectionModel.allSelectedProperty()));
+		menuItemSelectAll.setOnAction(_ -> selectionModel.selectAll());
 		final var menuItemSelectNone = new MenuItem("Unselect all layers");
-		menuItemSelectNone.disableProperty().bind(
-			not(multiImageView.multiLayerModeProperty()).or(numSelectedLayers.isEqualTo(0)));
-		menuItemSelectNone.setOnAction(_ -> multiImageView.selectNone());
+		menuItemSelectNone.disableProperty().bind(notMultiLayerMode.or(selectionModel.noneSelectedProperty()));
+		menuItemSelectNone.setOnAction(_ -> selectionModel.selectNone());
 		final var menuItemToggleLayerSelection = new MenuItem("Toggle layers selection");
-		menuItemToggleLayerSelection.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
-		menuItemToggleLayerSelection.setOnAction(_ -> multiImageView.invertSelection());
+		menuItemToggleLayerSelection.disableProperty().bind(notMultiLayerMode);
+		menuItemToggleLayerSelection.setOnAction(_ -> selectionModel.invertSelection());
 		final var menuItemResetAngles = new MenuItem("Reset dividers");
-		menuItemResetAngles.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
+		menuItemResetAngles.disableProperty().bind(notMultiLayerMode);
 		menuItemResetAngles.setOnAction(_ -> multiImageView.resetDividers());
 		// ---
 		final var menuItemFullScreen = new MenuItem();

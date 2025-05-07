@@ -19,7 +19,6 @@ package de.bernd_michaely.diascope.app.image;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.layout.Region;
@@ -63,19 +62,9 @@ public class MultiImageView
 		return imageLayers.getImageTransforms();
 	}
 
-	public void selectAll()
+	public LayerSelectionModel getLayerSelectionModel()
 	{
-		imageLayers.getLayersProperty().selectAll();
-	}
-
-	public void selectNone()
-	{
-		imageLayers.getLayersProperty().selectNone();
-	}
-
-	public void invertSelection()
-	{
-		imageLayers.getLayersProperty().invertSelection();
+		return imageLayers.getLayerSelectionModel();
 	}
 
 	/// Centers the split center in the viewport and
@@ -91,6 +80,11 @@ public class MultiImageView
 		return imageLayers.getLayers();
 	}
 
+	/// Returns the maximum possible number of layers.
+	/// This number depends on the minimum divider angle gap.
+	///
+	/// @return the maximum possible number of layers
+	///
 	public int getMaximumNumberOfLayers()
 	{
 		return (int) (C / imageLayers.getDividerRotationControl().getDividerMinGap());
@@ -119,16 +113,6 @@ public class MultiImageView
 		{
 			imageLayers.getLayerSelectionHandler().accept(layers.getFirst(), false);
 		}
-	}
-
-	public ReadOnlyIntegerProperty numberOfLayersProperty()
-	{
-		return imageLayers.numberOfLayersProperty();
-	}
-
-	public ReadOnlyIntegerProperty numberOfSelectedLayersProperty()
-	{
-		return imageLayers.getLayersProperty().numSelectedProperty();
 	}
 
 	/**

@@ -16,16 +16,12 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.common.desktop.fx.collections.selection.ListSelectionHandler;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
-import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ChangeListener;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
@@ -42,9 +38,7 @@ class ImageLayers
 	private static final Double ZERO = 0.0;
 	private final Viewport viewport;
 	private final SelectableList<ImageLayer> layers;
-	private final ListSelectionHandler<ImageLayer> layersProperty;
-	private final ReadOnlyBooleanWrapper singleLayerSelected;
-	private final ReadOnlyObjectWrapper<Optional<ImageLayer>> singleSelectedLayer;
+	private final LayerSelectionModel layerSelectionModel;
 	private final DividerRotationControl dividerRotationControl;
 	private final ImageTransforms imageTransforms;
 	private final ChangeListener<Number> listenerClippingPoints;
@@ -54,27 +48,9 @@ class ImageLayers
 	{
 		this.viewport = viewport;
 		this.layers = SelectableListFactory.selectableList();
-		this.layersProperty = SelectableListFactory.listSelectionHandler(layers);
-		this.singleSelectedLayer = new ReadOnlyObjectWrapper<>(Optional.empty());
-		this.singleLayerSelected = new ReadOnlyBooleanWrapper();
-		this.singleLayerSelected.bind(layersProperty.numSelectedProperty().isEqualTo(1));
+		this.layerSelectionModel = new LayerSelectionModel(layers);
 		this.dividerRotationControl = new DividerRotationControl(layers);
 		this.imageTransforms = new ImageTransforms();
-		this.layers.addSelectionListener(change ->
-		{
-			if (!change.isEmptyRange())
-			{
-				for (int i = change.getFrom(); i <= change.getTo(); i++)
-				{
-					if (i >= 0 && i < layers.size())
-					{
-						layers.get(i).selectedProperty().set(layers.isSelected(i));
-					}
-				}
-				singleSelectedLayer.set(singleLayerSelected.get() ?
-					layers.stream().filter(ImageLayer::isSelected).findAny() : Optional.empty());
-			}
-		});
 		this.layerSelectionHandler = (imageLayer, multiSelect) ->
 		{
 			for (int i = 0; i < layers.size(); i++)
@@ -147,14 +123,14 @@ class ImageLayers
 		return layerSelectionHandler;
 	}
 
-	ListSelectionHandler<ImageLayer> getLayersProperty()
+	LayerSelectionModel getLayerSelectionModel()
 	{
-		return layersProperty;
+		return layerSelectionModel;
 	}
 
 	ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty()
 	{
-		return singleSelectedLayer.getReadOnlyProperty();
+		return layerSelectionModel.singleSelectedLayerProperty();
 	}
 
 	Optional<ImageLayer> getSingleSelectedLayer()
@@ -170,11 +146,6 @@ class ImageLayers
 	DividerRotationControl getDividerRotationControl()
 	{
 		return dividerRotationControl;
-	}
-
-	ReadOnlyIntegerProperty numberOfLayersProperty()
-	{
-		return layersProperty.sizeProperty();
 	}
 
 	ImageLayer createImageLayer(int index)

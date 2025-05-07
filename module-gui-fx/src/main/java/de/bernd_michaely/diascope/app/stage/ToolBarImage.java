@@ -51,8 +51,9 @@ class ToolBarImage
 
 	ToolBarImage(MultiImageView multiImageView)
 	{
-		final var numLayers = multiImageView.numberOfLayersProperty();
-		final var numSelectedLayers = multiImageView.numberOfSelectedLayersProperty();
+		final var layerSelectionModel = multiImageView.getLayerSelectionModel();
+		final var numLayers = layerSelectionModel.sizeProperty();
+		final var numSelectedLayers = layerSelectionModel.numSelectedProperty();
 		final var buttonLayerAdd = new Button();
 		final Image iconLayerAdd = Icons.LayerAdd.getIconImage();
 		if (iconLayerAdd != null)
@@ -108,7 +109,8 @@ class ToolBarImage
 			buttonZoomFitWindow.setText("Fit");
 		}
 		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
-		buttonZoomFitWindow.setOnAction(_ -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIT));
+		buttonZoomFitWindow.setOnAction(_ ->
+			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIT));
 		onActionPropertyFitWindow = buttonZoomFitWindow.onActionProperty();
 		final var buttonZoomFillWindow = new Button();
 		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
@@ -121,7 +123,8 @@ class ToolBarImage
 			buttonZoomFillWindow.setText("Fill");
 		}
 		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
-		buttonZoomFillWindow.setOnAction(_ -> multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FILL));
+		buttonZoomFillWindow.setOnAction(_ ->
+			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FILL));
 		onActionPropertyFillWindow = buttonZoomFillWindow.onActionProperty();
 		final var buttonZoom100 = new Button();
 		final Image iconZoom100 = Icons.Zoom100.getIconImage();
@@ -169,7 +172,8 @@ class ToolBarImage
 		sliderRotation.setTooltip(new Tooltip("Set image rotation"));
 		final var labelRotation = new Label("0°");
 		labelRotation.setTooltip(new Tooltip("Current image rotation"));
-		labelRotation.textProperty().bind(multiImageView.getImageTransforms().rotateProperty().asString("%.0f° "));
+		labelRotation.textProperty().bind(
+			multiImageView.getImageTransforms().rotateProperty().asString("%.0f° "));
 		final var labelRotationWidth = new Label(" 360° ");
 		labelRotationWidth.setVisible(false);
 		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);

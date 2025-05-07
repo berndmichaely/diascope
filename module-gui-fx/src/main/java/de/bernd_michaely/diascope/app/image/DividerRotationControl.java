@@ -98,6 +98,30 @@ class DividerRotationControl implements Consumer<Divider>
 		}
 	}
 
+	/// Normalizes the given angle to be within the range
+	/// `[rangeLow..(rangeLow+360°)[`.
+	///
+	/// *Implementation note:* assuming angle is already close to range.
+	///
+	/// @param angle    the given angle
+	/// @param rangeLow the lower range bound
+	/// @return the normalized angle
+	///
+	static double normalizeAngleToRange(double angle, double rangeLow)
+	{
+		final double rangeHigh = rangeLow + C;
+		double a = angle;
+		while (a < rangeLow)
+		{
+			a += C;
+		}
+		while (a >= rangeHigh)
+		{
+			a -= C;
+		}
+		return a;
+	}
+
 	@Override
 	public void accept(Divider divider)
 	{
@@ -147,17 +171,8 @@ class DividerRotationControl implements Consumer<Divider>
 				}
 				// rangeLow = angleMin - (C - (angleMax - angleMin)) / 2
 				final double rangeLow = (angleMax + angleMin - C) / 2;
-				final double rangeHigh = rangeLow + C;
-				double a = rotationAngle;
-				while (a < rangeLow)
-				{
-					a += C;
-				}
-				while (a >= rangeHigh)
-				{
-					a -= C;
-				}
-				divider.setAngle(clamp(a, angleMin, angleMax));
+				divider.setAngle(clamp(
+					normalizeAngleToRange(rotationAngle, rangeLow), angleMin, angleMax));
 			}
 			case SINGLE_ADJUST_OTHERS ->
 			{
