@@ -119,6 +119,8 @@ allprojects {
 	
 	ext.versionCheckerFramework = '3.49.2'
 	ext.versionCheckerFrameworkPlugin = '0.6.53'
+	//ext.versionCheckerFramework = '3.49.3'
+	//ext.versionCheckerFrameworkPlugin = '0.6.54'
 	
 	repositories {
 		mavenCentral()
@@ -129,7 +131,7 @@ allprojects {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
 			//version = "21.0.6"
-			version = "24"
+			version = "24.0.1"
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}

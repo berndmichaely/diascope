@@ -251,8 +251,6 @@ class DividerDragCycle
 					}
 				}
 			}
-			case RELEASED -> throw new IllegalStateException("RotationType »%s« is handled in %s"
-					.formatted(rotationType, DividerRotationControl.class.getName()));
 			default -> throw new AssertionError("Invalid RotationType »%s«".formatted(rotationType));
 		}
 	}

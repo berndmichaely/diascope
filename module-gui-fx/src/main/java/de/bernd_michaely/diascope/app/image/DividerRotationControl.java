@@ -23,7 +23,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.*;
-import static de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType.*;
 
 /// Class to handle divider rorations.
 ///
@@ -39,7 +38,7 @@ class DividerRotationControl implements Consumer<Divider>
 
 	enum RotationType
 	{
-		NEUTRAL, WHEEL, SINGLE, FOLD, RELEASED
+		NEUTRAL, WHEEL, SINGLE, FOLD
 	}
 
 	DividerRotationControl(List<ImageLayer> layers)
@@ -100,7 +99,6 @@ class DividerRotationControl implements Consumer<Divider>
 	public void accept(Divider divider)
 	{
 		final var mouseDragState = divider.getMouseDragState();
-		final var rotationType = mouseDragState.getRotationType();
 		if (mouseDragState.isDragStart())
 		{
 			this.divider = divider;
@@ -110,24 +108,21 @@ class DividerRotationControl implements Consumer<Divider>
 		{
 			throw new IllegalStateException("Divider changed during drag cycle.");
 		}
-		switch (rotationType)
+		if (mouseDragState.isReleased())
 		{
-			case RELEASED ->
+			this.dragCycle = null;
+			this.divider = null;
+			normalizeDividerAngles();
+		}
+		else
+		{
+			if (dragCycle != null)
 			{
-				this.dragCycle = null;
-				this.divider = null;
-				normalizeDividerAngles();
+				dragCycle.drag(mouseDragState.getRotationType());
 			}
-			default ->
+			else
 			{
-				if (dragCycle != null)
-				{
-					dragCycle.drag(rotationType);
-				}
-				else
-				{
-					throw new IllegalStateException("DragCycle is null during drag operation.");
-				}
+				throw new IllegalStateException("DragCycle is null during drag operation.");
 			}
 		}
 	}

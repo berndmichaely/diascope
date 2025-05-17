@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType;
 import java.util.List;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
@@ -24,11 +23,9 @@ import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Cursor;
-import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
 import static de.bernd_michaely.diascope.app.image.Bindings.tan;
@@ -36,10 +33,7 @@ import static de.bernd_michaely.diascope.app.image.Border.BOTTOM;
 import static de.bernd_michaely.diascope.app.image.Border.LEFT;
 import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
 import static de.bernd_michaely.diascope.app.image.Border.TOP;
-import static de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType.*;
-import static java.lang.Math.atan2;
 import static java.lang.Math.ceil;
-import static java.lang.Math.toDegrees;
 import static javafx.beans.binding.Bindings.when;
 
 /**
@@ -55,81 +49,7 @@ class Divider
 	private final ReadOnlyObjectWrapper<Border> border;
 	private final ReadOnlyDoubleWrapper borderIntersectionX, borderIntersectionY;
 	private final Line lineShape, lineEvent;
-
-	static class MouseDragState
-	{
-		private @MonotonicNonNull Runnable onRotate;
-		private boolean dragStart = true;
-		private double rotationAngle;
-		private RotationType rotationType = RELEASED;
-
-		private MouseDragState()
-		{
-		}
-
-		private void fireEvent()
-		{
-			if (onRotate != null)
-			{
-				onRotate.run();
-			}
-			else
-			{
-				throw new IllegalStateException("Divider callback not initialized");
-			}
-		}
-
-		private void handleMouseDragged(double rotationAngle, RotationType rotationType)
-		{
-			this.rotationAngle = rotationAngle;
-//			if (dragStart)
-			{
-				this.rotationType = rotationType;
-			}
-			try
-			{
-				fireEvent();
-			}
-			finally
-			{
-				if (dragStart)
-				{
-					dragStart = false;
-				}
-			}
-		}
-
-		private void handleMouseReleased()
-		{
-			try
-			{
-				rotationType = RELEASED;
-				rotationAngle = 0.0;
-				fireEvent();
-			}
-			finally
-			{
-				dragStart = true;
-			}
-		}
-
-		double getRotationAngle()
-		{
-			return rotationAngle;
-		}
-
-		RotationType getRotationType()
-		{
-			return rotationType;
-		}
-
-		boolean isDragStart()
-		{
-			return dragStart;
-		}
-	}
-
-	private final MouseDragState mouseDragState = new MouseDragState();
+	private final MouseDragState mouseDragState;
 
 	Divider(CornerAngles cornerAngles,
 		ReadOnlyDoubleProperty viewportWidth,
@@ -146,6 +66,7 @@ class Divider
 		this.angleNorm = new ReadOnlyDoubleWrapper();
 		angleNorm.bind(normalizeAngle(angle));
 		this.angleNormalized = angleNorm.getReadOnlyProperty();
+		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
 		border.bind(
 			when(angleNormalized.lessThanOrEqualTo(cornerAngles.get(RIGHT)))
 				.then(RIGHT).otherwise(
@@ -196,47 +117,13 @@ class Divider
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
 		lineEvent.setCursor(Cursor.MOVE);
-		lineEvent.setOnMouseDragged(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				final double dx = event.getX() - splitCenterX.get();
-				final double dy = event.getY() - splitCenterY.get();
-				final boolean shiftDown = event.isShiftDown();
-				final boolean controlDown = event.isControlDown();
-				final boolean altDown = event.isAltDown();
-				var rotationType = NEUTRAL;
-				if (!altDown)
-				{
-					if (!shiftDown && !controlDown)
-					{
-						rotationType = WHEEL;
-					}
-					else if (!shiftDown && controlDown)
-					{
-						rotationType = SINGLE;
-					}
-					else if (shiftDown && !controlDown)
-					{
-						rotationType = FOLD;
-					}
-				}
-				event.consume();
-				final double rotationAngle = toDegrees(atan2(dy, dx));
-				mouseDragState.handleMouseDragged(rotationAngle, rotationType);
-			}
-		});
-		lineEvent.setOnMouseReleased(_ -> mouseDragState.handleMouseReleased());
+		lineEvent.setOnMouseDragged(mouseDragState::handleMouseDragged);
+		lineEvent.setOnMouseReleased(mouseDragState::handleMouseReleased);
 	}
 
 	MouseDragState getMouseDragState()
 	{
 		return mouseDragState;
-	}
-
-	void setOnRotate(Runnable onRotate)
-	{
-		mouseDragState.onRotate = onRotate;
 	}
 
 	DoubleProperty angleProperty()

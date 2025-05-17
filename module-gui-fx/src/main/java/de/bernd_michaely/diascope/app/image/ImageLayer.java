@@ -155,7 +155,7 @@ class ImageLayer
 			when(viewport.scrollBarEnabledVerticalProperty())
 				.then(negate(viewport.scrollPosYProperty()))
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
-		divider.setOnRotate(() -> onDividerRotate.accept(divider));
+		divider.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(divider));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
 	}
