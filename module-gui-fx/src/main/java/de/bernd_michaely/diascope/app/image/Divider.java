@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType;
 import java.util.List;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
@@ -35,7 +36,7 @@ import static de.bernd_michaely.diascope.app.image.Border.BOTTOM;
 import static de.bernd_michaely.diascope.app.image.Border.LEFT;
 import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
 import static de.bernd_michaely.diascope.app.image.Border.TOP;
-import static de.bernd_michaely.diascope.app.image.Divider.RotationType.*;
+import static de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType.*;
 import static java.lang.Math.atan2;
 import static java.lang.Math.ceil;
 import static java.lang.Math.toDegrees;
@@ -54,11 +55,6 @@ class Divider
 	private final ReadOnlyObjectWrapper<Border> border;
 	private final ReadOnlyDoubleWrapper borderIntersectionX, borderIntersectionY;
 	private final Line lineShape, lineEvent;
-
-	enum RotationType
-	{
-		ALL_SYNCHRONOUS, SINGLE_ONLY, SINGLE_ADJUST_OTHERS, RELEASED
-	}
 
 	static class MouseDragState
 	{
@@ -86,7 +82,7 @@ class Divider
 		private void handleMouseDragged(double rotationAngle, RotationType rotationType)
 		{
 			this.rotationAngle = rotationAngle;
-			if (dragStart)
+//			if (dragStart)
 			{
 				this.rotationType = rotationType;
 			}
@@ -105,10 +101,16 @@ class Divider
 
 		private void handleMouseReleased()
 		{
-			rotationType = RELEASED;
-			dragStart = true;
-			rotationAngle = 0.0;
-			fireEvent();
+			try
+			{
+				rotationType = RELEASED;
+				rotationAngle = 0.0;
+				fireEvent();
+			}
+			finally
+			{
+				dragStart = true;
+			}
 		}
 
 		double getRotationAngle()
@@ -203,27 +205,25 @@ class Divider
 				final boolean shiftDown = event.isShiftDown();
 				final boolean controlDown = event.isControlDown();
 				final boolean altDown = event.isAltDown();
-				RotationType rotationType = null;
+				var rotationType = NEUTRAL;
 				if (!altDown)
 				{
-					if (controlDown)
+					if (!shiftDown && !controlDown)
 					{
-						rotationType = shiftDown ? SINGLE_ADJUST_OTHERS : SINGLE_ONLY;
+						rotationType = WHEEL;
 					}
-					else
+					else if (!shiftDown && controlDown)
 					{
-						if (!shiftDown)
-						{
-							rotationType = ALL_SYNCHRONOUS;
-						}
+						rotationType = SINGLE;
+					}
+					else if (shiftDown && !controlDown)
+					{
+						rotationType = FOLD;
 					}
 				}
 				event.consume();
-				if (rotationType != null)
-				{
-					final double rotationAngle = toDegrees(atan2(dy, dx));
-					mouseDragState.handleMouseDragged(rotationAngle, rotationType);
-				}
+				final double rotationAngle = toDegrees(atan2(dy, dx));
+				mouseDragState.handleMouseDragged(rotationAngle, rotationType);
 			}
 		});
 		lineEvent.setOnMouseReleased(_ -> mouseDragState.handleMouseReleased());

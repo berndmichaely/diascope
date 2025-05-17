@@ -71,6 +71,7 @@ class Bindings
 		}
 	}
 
+	/// The number of degrees of a full circle.
 	static final double C = 360.0;
 
 	/// Returns the normalized angle.

@@ -16,15 +16,14 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.lang.System.Logger;
 import java.util.List;
 import java.util.function.Consumer;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.*;
-import static de.bernd_michaely.diascope.app.image.Divider.RotationType.*;
-import static java.lang.Math.clamp;
-import static java.lang.Math.max;
-import static java.lang.System.Logger.Level.*;
+import static de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType.*;
 
 /// Class to handle divider rorations.
 ///
@@ -32,32 +31,31 @@ import static java.lang.System.Logger.Level.*;
 ///
 class DividerRotationControl implements Consumer<Divider>
 {
-	private static final Logger logger = System.getLogger(DividerRotationControl.class.getName());
 	private static final double DEFAULT_DIVIDER_MIN_GAP = 10.0;
+	private final DoubleProperty dividerMinGapProperty;
 	private final List<ImageLayer> layers;
-	private double angleMin;
-	private double angleMax;
+	private @Nullable Divider divider;
+	private @Nullable DividerDragCycle dragCycle;
+
+	enum RotationType
+	{
+		NEUTRAL, WHEEL, SINGLE, FOLD, RELEASED
+	}
 
 	DividerRotationControl(List<ImageLayer> layers)
 	{
 		this.layers = layers;
+		this.dividerMinGapProperty = new SimpleDoubleProperty(DEFAULT_DIVIDER_MIN_GAP);
+	}
+
+	DoubleProperty dividerMinGapProperty()
+	{
+		return dividerMinGapProperty;
 	}
 
 	double getDividerMinGap()
 	{
-		return DEFAULT_DIVIDER_MIN_GAP;
-	}
-
-	private int getDividerIndex(Divider divider)
-	{
-		for (int i = 0; i < layers.size(); i++)
-		{
-			if (layers.get(i).getDivider() == divider)
-			{
-				return i;
-			}
-		}
-		return -1;
+		return dividerMinGapProperty().get();
 	}
 
 	/// Initializes all dividers to aequidistant angles.
@@ -98,96 +96,39 @@ class DividerRotationControl implements Consumer<Divider>
 		}
 	}
 
-	/// Normalizes the given angle to be within the range
-	/// `[rangeLow..(rangeLow+360°)[`.
-	///
-	/// *Implementation note:* assuming angle is already close to range.
-	///
-	/// @param angle    the given angle
-	/// @param rangeLow the lower range bound
-	/// @return the normalized angle
-	///
-	static double normalizeAngleToRange(double angle, double rangeLow)
-	{
-		final double rangeHigh = rangeLow + C;
-		double a = angle;
-		while (a < rangeLow)
-		{
-			a += C;
-		}
-		while (a >= rangeHigh)
-		{
-			a -= C;
-		}
-		return a;
-	}
-
 	@Override
 	public void accept(Divider divider)
 	{
 		final var mouseDragState = divider.getMouseDragState();
 		final var rotationType = mouseDragState.getRotationType();
-		final boolean isDragStart = mouseDragState.isDragStart();
-		final double angle = divider.getAngle();
-		final double rotationAngle = mouseDragState.getRotationAngle();
+		if (mouseDragState.isDragStart())
+		{
+			this.divider = divider;
+			this.dragCycle = new DividerDragCycle(layers, divider, getDividerMinGap());
+		}
+		else if (this.divider != divider)
+		{
+			throw new IllegalStateException("Divider changed during drag cycle.");
+		}
 		switch (rotationType)
 		{
-			case ALL_SYNCHRONOUS ->
-			{
-				final double da = rotationAngle - angle;
-				for (var layer : layers)
-				{
-					final var d = layer.getDivider();
-					d.setAngle(d.getAngle() + da);
-				}
-			}
-			case SINGLE_ONLY ->
-			{
-				if (isDragStart)
-				{
-					// initialize angleMin, angleMax:
-					final int n = layers.size();
-					final int index = getDividerIndex(divider);
-					if (n > 1 && index >= 0)
-					{
-						final int indexLast = n - 1;
-						final int indexPrev = index > 0 ? index - 1 : indexLast;
-						final int indexNext = index < indexLast ? index + 1 : 0;
-						double anglePrev = layers.get(indexPrev).getDivider().getAngle();
-						while (anglePrev > angle)
-						{
-							anglePrev -= C;
-						}
-						double angleNext = layers.get(indexNext).getDivider().getAngle();
-						while (angleNext < angle)
-						{
-							angleNext += C;
-						}
-						final double gap = getDividerMinGap();
-						angleMin = anglePrev + gap;
-						angleMax = max(angleMin, (angleNext - gap));
-						//  max()  ^^^ due to possible rounding errors
-					}
-				}
-				// rangeLow = angleMin - (C - (angleMax - angleMin)) / 2
-				final double rangeLow = (angleMax + angleMin - C) / 2;
-				divider.setAngle(clamp(
-					normalizeAngleToRange(rotationAngle, rangeLow), angleMin, angleMax));
-			}
-			case SINGLE_ADJUST_OTHERS ->
-			{
-				// TODO : implement SINGLE_ADJUST_OTHERS RotationType
-				if (isDragStart)
-				{
-					logger.log(TRACE, () ->
-						getClass().getName() + ": RotationType »" + rotationType + "« not implemented yet…");
-				}
-			}
 			case RELEASED ->
 			{
+				this.dragCycle = null;
+				this.divider = null;
 				normalizeDividerAngles();
 			}
-			default -> throw new AssertionError("Invalid Divider.RotationType: " + rotationType);
+			default ->
+			{
+				if (dragCycle != null)
+				{
+					dragCycle.drag(rotationType);
+				}
+				else
+				{
+					throw new IllegalStateException("DragCycle is null during drag operation.");
+				}
+			}
 		}
 	}
 }

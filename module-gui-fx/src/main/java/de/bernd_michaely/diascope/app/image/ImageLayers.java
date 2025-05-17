@@ -27,6 +27,7 @@ import javafx.beans.value.ChangeListener;
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
 import static de.bernd_michaely.diascope.app.image.Border.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.util.Collections.unmodifiableList;
 import static javafx.beans.binding.Bindings.max;
 
 /// Class to handle the image layer viewport layer.
@@ -49,7 +50,7 @@ class ImageLayers
 		this.viewport = viewport;
 		this.layers = SelectableListFactory.selectableList();
 		this.layerSelectionModel = new LayerSelectionModel(layers);
-		this.dividerRotationControl = new DividerRotationControl(layers);
+		this.dividerRotationControl = new DividerRotationControl(unmodifiableList(layers));
 		this.imageTransforms = new ImageTransforms();
 		this.layerSelectionHandler = (imageLayer, multiSelect) ->
 		{

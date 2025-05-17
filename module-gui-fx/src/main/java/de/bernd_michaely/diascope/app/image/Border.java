@@ -63,7 +63,7 @@ enum Border
 		final int i1 = border1.ordinal();
 		final int i2 = border2.ordinal();
 		final int n = values().length;
-		final int c = i1 <= i2 ? i2 - i1 : n + i2 - i1;
-		return (c == 0 && d >= 180.0) ? 4 : c;
+		final int num = i1 <= i2 ? i2 - i1 : n + i2 - i1;
+		return (num == 0 && d >= 180.0) ? n : num;
 	}
 }
