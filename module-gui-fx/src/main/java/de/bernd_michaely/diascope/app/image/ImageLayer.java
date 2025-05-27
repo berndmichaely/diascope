@@ -79,7 +79,7 @@ class ImageLayer
 	private final Translate translateScroll;
 	private String imageTitle = "";
 
-	private ImageLayer(Viewport viewport, Consumer<Divider> onDividerRotate)
+	private ImageLayer(Viewport viewport)
 	{
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
@@ -155,7 +155,6 @@ class ImageLayer
 			when(viewport.scrollBarEnabledVerticalProperty())
 				.then(negate(viewport.scrollPosYProperty()))
 				.otherwise(viewport.heightProperty().subtract(imageHeightTransformed).divide(2.0)));
-		divider.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(divider));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, rotate, translateCenter, mirror);
 	}
@@ -164,8 +163,10 @@ class ImageLayer
 		BiConsumer<ImageLayer, Boolean> layerSelectionHandler,
 		Consumer<Divider> onDividerRotate)
 	{
-		final var imageLayer = new ImageLayer(viewport, onDividerRotate);
+		final var imageLayer = new ImageLayer(viewport);
 		// post init:
+		final Divider d = imageLayer.getDivider();
+		d.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(d));
 		imageLayer.getImageLayerShape().setLayerSelectionHandler(new Consumer<Boolean>()
 		{
 			private final WeakReference<ImageLayer> wImageLayer = new WeakReference<>(imageLayer);

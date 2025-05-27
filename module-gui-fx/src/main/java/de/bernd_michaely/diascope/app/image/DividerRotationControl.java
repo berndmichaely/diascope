@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.lang.System.Logger;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.DoubleProperty;
@@ -23,6 +24,8 @@ import javafx.beans.property.SimpleDoubleProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.*;
+import static java.lang.Math.max;
+import static java.lang.System.Logger.Level.*;
 
 /// Class to handle divider rorations.
 ///
@@ -30,11 +33,13 @@ import static de.bernd_michaely.diascope.app.image.Bindings.*;
 ///
 class DividerRotationControl implements Consumer<Divider>
 {
+	private static final Logger logger = System.getLogger(DividerRotationControl.class.getName());
 	private static final double DEFAULT_DIVIDER_MIN_GAP = 10.0;
+	private static final double C2 = 2 * C;
 	private final DoubleProperty dividerMinGapProperty;
 	private final List<ImageLayer> layers;
 	private @Nullable Divider divider;
-	private @Nullable DividerDragCycle dragCycle;
+	private @Nullable Runnable dividerDragCycle;
 
 	enum RotationType
 	{
@@ -74,24 +79,53 @@ class DividerRotationControl implements Consumer<Divider>
 
 	/// Normalizes all divider angles.
 	/// The first divider will be in the range `[0°..360°[`,
-	/// the following in the range `[0°..720°[`.
+	/// the following in the range `]0°..720°[`.
 	/// All angles are strictly increasing.
 	///
 	void normalizeDividerAngles()
 	{
 		if (!layers.isEmpty())
 		{
-			final var first = layers.getFirst();
-			final double angle = first.getDivider().getAngle();
+			final double minGap = getDividerMinGap();
+			final double angle = layers.getFirst().getDivider().getAngle();
 			final double da = normalizeAngle(angle) - angle;
-			if (da != 0.0)
+			double anglePrev = 0.0;
+			for (int i = 0; i < layers.size(); i++)
 			{
-				for (var layer : layers)
+				final var d = layers.get(i).getDivider();
+				double an = d.getAngle() + da;
+				final double aMin = anglePrev + minGap;
+				if (i > 0)
 				{
-					final var divider = layer.getDivider();
-					divider.setAngle(divider.getAngle() + da);
+					if (an < aMin)
+					{
+						final int index = i;
+						final double oldValue = an;
+						an = aMin;
+						final double newValue = an;
+						logger.log(WARNING, () -> "Correcting angle #%d from %f → %f"
+							.formatted(index, oldValue, newValue));
+					}
+					if (an >= anglePrev + C)
+					{
+						final int index = i;
+						final double oldValue = an;
+						an = max(aMin, an - C);
+						final double newValue = an;
+						logger.log(WARNING, () -> "Correcting angle #%d from %f ↓ %f"
+							.formatted(index, oldValue, newValue));
+					}
 				}
+				d.setAngle(an);
+				anglePrev = an;
 			}
+			if (anglePrev >= C2)
+			{
+				final double a = anglePrev;
+				logger.log(WARNING, () -> "Last divider angle is %f".formatted(a));
+			}
+			logger.log(TRACE, () -> "normalized divider angles → %s".formatted(
+				layers.stream().map(ImageLayer::getDivider).map(Divider::getAngle).toList()));
 		}
 	}
 
@@ -99,30 +133,29 @@ class DividerRotationControl implements Consumer<Divider>
 	public void accept(Divider divider)
 	{
 		final var mouseDragState = divider.getMouseDragState();
+		final boolean dividerChanged = this.divider != null && this.divider != divider;
+		if (dividerChanged)
+		{
+			logger.log(WARNING, () -> "Divider changed during mouse drag cycle.");
+		}
 		if (mouseDragState.isDragStart())
 		{
+			logger.log(TRACE, () -> ">>> start drag cycle");
 			this.divider = divider;
-			this.dragCycle = new DividerDragCycle(layers, divider, getDividerMinGap());
+			this.dividerDragCycle = new DividerDragCycle(layers, divider, getDividerMinGap());
 		}
-		else if (this.divider != divider)
+		if (mouseDragState.isDragRelease() || dividerChanged)
 		{
-			throw new IllegalStateException("Divider changed during drag cycle.");
-		}
-		if (mouseDragState.isReleased())
-		{
-			this.dragCycle = null;
+			logger.log(TRACE, () -> "<<< release drag cycle");
+			this.dividerDragCycle = null;
 			this.divider = null;
 			normalizeDividerAngles();
 		}
 		else
 		{
-			if (dragCycle != null)
+			if (dividerDragCycle != null)
 			{
-				dragCycle.drag(mouseDragState.getRotationType());
-			}
-			else
-			{
-				throw new IllegalStateException("DragCycle is null during drag operation.");
+				dividerDragCycle.run();
 			}
 		}
 	}

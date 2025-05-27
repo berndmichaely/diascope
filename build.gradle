@@ -13,10 +13,10 @@ plugins {
 //apply plugin: 'extra-java-module-info'
 
 wrapper {
-	gradleVersion '8.10.2'
+	gradleVersion = '8.14.1'
 }
 
-final def javaLangVersion = JavaLanguageVersion.of(23)
+final def javaLangVersion = JavaLanguageVersion.of(24)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
 
@@ -38,7 +38,7 @@ final String propVersion = 'diascope.version'
 final String versionBase = project.hasProperty(propVersion) ? project.getProperty(propVersion) : '0'
 
 final String propPreRelease = 'diascope.pre-release'
-final String versionPreRelease  = project.hasProperty(propPreRelease) ?
+final String versionPreRelease = project.hasProperty(propPreRelease) ?
 	"${versionBase}-${project.getProperty(propPreRelease)}" : versionBase
 
 // global (user) properties (build identifier supersedes reading subversion revision):
@@ -191,8 +191,8 @@ dependencies {
 }
 
 task writeSemVer {
-	description "Write application semantic version to resource file »${fileSemVer}«"
-	group processResources.group
+	description = "Write application semantic version to resource file »${fileSemVer}«"
+	group = processResources.group
 	doFirst {
 		boolean do_write
 		if (isReadingSvnRevision) {
@@ -210,8 +210,8 @@ def String toShieldParam(String text) {
 }
 
 task getVersionShield {
-	description "Generate a version shield by accessing shields.io and write it to file »${fileVersionShield}«"
-	group javadoc.group
+	description = "Generate a version shield by accessing shields.io and write it to file »${fileVersionShield}«"
+	group = javadoc.group
 	doLast {
 		final String label = toShieldParam(project.name)
 		//final String message = toShieldParam(project.version - ~'\\+.*$' - ~'-snapshot$')
@@ -232,7 +232,6 @@ jar {
 		//	modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls', 'javafx.swing', 'javafx.web' ]
 		modules = [ 'javafx.base', 'javafx.graphics', 'javafx.controls' ]
 	}
-
 	manifest {
 		attributes ( 'Main-Class' : "${application.mainModule.get()}/${application.mainClass.get()}" )
 	}

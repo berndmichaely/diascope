@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType;
 import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -35,7 +36,7 @@ class MouseDragState
 	private final ReadOnlyDoubleProperty originX, originY;
 	private @MonotonicNonNull Runnable onRotate;
 	private boolean dragStart = true;
-	private boolean released = false;
+	private boolean dragRelease = false;
 	private double rotationAngle;
 	private RotationType rotationType = NEUTRAL;
 
@@ -43,6 +44,12 @@ class MouseDragState
 	{
 		this.originX = originX;
 		this.originY = originY;
+	}
+
+	void setListenersFor(Node node)
+	{
+		node.setOnMouseDragged(this::handleMouseDragged);
+		node.setOnMouseReleased(this::handleMouseReleased);
 	}
 
 	private void fireListenerEvent()
@@ -57,7 +64,7 @@ class MouseDragState
 		}
 	}
 
-	private void handleMouseEvent(MouseEvent event)
+	private boolean handleMouseEvent(MouseEvent event)
 	{
 		if (event.getButton().equals(MouseButton.PRIMARY))
 		{
@@ -84,7 +91,14 @@ class MouseDragState
 			}
 			event.consume();
 			this.rotationType = type;
-			this.rotationAngle = toDegrees(atan2(dy, dx));
+			final double oldValue = this.rotationAngle;
+			final double newValue = toDegrees(atan2(dy, dx));
+			this.rotationAngle = newValue;
+			return oldValue != newValue;
+		}
+		else
+		{
+			return false;
 		}
 	}
 
@@ -97,15 +111,14 @@ class MouseDragState
 	{
 		try
 		{
-			handleMouseEvent(event);
-			fireListenerEvent();
+			if (handleMouseEvent(event) || dragStart)
+			{
+				fireListenerEvent();
+			}
 		}
 		finally
 		{
-			if (dragStart)
-			{
-				dragStart = false;
-			}
+			dragStart = false;
 		}
 	}
 
@@ -113,14 +126,14 @@ class MouseDragState
 	{
 		try
 		{
-			released = true;
 			handleMouseEvent(event);
+			dragRelease = true;
 			fireListenerEvent();
 		}
 		finally
 		{
 			dragStart = true;
-			released = false;
+			dragRelease = false;
 			rotationType = NEUTRAL;
 			rotationAngle = 0.0;
 		}
@@ -141,8 +154,8 @@ class MouseDragState
 		return dragStart;
 	}
 
-	boolean isReleased()
+	boolean isDragRelease()
 	{
-		return released;
+		return dragRelease;
 	}
 }

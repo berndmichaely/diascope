@@ -66,7 +66,6 @@ class Divider
 		this.angleNorm = new ReadOnlyDoubleWrapper();
 		angleNorm.bind(normalizeAngle(angle));
 		this.angleNormalized = angleNorm.getReadOnlyProperty();
-		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
 		border.bind(
 			when(angleNormalized.lessThanOrEqualTo(cornerAngles.get(RIGHT)))
 				.then(RIGHT).otherwise(
@@ -117,8 +116,8 @@ class Divider
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
 		lineEvent.setCursor(Cursor.MOVE);
-		lineEvent.setOnMouseDragged(mouseDragState::handleMouseDragged);
-		lineEvent.setOnMouseReleased(mouseDragState::handleMouseReleased);
+		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
+		mouseDragState.setListenersFor(lineEvent);
 	}
 
 	MouseDragState getMouseDragState()

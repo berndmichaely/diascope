@@ -16,7 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType;
+import java.lang.System.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
@@ -24,76 +24,83 @@ import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static java.lang.Math.clamp;
 import static java.lang.Math.max;
+import static java.lang.System.Logger.Level.*;
 import static java.util.Collections.unmodifiableList;
 
 /// Class to handle a divider drag cycle.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class DividerDragCycle
+class DividerDragCycle implements Runnable
 {
+	private static final Logger logger = System.getLogger(DividerDragCycle.class.getName());
 	private final List<ImageLayer> layers;
 	private final int n;
+	private final int indexLast;
 	private final Divider divider;
 	private final double dividerMinGap;
 	private final List<Double> startAngles;
-	private double dividerStartAngle;
-	private double previousRotationAngle;
 	private final int indexDivider;
+	private final FoldState foldStateFwd, foldStateBwd;
+	private double dividerStartAngle;
 	private double singleAngleMin;
 	private double singleAngleMax;
-	private final FoldState foldStateFwd, foldStateBwd;
+	private boolean isForward;
 
 	private class FoldState
 	{
+		private final boolean forward;
 		private final double angleLow;
 		private final double rangeLow;
 		private final double rangeHigh;
+		private final double angleHigh;
 
 		private FoldState(boolean forward)
 		{
-			final double angleHigh;
-			if (n > 1 && indexDivider >= 0)
+			if (n < 2 || indexDivider < 0 || indexDivider >= n)
 			{
-				final int indexLast = n - 1;
-				final double dividerCumulativeGap = indexLast * dividerMinGap;
-				if (forward)
-				{
-					if (indexDivider > 0)
-					{
-						angleLow = startAngles.get(indexDivider - 1);
-						angleHigh = angleLow + C;
-					}
-					else
-					{
-						angleHigh = startAngles.get(indexLast);
-						angleLow = angleHigh - C;
-					}
-					rangeLow = angleLow + dividerMinGap;
-					rangeHigh = angleHigh - dividerCumulativeGap;
-				}
-				else // backward
-				{
-					if (indexDivider < indexLast)
-					{
-						angleHigh = startAngles.get(indexDivider + 1);
-						angleLow = angleHigh - C;
-					}
-					else
-					{
-						angleLow = startAngles.get(0);
-						angleHigh = angleLow + C;
-					}
-					rangeLow = angleLow + dividerCumulativeGap;
-					rangeHigh = angleHigh - dividerMinGap;
-				}
+				throw new IllegalStateException("Invalid precondition for FoldState");
 			}
-			else
+			this.forward = forward;
+			final double dividerCumulativeGap = indexLast * dividerMinGap;
+			if (forward)
 			{
-				angleLow = 0.0;
-				rangeLow = 0.0;
-				rangeHigh = 0.0;
+				if (indexDivider > 0)
+				{
+					angleLow = startAngles.get(indexDivider - 1);
+					angleHigh = angleLow + C;
+				}
+				else
+				{
+					angleHigh = startAngles.get(indexLast);
+					angleLow = angleHigh - C;
+				}
+				rangeLow = angleLow + dividerMinGap;
+				rangeHigh = angleHigh - dividerCumulativeGap;
 			}
+			else // backward
+			{
+				if (indexDivider < indexLast)
+				{
+					angleHigh = startAngles.get(indexDivider + 1);
+					angleLow = angleHigh - C;
+				}
+				else
+				{
+					angleLow = startAngles.get(0);
+					angleHigh = angleLow + C;
+				}
+				rangeLow = angleLow + dividerCumulativeGap;
+				rangeHigh = angleHigh - dividerMinGap;
+			}
+		}
+
+		@Override
+		public String toString()
+		{
+			return "%s [[ %f [ %f / %f ] %f ] %s]".formatted(
+				getClass().getSimpleName(), angleLow, rangeLow, rangeHigh, angleHigh,
+				forward ? "→ FWD" : "← BWD");
 		}
 	}
 
@@ -101,6 +108,7 @@ class DividerDragCycle
 	{
 		this.layers = layers;
 		this.n = layers.size();
+		this.indexLast = n - 1;
 		this.divider = divider;
 		this.dividerMinGap = dividerMinGap;
 		final List<Double> angles = new ArrayList<>(n);
@@ -124,10 +132,11 @@ class DividerDragCycle
 		{
 			throw new IllegalStateException("Invalid divider in DividerDragCycle.");
 		}
-		previousRotationAngle = dividerStartAngle;
 		this.startAngles = unmodifiableList(angles);
 		this.foldStateFwd = new FoldState(true);
 		this.foldStateBwd = new FoldState(false);
+		logger.log(TRACE, () -> "· " + foldStateFwd);
+		logger.log(TRACE, () -> "· " + foldStateBwd);
 		initSingleRotation(dividerMinGap);
 	}
 
@@ -139,7 +148,6 @@ class DividerDragCycle
 		final int index = indexDivider;
 		if (n > 1 && index >= 0)
 		{
-			final int indexLast = n - 1;
 			final int indexPrev = index > 0 ? index - 1 : indexLast;
 			final int indexNext = index < indexLast ? index + 1 : 0;
 			double anglePrev = layers.get(indexPrev).getDivider().getAngle();
@@ -187,9 +195,11 @@ class DividerDragCycle
 		return a;
 	}
 
-	void drag(RotationType rotationType)
+	@Override
+	public void run()
 	{
 		final var mouseDragState = divider.getMouseDragState();
+		final var rotationType = mouseDragState.getRotationType();
 		final double rotationAngle = mouseDragState.getRotationAngle();
 		switch (rotationType)
 		{
@@ -231,23 +241,43 @@ class DividerDragCycle
 			}
 			case FOLD ->
 			{
-				final double ra = normalizeAngleToRange(rotationAngle, previousRotationAngle - 180.0);
-				final double da = ra - previousRotationAngle;
-				previousRotationAngle = ra;
-				if (da != 0.0)
+				isForward = normalizeAngleToRange(
+					rotationAngle, (isForward ? foldStateFwd : foldStateBwd).angleLow) >= dividerStartAngle;
+				final var foldState = isForward ? foldStateFwd : foldStateBwd;
+				final double normalized = normalizeAngleToRange(rotationAngle, foldState.angleLow);
+				final double ra = clamp(normalized, foldState.rangeLow, foldState.rangeHigh);
+				divider.setAngle(ra);
+				int index = indexDivider;
+				for (int i = n - 2; i >= 0; i--)
 				{
-					final boolean isForward = da > 0.0;
-					final var foldState = isForward ? foldStateFwd : foldStateBwd;
-					final double normalized = normalizeAngleToRange(ra, foldState.angleLow);
-					final double a = clamp(normalized, foldState.rangeLow, foldState.rangeHigh);
-					divider.setAngle(a);
-					final int indexLast = n - 1;
-					final double dsa = (a - dividerStartAngle) / indexLast;
-					int index = indexDivider;
-					for (int i = n - 2; i >= 0; i--)
+					index = isForward ? (index < indexLast ? index + 1 : 0) : (index > 0 ? index - 1 : indexLast);
+					final double startAngle = startAngles.get(index);
+					if (i > 0)
 					{
-						index = isForward ? (index < indexLast ? index + 1 : 0) : (index > 0 ? index - 1 : indexLast);
-						layers.get(index).getDivider().setAngle(startAngles.get(index) + i * dsa);
+						final double a, th, tl, dh, dl, p;
+						if (isForward)
+						{
+							th = normalizeAngleToRange(foldState.angleHigh - i * dividerMinGap, foldState.angleLow);
+							tl = startAngle;
+							dh = foldState.rangeHigh;
+							dl = dividerStartAngle;
+							p = (ra - dl) / (dh - dl);
+							a = tl + p * normalizeAngleToRange((th - tl), 0.0);
+						}
+						else
+						{
+							th = foldState.angleLow + i * dividerMinGap;
+							tl = startAngle;
+							dh = foldState.rangeLow;
+							dl = dividerStartAngle;
+							p = (ra - dl) / (dh - dl);
+							a = tl - p * normalizeAngleToRange(tl - th, 0.0);
+						}
+						layers.get(index).getDivider().setAngle(a);
+					}
+					else
+					{
+						layers.get(index).getDivider().setAngle(startAngle);
 					}
 				}
 			}
