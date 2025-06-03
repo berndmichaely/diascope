@@ -254,20 +254,19 @@ class DividerDragCycle implements Runnable
 					final double startAngle = startAngles.get(index);
 					if (i > 0)
 					{
-						final double a, th, tl, dh, dl, p;
+						final double tl = startAngle;
+						final double a, th, dh, dl, p;
 						if (isForward)
 						{
 							th = normalizeAngleToRange(foldState.angleHigh - i * dividerMinGap, foldState.angleLow);
-							tl = startAngle;
 							dh = foldState.rangeHigh;
 							dl = dividerStartAngle;
 							p = (ra - dl) / (dh - dl);
-							a = tl + p * normalizeAngleToRange((th - tl), 0.0);
+							a = tl + p * normalizeAngleToRange(th - tl, 0.0);
 						}
 						else
 						{
 							th = foldState.angleLow + i * dividerMinGap;
-							tl = startAngle;
 							dh = foldState.rangeLow;
 							dl = dividerStartAngle;
 							p = (ra - dl) / (dh - dl);

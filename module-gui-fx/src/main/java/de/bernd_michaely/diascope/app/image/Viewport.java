@@ -47,7 +47,7 @@ class Viewport
 	private final SplitCenter splitCenter;
 	private final StackPane paneViewport;
 	private final CornerAngles cornerAngles;
-	private final BooleanProperty multiLayerMode;
+	private final ReadOnlyBooleanProperty multiLayerMode;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
 	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
@@ -58,9 +58,9 @@ class Viewport
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
-	Viewport()
+	Viewport(ReadOnlyBooleanProperty multiLayerMode)
 	{
-		this.multiLayerMode = new SimpleBooleanProperty();
+		this.multiLayerMode = multiLayerMode;
 		this.dividersVisible = new SimpleBooleanProperty();
 		this.dividersEnabled = new ReadOnlyBooleanWrapper();
 		dividersEnabled.bind(multiLayerMode.and(dividersVisible));
@@ -153,12 +153,12 @@ class Viewport
 		return splitCenter;
 	}
 
-	BooleanProperty multiLayerModeProperty()
+	ReadOnlyBooleanProperty multiLayerModeProperty()
 	{
 		return multiLayerMode;
 	}
 
-	boolean isClippingEnabled()
+	boolean isMultiLayerMode()
 	{
 		return multiLayerModeProperty().get();
 	}

@@ -21,7 +21,7 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType.*;
 import static java.lang.Math.atan2;
@@ -34,7 +34,7 @@ import static java.lang.Math.toDegrees;
 class MouseDragState
 {
 	private final ReadOnlyDoubleProperty originX, originY;
-	private @MonotonicNonNull Runnable onRotate;
+	private @Nullable Runnable onRotate;
 	private boolean dragStart = true;
 	private boolean dragRelease = false;
 	private double rotationAngle;
@@ -50,6 +50,13 @@ class MouseDragState
 	{
 		node.setOnMouseDragged(this::handleMouseDragged);
 		node.setOnMouseReleased(this::handleMouseReleased);
+	}
+
+	@SuppressWarnings("argument")
+	void removeListenersFor(Node node)
+	{
+		node.setOnMouseDragged(null);
+		node.setOnMouseReleased(null);
 	}
 
 	private void fireListenerEvent()
@@ -102,7 +109,7 @@ class MouseDragState
 		}
 	}
 
-	void setOnRotate(Runnable onRotate)
+	void setOnRotate(@Nullable Runnable onRotate)
 	{
 		this.onRotate = onRotate;
 	}

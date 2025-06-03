@@ -159,4 +159,11 @@ class Divider
 	{
 		return List.of(lineShape, lineEvent);
 	}
+
+	void clear()
+	{
+		angleProperty().unbind();
+		mouseDragState.removeListenersFor(lineEvent);
+		mouseDragState.setOnRotate(null);
+	}
 }

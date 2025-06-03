@@ -18,15 +18,20 @@ package de.bernd_michaely.diascope.app.image;
 
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.collections.ObservableList;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
-import static java.util.stream.Collectors.toUnmodifiableList;
+import static javafx.beans.binding.Bindings.isNotNull;
+import static javafx.beans.binding.Bindings.when;
 
 /// Facade of a component to display multiple images.
 ///
@@ -34,17 +39,40 @@ import static java.util.stream.Collectors.toUnmodifiableList;
 ///
 public class MultiImageView
 {
-	private final ImageLayers imageLayers;
 	private final Viewport viewport;
+	private final ImageLayers imageLayers;
 	private final BooleanProperty scrollBarsEnabled;
+	private final ObjectProperty<Mode> modeProperty;
+	private final ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty;
+
+	/// Enum to describe the multi image mode.
+	///
+	public enum Mode
+	{
+		SPLIT, SPOT;
+
+		/// Returns the default multi image mode.
+		///
+		/// @return currently returns the SPLIT mode.
+		public static Mode getDefaultMode()
+		{
+			return SPLIT;
+		}
+	}
 
 	public MultiImageView()
 	{
-		this.viewport = new Viewport();
+		final var multiLayerMode = new ReadOnlyBooleanWrapper();
+		this.viewport = new Viewport(multiLayerMode.getReadOnlyProperty());
 		this.imageLayers = new ImageLayers(viewport);
+		multiLayerMode.bind(imageLayers.getLayerSelectionModel().sizeProperty().greaterThanOrEqualTo(2));
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
+		this.modeProperty = new SimpleObjectProperty<>(Mode.getDefaultMode());
+		this.modeOrDefaultProperty = new ReadOnlyObjectWrapper<>();
+		modeOrDefaultProperty.bind(
+			when(isNotNull(modeProperty)).then(modeProperty).otherwise(Mode.getDefaultMode()));
 	}
 
 	/**
@@ -75,11 +103,6 @@ public class MultiImageView
 		imageLayers.getDividerRotationControl().initializeDividerAngles();
 	}
 
-	private ObservableList<ImageLayer> getLayers()
-	{
-		return imageLayers.getLayers();
-	}
-
 	/// Returns the maximum possible number of layers.
 	/// This number depends on the minimum divider angle gap.
 	///
@@ -93,30 +116,24 @@ public class MultiImageView
 	public void addLayer()
 	{
 		final Optional<ImageLayer> singleSelectedLayer = imageLayers.getSingleSelectedLayer();
-		final var layers = getLayers();
-		addLayer(singleSelectedLayer.isPresent() ?
+		final var layers = imageLayers.getLayers();
+		imageLayers.createImageLayer(singleSelectedLayer.isPresent() ?
 			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
 	}
 
-	private void addLayer(int index)
+	/// Removes the selected layers.
+	///
+	/// @return true, iff anything has been changed
+	///
+	public boolean removeSelectedLayers()
 	{
-		final var imageLayer = imageLayers.createImageLayer(index);
-		imageLayers.getLayerSelectionHandler().accept(imageLayer, false);
-	}
-
-	public void removeSelectedLayers()
-	{
-		final var layers = getLayers();
-		final boolean anyRemoved = imageLayers.removeLayers(layers.stream()
-			.filter(ImageLayer::isSelected).collect(toUnmodifiableList()));
-		if (anyRemoved && layers.size() == 1)
-		{
-			imageLayers.getLayerSelectionHandler().accept(layers.getFirst(), false);
-		}
+		return imageLayers.removeSelectedLayers();
 	}
 
 	/**
-	 * Display the given image.
+	 * Display the given image. If a single layer is selected, the image is
+	 * displayed on that layer, otherwise, it is ignored. (If there is only one
+	 * layer, it is implicitly selected.)
 	 *
 	 * @param imageDescriptor the given image, may be null to clear the display
 	 */
@@ -144,5 +161,41 @@ public class MultiImageView
 	public BooleanProperty dividersVisibleProperty()
 	{
 		return viewport.dividersVisibleProperty();
+	}
+
+	/// Property to indicate the multi image mode.
+	///
+	/// @return property to indicate the multi image mode
+	///
+	public ObjectProperty<Mode> modeProperty()
+	{
+		return modeProperty;
+	}
+
+	/// Property to indicate the multi image mode.
+	///
+	/// @return property to indicate the multi image mode
+	///
+	public ReadOnlyObjectProperty<Mode> modeOrDefaultProperty()
+	{
+		return modeOrDefaultProperty.getReadOnlyProperty();
+	}
+
+	/// Returns the multi image mode or the default mode, if null.
+	///
+	/// @return the multi image mode
+	///
+	public Mode getModeOrDefault()
+	{
+		return modeOrDefaultProperty().get();
+	}
+
+	/// Sets the multi image mode.
+	///
+	/// @param mode the given mode
+	///
+	public void setMode(Mode mode)
+	{
+		modeProperty.set(mode);
 	}
 }

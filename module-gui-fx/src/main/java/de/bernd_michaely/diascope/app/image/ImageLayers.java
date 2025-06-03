@@ -18,15 +18,17 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
-import java.util.List;
+import java.lang.System.Logger;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
 import static de.bernd_michaely.diascope.app.image.Border.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.lang.System.Logger.Level.*;
 import static java.util.Collections.unmodifiableList;
 import static javafx.beans.binding.Bindings.max;
 
@@ -36,6 +38,7 @@ import static javafx.beans.binding.Bindings.max;
 ///
 class ImageLayers
 {
+	private static final Logger logger = System.getLogger(ImageLayers.class.getName());
 	private static final Double ZERO = 0.0;
 	private final Viewport viewport;
 	private final SelectableList<ImageLayer> layers;
@@ -68,7 +71,7 @@ class ImageLayers
 		};
 		this.listenerClippingPoints = onChange(() ->
 		{
-			if (viewport.isClippingEnabled())
+			if (viewport.isMultiLayerMode())
 			{
 				final int n = layers.size();
 				for (int i = 0; i < n; i++)
@@ -109,6 +112,56 @@ class ImageLayers
 					points[index++] = dividerNext.getBorderIntersectionX();
 					points[index++] = dividerNext.getBorderIntersectionY();
 					layer.setShapePoints(points);
+				}
+			}
+		});
+		viewport.multiLayerModeProperty().addListener(onChange((Boolean enabled) ->
+		{
+			if (enabled)
+			{
+				viewport.widthProperty().addListener(listenerClippingPoints);
+				viewport.heightProperty().addListener(listenerClippingPoints);
+				viewport.getSplitCenter().xProperty().addListener(listenerClippingPoints);
+				viewport.getSplitCenter().yProperty().addListener(listenerClippingPoints);
+			}
+			else
+			{
+				viewport.widthProperty().removeListener(listenerClippingPoints);
+				viewport.heightProperty().removeListener(listenerClippingPoints);
+				viewport.getSplitCenter().xProperty().removeListener(listenerClippingPoints);
+				viewport.getSplitCenter().yProperty().removeListener(listenerClippingPoints);
+			}
+		}));
+		layers.addListener((ListChangeListener.Change<? extends ImageLayer> change) ->
+		{
+			while (change.next())
+			{
+				if (change.wasPermutated())
+				{
+					logger.log(WARNING, "ImageLayers→ListChangeListener: Unexpected list permutation");
+				}
+				else if (change.wasUpdated())
+				{
+					logger.log(WARNING, "ImageLayers→ListChangeListener: Unexpected list item update");
+				}
+				else
+				{
+					for (var imageLayer : change.getRemoved())
+					{
+						// imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
+						imageLayer.getImageTransforms().unbindProperties(imageTransforms);
+						imageLayer.getDivider().angleProperty().removeListener(listenerClippingPoints);
+						imageLayer.getDivider().clear();
+						viewport.removeLayer(imageLayer);
+					}
+					for (int i = change.getFrom(); i < change.getTo(); i++)
+					{
+						final var imageLayer = change.getList().get(i);
+						imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
+						imageLayer.getImageTransforms().bindProperties(imageTransforms);
+						// imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
+						viewport.addLayer(i, imageLayer);
+					}
 				}
 			}
 		});
@@ -158,53 +211,27 @@ class ImageLayers
 		}
 		final var imageLayer = ImageLayer.createInstance(viewport, layerSelectionHandler, dividerRotationControl);
 		layers.add(index, imageLayer);
-		viewport.addLayer(index, imageLayer);
-		// imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 		updateScrollRangeBindings();
-		final int numLayers = layers.size();
-		if (numLayers == 2)
-		{
-			viewport.multiLayerModeProperty().set(true);
-			viewport.widthProperty().addListener(listenerClippingPoints);
-			viewport.heightProperty().addListener(listenerClippingPoints);
-			viewport.getSplitCenter().xProperty().addListener(listenerClippingPoints);
-			viewport.getSplitCenter().yProperty().addListener(listenerClippingPoints);
-		}
-		imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
 		dividerRotationControl.initializeDividerAngles();
-		imageLayer.getImageTransforms().bindProperties(getImageTransforms());
+		getLayerSelectionHandler().accept(imageLayer, false);
 		return imageLayer;
 	}
 
-	/// Removes the given layers.
+	/// Removes the selected layers.
 	///
-	/// @param imageLayers the layers to remove
 	/// @return true, iff anything has been changed
 	///
-	boolean removeLayers(List<ImageLayer> imageLayers)
+	boolean removeSelectedLayers()
 	{
-		boolean anyRemoved = false;
-		for (var imageLayer : imageLayers)
-		{
-			final boolean removed = layers.remove(imageLayer);
-			anyRemoved |= removed;
-			if (removed)
-			{
-				imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
-				imageLayer.getDivider().angleProperty().unbind();
-				if (layers.size() == 1)
-				{
-					viewport.multiLayerModeProperty().set(false);
-					viewport.widthProperty().removeListener(listenerClippingPoints);
-					viewport.heightProperty().removeListener(listenerClippingPoints);
-				}
-				viewport.removeLayer(imageLayer);
-			}
-		}
+		final boolean anyRemoved = layers.removeIf(ImageLayer::isSelected);
 		if (anyRemoved)
 		{
 			updateScrollRangeBindings();
 			dividerRotationControl.initializeDividerAngles();
+			if (layers.size() == 1)
+			{
+				getLayerSelectionHandler().accept(layers.getFirst(), false);
+			}
 		}
 		return anyRemoved;
 	}
