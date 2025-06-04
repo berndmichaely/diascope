@@ -63,7 +63,7 @@ public class MultiImageView
 	public MultiImageView()
 	{
 		final var multiLayerMode = new ReadOnlyBooleanWrapper();
-		this.viewport = new Viewport(multiLayerMode.getReadOnlyProperty());
+		this.viewport = new Viewport(multiLayerMode);
 		this.imageLayers = new ImageLayers(viewport);
 		multiLayerMode.bind(imageLayers.getLayerSelectionModel().sizeProperty().greaterThanOrEqualTo(2));
 		this.scrollBarsEnabled = new SimpleBooleanProperty();

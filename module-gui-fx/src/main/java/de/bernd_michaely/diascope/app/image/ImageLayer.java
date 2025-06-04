@@ -305,4 +305,10 @@ class ImageLayer
 	{
 		return imageTitle;
 	}
+
+	void clear()
+	{
+		clearClip();
+		getDivider().clear();
+	}
 }

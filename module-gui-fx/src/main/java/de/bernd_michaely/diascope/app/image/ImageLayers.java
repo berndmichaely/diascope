@@ -151,7 +151,7 @@ class ImageLayers
 						// imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
 						imageLayer.getImageTransforms().unbindProperties(imageTransforms);
 						imageLayer.getDivider().angleProperty().removeListener(listenerClippingPoints);
-						imageLayer.getDivider().clear();
+						imageLayer.clear();
 						viewport.removeLayer(imageLayer);
 					}
 					for (int i = change.getFrom(); i < change.getTo(); i++)

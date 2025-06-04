@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.util.List;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
@@ -155,9 +154,14 @@ class Divider
 		return borderIntersectionY.getValue();
 	}
 
-	List<Line> getLines()
+	Line getLineShape()
 	{
-		return List.of(lineShape, lineEvent);
+		return lineShape;
+	}
+
+	Line getLineEvent()
+	{
+		return lineEvent;
 	}
 
 	void clear()

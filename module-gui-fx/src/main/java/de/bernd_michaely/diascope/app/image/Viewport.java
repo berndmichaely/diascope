@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -42,12 +41,13 @@ import static java.lang.Double.min;
 class Viewport
 {
 	private final Pane paneImageLayers = new Pane();
-	private final Pane paneImageLayerShapes = new Pane();
+	private final Pane paneTopLayer = new Pane();
+	private final StackPane paneViewport = new StackPane(paneImageLayers, paneTopLayer);
+	private final int numFixedEventControls;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
-	private final StackPane paneViewport;
 	private final CornerAngles cornerAngles;
-	private final ReadOnlyBooleanProperty multiLayerMode;
+	private final ReadOnlyBooleanWrapper multiLayerMode;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
 	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
@@ -58,12 +58,12 @@ class Viewport
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 
-	Viewport(ReadOnlyBooleanProperty multiLayerMode)
+	Viewport(ReadOnlyBooleanWrapper multiLayerMode)
 	{
 		this.multiLayerMode = multiLayerMode;
 		this.dividersVisible = new SimpleBooleanProperty();
 		this.dividersEnabled = new ReadOnlyBooleanWrapper();
-		dividersEnabled.bind(multiLayerMode.and(dividersVisible));
+		dividersEnabled.bind(multiLayerMode.getReadOnlyProperty().and(dividersVisible));
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -72,13 +72,13 @@ class Viewport
 		this.scrollRangeMaxHeight = new ReadOnlyDoubleWrapper();
 		this.scrollPosX = new ReadOnlyDoubleWrapper();
 		this.scrollPosY = new ReadOnlyDoubleWrapper();
-		this.paneViewport = new StackPane(paneImageLayers, paneImageLayerShapes);
 		this.scrollBars = new ScrollBars(paneViewport.widthProperty(), paneViewport.heightProperty());
 		this.splitCenter = new SplitCenter(paneViewport.widthProperty(), paneViewport.heightProperty());
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
-		paneImageLayerShapes.setBackground(Background.EMPTY);
-		paneImageLayerShapes.getChildren().addAll(scrollBars.getControls());
-		paneImageLayerShapes.getChildren().add(splitCenter.getShape());
+		paneTopLayer.setBackground(Background.EMPTY);
+		paneTopLayer.getChildren().addAll(scrollBars.getControls());
+		paneTopLayer.getChildren().add(splitCenter.getShape());
+		this.numFixedEventControls = paneTopLayer.getChildren().size();
 		paneViewport.setBackground(Background.fill(Color.BLACK));
 		paneViewport.setMinSize(0, 0);
 		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -127,24 +127,23 @@ class Viewport
 
 	void addLayer(int index, ImageLayer imageLayer)
 	{
+		final var childrenLayerEvent = paneTopLayer.getChildren();
 		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
-		paneImageLayerShapes.getChildren().add(index, imageLayer.getImageLayerShape().getShape());
-		final List<Line> lines = imageLayer.getDivider().getLines();
-		final int n = lines.size();
-		final int offset = n * index;
-		for (int i = 0; i < n; i++)
-		{
-			final var line = lines.get(i);
-			line.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
-			paneImageLayerShapes.getChildren().add(offset + i, line);
-		}
+		childrenLayerEvent.add(index, imageLayer.getImageLayerShape().getShape());
+		final Line lineEvent = imageLayer.getDivider().getLineEvent();
+		final Line lineShape = imageLayer.getDivider().getLineShape();
+		lineEvent.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
+		lineShape.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
+		paneImageLayers.getChildren().add(lineShape);
+		childrenLayerEvent.add(childrenLayerEvent.size() - numFixedEventControls, lineEvent);
 	}
 
 	void removeLayer(ImageLayer imageLayer)
 	{
-		paneImageLayerShapes.getChildren().removeAll(imageLayer.getDivider().getLines());
-		paneImageLayerShapes.getChildren().remove(imageLayer.getImageLayerShape().getShape());
-		imageLayer.clearClip();
+		final Divider divider = imageLayer.getDivider();
+		paneImageLayers.getChildren().remove(divider.getLineShape());
+		paneTopLayer.getChildren().remove(divider.getLineEvent());
+		paneTopLayer.getChildren().remove(imageLayer.getImageLayerShape().getShape());
 		paneImageLayers.getChildren().remove(imageLayer.getRegion());
 	}
 
@@ -155,7 +154,7 @@ class Viewport
 
 	ReadOnlyBooleanProperty multiLayerModeProperty()
 	{
-		return multiLayerMode;
+		return multiLayerMode.getReadOnlyProperty();
 	}
 
 	boolean isMultiLayerMode()
