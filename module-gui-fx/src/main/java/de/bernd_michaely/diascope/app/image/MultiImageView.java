@@ -16,22 +16,21 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.lang.System.Logger;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
-import static javafx.beans.binding.Bindings.isNotNull;
-import static javafx.beans.binding.Bindings.when;
+import static java.lang.System.Logger.Level.*;
 
 /// Facade of a component to display multiple images.
 ///
@@ -39,11 +38,12 @@ import static javafx.beans.binding.Bindings.when;
 ///
 public class MultiImageView
 {
+	private static final Logger logger = System.getLogger(MultiImageView.class.getName());
 	private final Viewport viewport;
 	private final ImageLayers imageLayers;
 	private final BooleanProperty scrollBarsEnabled;
-	private final ObjectProperty<Mode> modeProperty;
-	private final ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty;
+	private final ReadOnlyIntegerWrapper numLayers;
+	private final ReadOnlyBooleanWrapper spotModeAvailable;
 
 	/// Enum to describe the multi image mode.
 	///
@@ -62,24 +62,22 @@ public class MultiImageView
 
 	public MultiImageView()
 	{
-		final var multiLayerMode = new ReadOnlyBooleanWrapper();
-		this.viewport = new Viewport(multiLayerMode);
+		this.numLayers = new ReadOnlyIntegerWrapper();
+		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
 		this.imageLayers = new ImageLayers(viewport);
-		multiLayerMode.bind(imageLayers.getLayerSelectionModel().sizeProperty().greaterThanOrEqualTo(2));
+		numLayers.bind(imageLayers.getLayerSelectionModel().sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
-		this.modeProperty = new SimpleObjectProperty<>(Mode.getDefaultMode());
-		this.modeOrDefaultProperty = new ReadOnlyObjectWrapper<>();
-		modeOrDefaultProperty.bind(
-			when(isNotNull(modeProperty)).then(modeProperty).otherwise(Mode.getDefaultMode()));
+		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
+		spotModeAvailable.bind(viewport.multiLayerModeProperty()
+			.and(imageLayers.getLayerSelectionModel().numSelectedProperty().isEqualTo(1)));
 	}
 
-	/**
-	 * Returns the main component to be included in surrounding environment.
-	 *
-	 * @return the main component
-	 */
+	/// Returns the main component to be included in surrounding environment.
+	///
+	/// @return the main component
+	///
 	public Region getRegion()
 	{
 		return viewport.getPaneViewport();
@@ -139,6 +137,7 @@ public class MultiImageView
 	 */
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
+		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
 		imageLayers.getSingleSelectedLayer().ifPresent(imageLayer ->
 			imageLayer.setImageDescriptor(imageDescriptor));
 	}
@@ -169,7 +168,7 @@ public class MultiImageView
 	///
 	public ObjectProperty<Mode> modeProperty()
 	{
-		return modeProperty;
+		return viewport.modeProperty();
 	}
 
 	/// Property to indicate the multi image mode.
@@ -178,7 +177,7 @@ public class MultiImageView
 	///
 	public ReadOnlyObjectProperty<Mode> modeOrDefaultProperty()
 	{
-		return modeOrDefaultProperty.getReadOnlyProperty();
+		return viewport.modeOrDefaultProperty();
 	}
 
 	/// Returns the multi image mode or the default mode, if null.
@@ -196,6 +195,11 @@ public class MultiImageView
 	///
 	public void setMode(Mode mode)
 	{
-		modeProperty.set(mode);
+		modeProperty().set(mode);
+	}
+
+	public ReadOnlyBooleanProperty spotModeAvailableProperty()
+	{
+		return spotModeAvailable.getReadOnlyProperty();
 	}
 }

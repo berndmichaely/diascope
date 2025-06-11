@@ -26,6 +26,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToolBar;
@@ -34,6 +35,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 
+import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static javafx.beans.binding.Bindings.not;
 import static javafx.geometry.Pos.CENTER_RIGHT;
@@ -54,6 +56,7 @@ class ToolBarImage
 		final var layerSelectionModel = multiImageView.getLayerSelectionModel();
 		final var numLayers = layerSelectionModel.sizeProperty();
 		final var numSelectedLayers = layerSelectionModel.numSelectedProperty();
+		// add/remove layers
 		final var buttonLayerAdd = new Button();
 		final Image iconLayerAdd = Icons.LayerAdd.getIconImage();
 		if (iconLayerAdd != null)
@@ -84,6 +87,17 @@ class ToolBarImage
 				.and(numSelectedLayers.greaterThan(0)
 					.and(numSelectedLayers.lessThan(numLayers)))));
 		buttonLayerRemove.setOnAction(_ -> multiImageView.removeSelectedLayers());
+		// multi layer modes
+		final var buttonModeSplit = new Button();
+		buttonModeSplit.setText("Split");
+		buttonModeSplit.setTooltip(new Tooltip("Set multi image split mode"));
+		buttonModeSplit.setOnAction(_ -> multiImageView.setMode(SPLIT));
+		final var buttonModeSpot = new Button();
+		buttonModeSpot.setText("Spot");
+		buttonModeSpot.setTooltip(new Tooltip("Set multi image spot mode"));
+		buttonModeSpot.setOnAction(_ -> multiImageView.setMode(SPOT));
+		buttonModeSpot.disableProperty().bind(not(multiImageView.spotModeAvailableProperty()));
+		// dividers
 		final var buttonShowDividers = new ToggleButton();
 		final Image iconShowDividers = Icons.ShowDividers.getIconImage();
 		if (iconShowDividers != null)
@@ -98,6 +112,7 @@ class ToolBarImage
 		buttonShowDividers.disableProperty().bind(not(multiImageView.multiLayerModeProperty()));
 		buttonShowDividers.setSelected(true);
 		multiImageView.dividersVisibleProperty().bindBidirectional(buttonShowDividers.selectedProperty());
+		// zoom modes
 		final var buttonZoomFitWindow = new Button();
 		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
 		if (iconZoomFitWindow != null)
@@ -166,8 +181,9 @@ class ToolBarImage
 		final var labelZoomWidth = new Label("8888.8% ");
 		labelZoomWidth.setVisible(false);
 		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);
-		stackPaneZoom.setAlignment(CENTER_RIGHT);
 //		stackPaneZoom.setBackground(Background.fill(Color.ROSYBROWN));
+		stackPaneZoom.setAlignment(CENTER_RIGHT);
+		// transformations
 		final var sliderRotation = new Slider(0, 360, 0);
 		sliderRotation.setTooltip(new Tooltip("Set image rotation"));
 		final var labelRotation = new Label("0°");
@@ -205,9 +221,14 @@ class ToolBarImage
 		multiImageView.getImageTransforms().mirrorYProperty().bind(buttonMirrorY.selectedProperty());
 		multiImageView.getImageTransforms().rotateProperty().bind(sliderRotation.valueProperty());
 		this.toolBar = new ToolBar();
-		if (Platform.isSupported(ConditionalFeature.SHAPE_CLIP))
+		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
+		if (isShapeClipSupported)
 		{
-			toolBar.getItems().addAll(buttonLayerAdd, buttonLayerRemove, buttonShowDividers);
+			toolBar.getItems().addAll(buttonLayerAdd, buttonLayerRemove);
+			toolBar.getItems().add(new Separator());
+			toolBar.getItems().addAll(buttonModeSplit, buttonModeSpot);
+			toolBar.getItems().add(new Separator());
+			toolBar.getItems().add(buttonShowDividers);
 		}
 		toolBar.getItems().addAll(
 			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,

@@ -37,8 +37,6 @@ import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyIntegerProperty;
-import javafx.beans.property.ReadOnlyListProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -70,6 +68,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.ApplicationConfiguration.LaunchType.*;
@@ -105,6 +104,12 @@ public class MainWindow
 	private final BooleanProperty showingHiddenDirsProperty;
 	private final CheckMenuItem menuItemShowStatusLine;
 	private final BooleanProperty showStatusLinePersistedProperty;
+	private final Menu menuOptions;
+	private final MenuItem menuItemDirOpen, menuItemSysEnv, menuItemInfoAbout, menuItemExit;
+	private final @Nullable CheckMenuItem menuItemDevelopmentMode;
+	private final SplitPane splitPane;
+	private final BorderPane borderPane;
+	private final TabPane tabPane;
 	private final MainContent mainContent;
 
 	public MainWindow()
@@ -123,7 +128,7 @@ public class MainWindow
 					}
 					catch (IOException ex)
 					{
-						logger.log(WARNING, "" + ex);
+						logger.log(WARNING, "UserNodeConfiguration::isCreatingNodeForDirectory", ex);
 						return false;
 					}
 				}
@@ -148,69 +153,28 @@ public class MainWindow
 		this.mainContent = new MainContent(
 			this.fileSystemTreeView.selectedPathProperty(),
 			this.menuItemShowStatusLine.selectedProperty());
-	}
-
-	/**
-	 * Performs initialization of the main window.
-	 *
-	 * @param stage the primary stage
-	 */
-	public void initialize(Stage stage)
-	{
 		final var state = ApplicationConfiguration.getState();
 		final BooleanProperty developmentModeProperty = state.developmentModeProperty();
 		final var launchType = state.launchType();
 		final boolean isDevelopmentMode = launchType == DEVELOPMENT;
-		final boolean isTestMode = launchType == UNIT_TEST;
-		dialogSystemEnvironment.setTitle("System Environment");
-		dialogInfoAbout.setTitle("Info About");
-		final var menuItemShowHidden = new CheckMenuItem("Show hidden directories");
-		final var paneFstv = new BorderPane(fileSystemTreeView.getComponent());
-		final var tabFstv = new Tab("Filesystem", paneFstv);
-		tabFstv.setClosable(false);
-		final var tabPane = new TabPane(tabFstv);
-		final var menuItemUpdate = new MenuItem("Update");
-		menuItemUpdate.setOnAction(e -> fileSystemTreeView.updateTree());
-		menuItemShowHidden.selectedProperty().bindBidirectional(showingHiddenDirsProperty);
-		showingHiddenDirsProperty.addListener(onChange(fileSystemTreeView::updateTree));
-		final var menuFstv = new Menu("View");
-		menuFstv.getItems().addAll(menuItemUpdate, menuItemShowHidden);
-		paneFstv.setTop(new VBox(new MenuBar(menuFstv)));
-		final var splitPane = new SplitPane(mainContent.getRegion());
-		// *** Main Menu and ToolBar ***
-		final var borderPane = new BorderPane(splitPane);
-		// Actions:
-		final EventHandler<ActionEvent> actionOpen = e ->
+		this.menuOptions = new Menu("Options");
+		this.menuItemDirOpen = new MenuItem("Open directory …");
+		this.menuItemSysEnv = new MenuItem("System Environment");
+		this.menuItemInfoAbout = new MenuItem("About");
+		if (isDevelopmentMode)
 		{
-			final var directoryChooser = new DirectoryChooser();
-			final var selectedPath = selectedPathPersistedProperty.get();
-			if (selectedPath != null)
-			{
-				directoryChooser.setTitle("Open directory");
-				directoryChooser.setInitialDirectory(selectedPath.toFile());
-			}
-			final File result = directoryChooser.showDialog(stage);
-			if (result != null)
-			{
-				fileSystemTreeView.expandPath(result.toPath(), true, true);
-			}
-		};
+			final var checkMenuItem = new CheckMenuItem("Development mode");
+			developmentModeProperty.bind(checkMenuItem.selectedProperty());
+			menuOptions.getItems().add(checkMenuItem);
+			menuItemDevelopmentMode = checkMenuItem;
+		}
+		else
+		{
+			menuItemDevelopmentMode = null;
+		}
+		this.splitPane = new SplitPane(mainContent.getRegion());
+		this.borderPane = new BorderPane(splitPane);
 		final EventHandler<ActionEvent> actionClose = e -> fileSystemTreeView.clearSelection();
-		final EventHandler<ActionEvent> actionExit = e ->
-		{
-			try
-			{
-				onApplicationClose();
-			}
-			finally
-			{
-				Platform.exit();
-			}
-		};
-		final EventHandler<ActionEvent> actionSysEnv = e ->
-			dialogSystemEnvironment.show(stage, new PaneInfoSysEnv().getDisplay());
-		final EventHandler<ActionEvent> actionInfoAbout = e ->
-			dialogInfoAbout.show(stage, new PaneInfoAbout(getApplicationName()).getDisplay());
 		// Icons:
 		final Image iconFstv = Icons.ShowSidePane.getIconImage();
 		final Image iconFileOpen = Icons.FileOpen.getIconImage();
@@ -221,8 +185,6 @@ public class MainWindow
 		final Image iconViewShowLast = Icons.ViewShowLast.getIconImage();
 		// Menu("File")
 		final var menuFile = new Menu("File");
-		final var menuItemDirOpen = new MenuItem("Open directory …");
-		menuItemDirOpen.setOnAction(actionOpen);
 		menuItemDirOpen.setAccelerator(new KeyCharacterCombination("o", KeyCombination.CONTROL_DOWN));
 		final var buttonDirOpen = new Button();
 		adaptActionState(menuItemDirOpen, buttonDirOpen, menuItemDirOpen.getText());
@@ -233,8 +195,7 @@ public class MainWindow
 		final var menuItemClose = new MenuItem("Close directory");
 		menuItemClose.setOnAction(actionClose);
 		menuItemClose.disableProperty().bind(not(fileSystemTreeView.pathSelectedProperty()));
-		final var menuItemExit = new MenuItem("Exit");
-		menuItemExit.setOnAction(actionExit);
+		this.menuItemExit = new MenuItem("Exit");
 		menuFile.getItems().addAll(
 			menuItemDirOpen, menuItemClose, new SeparatorMenuItem(), menuItemExit);
 		// Menu("View")
@@ -247,7 +208,7 @@ public class MainWindow
 		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
 		final var menuItemFullscreen = new CheckMenuItem("Fullscreen");
 		menuItemFullscreen.selectedProperty().bindBidirectional(mainContent.fullScreenProperty());
-		menuItemFullscreen.disableProperty().bind(getListViewProperty().emptyProperty());
+		menuItemFullscreen.disableProperty().bind(mainContent.getListViewProperty().emptyProperty());
 		menuItemFullscreen.setAccelerator(new KeyCodeCombination(KeyCode.F11));
 		final var buttonViewFullscreen = new ToggleButton();
 		if (iconViewFullscreen != null)
@@ -268,23 +229,25 @@ public class MainWindow
 		final var menuItemShowFirst = new MenuItem("Select First");
 		menuItemShowFirst.setOnAction(_ -> mainContent.selectFirst());
 		menuItemShowFirst.disableProperty().bind(
-			selectedIndexProperty().isEqualTo(0).or(
-				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			mainContent.selectedIndexProperty().isEqualTo(0).or(
+				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var menuItemShowPrev = new MenuItem("Select Previous");
 		menuItemShowPrev.setOnAction(_ -> mainContent.selectPrevious());
 		menuItemShowPrev.disableProperty().bind(
-			selectedIndexProperty().isEqualTo(0).or(
-				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			mainContent.selectedIndexProperty().isEqualTo(0).or(
+				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var menuItemShowNext = new MenuItem("Select Next");
 		menuItemShowNext.setOnAction(_ -> mainContent.selectselectNext());
 		menuItemShowNext.disableProperty().bind(
-			selectedIndexProperty().isEqualTo(getListViewProperty().sizeProperty().subtract(1)).or(
-				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			mainContent.selectedIndexProperty().isEqualTo(
+				mainContent.getListViewProperty().sizeProperty().subtract(1)).or(
+				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var menuItemShowLast = new MenuItem("Select Last");
 		menuItemShowLast.setOnAction(_ -> mainContent.selectselectLast());
 		menuItemShowLast.disableProperty().bind(
-			selectedIndexProperty().isEqualTo(getListViewProperty().sizeProperty().subtract(1)).or(
-				getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			mainContent.selectedIndexProperty().isEqualTo(
+				mainContent.getListViewProperty().sizeProperty().subtract(1)).or(
+				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
 		final var buttonItemShowFirst = new Button();
 		final var buttonItemShowPrev = new Button();
 		final var buttonItemShowNext = new Button();
@@ -315,24 +278,8 @@ public class MainWindow
 		menuNavigation.getItems().addAll(
 			menuItemShowFirst, menuItemShowPrev, menuItemShowNext, menuItemShowLast);
 		// Menu("Options")
-		final var menuOptions = new Menu("Options");
 		menuOptions.getItems().add(this.menuItemShowStatusLine);
-		final CheckMenuItem menuItemDevelopmentMode;
-		if (isDevelopmentMode)
-		{
-			menuItemDevelopmentMode = new CheckMenuItem("Development mode");
-			developmentModeProperty.bind(menuItemDevelopmentMode.selectedProperty());
-			menuOptions.getItems().add(menuItemDevelopmentMode);
-		}
-		else
-		{
-			menuItemDevelopmentMode = null;
-		}
 		final var menuHelp = new Menu("Help");
-		final var menuItemSysEnv = new MenuItem("System Environment");
-		menuItemSysEnv.setOnAction(actionSysEnv);
-		final var menuItemInfoAbout = new MenuItem("About");
-		menuItemInfoAbout.setOnAction(actionInfoAbout);
 		menuHelp.getItems().addAll(menuItemSysEnv, menuItemInfoAbout);
 		// ToolBar items:
 		final var toggleButtonSidePane = new ToggleButton();
@@ -370,7 +317,65 @@ public class MainWindow
 			}
 		}));
 		borderPane.setTop(new VBox(menuBar, toolBar));
-		// *** end Menu and ToolBar ***
+		dialogSystemEnvironment.setTitle("System Environment");
+		dialogInfoAbout.setTitle("Info About");
+		final var menuItemShowHidden = new CheckMenuItem("Show hidden directories");
+		final var paneFstv = new BorderPane(fileSystemTreeView.getComponent());
+		final var tabFstv = new Tab("Filesystem", paneFstv);
+		tabFstv.setClosable(false);
+		this.tabPane = new TabPane(tabFstv);
+		final var menuItemUpdate = new MenuItem("Update");
+		menuItemUpdate.setOnAction(e -> fileSystemTreeView.updateTree());
+		menuItemShowHidden.selectedProperty().bindBidirectional(showingHiddenDirsProperty);
+		showingHiddenDirsProperty.addListener(onChange(fileSystemTreeView::updateTree));
+		final var menuFstv = new Menu("View");
+		menuFstv.getItems().addAll(menuItemUpdate, menuItemShowHidden);
+		paneFstv.setTop(new VBox(new MenuBar(menuFstv)));
+	}
+
+	/**
+	 * Performs initialization of the main window.
+	 *
+	 * @param stage the primary stage
+	 */
+	public void _start(Stage stage)
+	{
+		final var state = ApplicationConfiguration.getState();
+		final BooleanProperty developmentModeProperty = state.developmentModeProperty();
+		// Actions:
+		final EventHandler<ActionEvent> actionOpen = e ->
+		{
+			final var directoryChooser = new DirectoryChooser();
+			final var selectedPath = selectedPathPersistedProperty.get();
+			if (selectedPath != null)
+			{
+				directoryChooser.setTitle("Open directory");
+				directoryChooser.setInitialDirectory(selectedPath.toFile());
+			}
+			final File result = directoryChooser.showDialog(stage);
+			if (result != null)
+			{
+				fileSystemTreeView.expandPath(result.toPath(), true, true);
+			}
+		};
+		final EventHandler<ActionEvent> actionSysEnv = e ->
+			dialogSystemEnvironment.show(stage, new PaneInfoSysEnv().getDisplay());
+		final EventHandler<ActionEvent> actionInfoAbout = e ->
+			dialogInfoAbout.show(stage, new PaneInfoAbout(getApplicationName()).getDisplay());
+		menuItemExit.setOnAction(e ->
+		{
+			try
+			{
+				onApplicationClose();
+			}
+			finally
+			{
+				Platform.exit();
+			}
+		});
+		menuItemDirOpen.setOnAction(actionOpen);
+		menuItemSysEnv.setOnAction(actionSysEnv);
+		menuItemInfoAbout.setOnAction(actionInfoAbout);
 		final var scene = new Scene(borderPane);
 		SceneStylesheetUtil.setStylesheet(scene);
 		initStageBounds(stage);
@@ -409,7 +414,7 @@ public class MainWindow
 		stage.titleProperty().bind(StringBindingAppTitle.create(
 			fileSystemTreeView.selectedPathProperty(), developmentModeProperty));
 		stage.setOnCloseRequest(event -> onApplicationClose());
-		if (isTestMode)
+		if (state.launchType() == UNIT_TEST)
 		{
 			Platform.runLater(Platform::exit);
 		}
@@ -459,22 +464,14 @@ public class MainWindow
 		}
 	}
 
-	private ReadOnlyIntegerProperty selectedIndexProperty()
-	{
-		return mainContent.selectedIndexProperty();
-	}
-
-	private ReadOnlyListProperty<ImageGroupDescriptor> getListViewProperty()
-	{
-		return mainContent.getListViewProperty();
-	}
-
-	private void adaptActionState(MenuItem from, Button to)
+	private void adaptActionState(@UnderInitialization MainWindow this,
+		MenuItem from, Button to)
 	{
 		adaptActionState(from, to, from.getText());
 	}
 
-	private void adaptActionState(MenuItem from, Button to, String textTooltip)
+	private void adaptActionState(@UnderInitialization MainWindow this,
+		MenuItem from, Button to, String textTooltip)
 	{
 		to.onActionProperty().bindBidirectional(from.onActionProperty());
 		to.disableProperty().bind(from.disableProperty());

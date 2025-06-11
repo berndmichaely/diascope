@@ -21,33 +21,32 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
-/**
- * Main application object of the Diascope application.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Main application object of the Diascope application.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class DiascopeApplication extends Application
 {
 	private @MonotonicNonNull MainWindow mainWindow;
+	private final boolean optimizeMainWindowInit = true;
 
 	@Override
 	public void init() throws Exception
 	{
 		super.init();
-		mainWindow = new MainWindow();
+		if (optimizeMainWindowInit)
+		{
+			mainWindow = new MainWindow();
+		}
 	}
 
 	@Override
 	public void start(Stage stage) throws Exception
 	{
-		if (mainWindow != null)
+		if (mainWindow == null)
 		{
-			mainWindow.initialize(stage);
+			mainWindow = new MainWindow();
 		}
-		else
-		{
-			throw new IllegalStateException(getClass().getName() +
-				"::start : Main window not instantiated");
-		}
+		mainWindow._start(stage);
 	}
 }
