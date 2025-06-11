@@ -16,8 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
-import de.bernd_michaely.common.filesystem.view.base.Configuration;
-import de.bernd_michaely.common.filesystem.view.base.UserNodeConfiguration;
 import de.bernd_michaely.common.filesystem.view.fx.FileSystemTreeView;
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.PreferencesUtil;
@@ -29,15 +27,13 @@ import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
 import java.io.File;
 import java.io.IOException;
 import java.lang.System.Logger;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.prefs.Preferences;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -52,7 +48,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToolBar;
@@ -69,13 +64,13 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.ApplicationConfiguration.LaunchType.*;
 import static de.bernd_michaely.diascope.app.ApplicationConfiguration.getApplicationName;
 import static de.bernd_michaely.diascope.app.control.ScaleBox.SpaceGainingMode.*;
 import static de.bernd_michaely.diascope.app.dialog.ResizableDialog.DialogType.*;
-import static de.bernd_michaely.diascope.app.stage.GlobalConstants.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
@@ -92,8 +87,9 @@ public class MainWindow
 	private static final Logger logger = System.getLogger(MainWindow.class.getName());
 	private static final double INITIAL_WINDOW_SIZE = 2.0 / 3.0;
 	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
-	private final FileSystemTreeView fileSystemTreeView;
-	private final ObjectProperty<@Nullable Path> selectedPathPersistedProperty;
+	private @MonotonicNonNull PaneFileSystem paneFileSystem;
+	private final StringProperty titleProperty = new SimpleStringProperty();
+	private final MenuItem menuItemClose;
 	private final ResizableDialog dialogSystemEnvironment =
 		new ResizableDialog(CLOSEABLE_DIALOG, NONE, false);
 	private final ResizableDialog dialogInfoAbout =
@@ -101,7 +97,6 @@ public class MainWindow
 	private final BooleanProperty sidePaneVisibleProperty;
 	private final BooleanProperty sidePaneVisiblePersistedProperty;
 	private final DoubleProperty mainSplitPosPersistedProperty;
-	private final BooleanProperty showingHiddenDirsProperty;
 	private final CheckMenuItem menuItemShowStatusLine;
 	private final BooleanProperty showStatusLinePersistedProperty;
 	private final Menu menuOptions;
@@ -114,49 +109,20 @@ public class MainWindow
 
 	public MainWindow()
 	{
-		this.showingHiddenDirsProperty = newPersistedBooleanProperty(
-			PREF_KEY_SHOW_HIDDEN_DIRS, getClass(), false);
-		this.fileSystemTreeView = FileSystemTreeView.createInstance(
-			Configuration.builder().setUserNodeConfiguration(new UserNodeConfiguration()
-			{
-				@Override
-				public boolean isCreatingNodeForDirectory(Path directory)
-				{
-					try
-					{
-						return showingHiddenDirsProperty.get() || !Files.isHidden(directory);
-					}
-					catch (IOException ex)
-					{
-						logger.log(WARNING, "UserNodeConfiguration::isCreatingNodeForDirectory", ex);
-						return false;
-					}
-				}
-
-				@Override
-				public UserNodeConfiguration getUserNodeConfigurationFor(Path path)
-				{
-					return this;
-				}
-			}).build());
 		this.sidePaneVisibleProperty = new SimpleBooleanProperty();
 		this.sidePaneVisiblePersistedProperty = newPersistedBooleanProperty(
 			PREF_KEY_FSTV_VISIBLE, getClass(), true);
-		this.selectedPathPersistedProperty = newPersistedObjectProperty(
-			PREF_KEY_SELECTED_PATH, getClass(), PATH_USER_HOME.toString(), Paths::get);
 		this.mainSplitPosPersistedProperty = newPersistedDoubleProperty(
 			PREF_KEY_SPLIT_POS_MAIN, getClass(), 1.0 / 3.0);
 		this.menuItemShowStatusLine = new CheckMenuItem("Show status line");
 		this.showStatusLinePersistedProperty = newPersistedBooleanProperty(
 			PREF_KEY_SHOW_STATUS_LINE, getClass(), true);
 		this.menuItemShowStatusLine.selectedProperty().bindBidirectional(showStatusLinePersistedProperty);
-		this.mainContent = new MainContent(
-			this.fileSystemTreeView.selectedPathProperty(),
-			this.menuItemShowStatusLine.selectedProperty());
+		this.mainContent = new MainContent(this.menuItemShowStatusLine.selectedProperty());
 		final var state = ApplicationConfiguration.getState();
 		final BooleanProperty developmentModeProperty = state.developmentModeProperty();
 		final var launchType = state.launchType();
-		final boolean isDevelopmentMode = launchType == DEVELOPMENT;
+		final boolean isDevelopmentMode = DEVELOPMENT.equals(launchType);
 		this.menuOptions = new Menu("Options");
 		this.menuItemDirOpen = new MenuItem("Open directory …");
 		this.menuItemSysEnv = new MenuItem("System Environment");
@@ -174,7 +140,6 @@ public class MainWindow
 		}
 		this.splitPane = new SplitPane(mainContent.getRegion());
 		this.borderPane = new BorderPane(splitPane);
-		final EventHandler<ActionEvent> actionClose = e -> fileSystemTreeView.clearSelection();
 		// Icons:
 		final Image iconFstv = Icons.ShowSidePane.getIconImage();
 		final Image iconFileOpen = Icons.FileOpen.getIconImage();
@@ -192,9 +157,7 @@ public class MainWindow
 		{
 			buttonDirOpen.setGraphic(new ImageView(iconFileOpen));
 		}
-		final var menuItemClose = new MenuItem("Close directory");
-		menuItemClose.setOnAction(actionClose);
-		menuItemClose.disableProperty().bind(not(fileSystemTreeView.pathSelectedProperty()));
+		this.menuItemClose = new MenuItem("Close directory");
 		this.menuItemExit = new MenuItem("Exit");
 		menuFile.getItems().addAll(
 			menuItemDirOpen, menuItemClose, new SeparatorMenuItem(), menuItemExit);
@@ -319,18 +282,32 @@ public class MainWindow
 		borderPane.setTop(new VBox(menuBar, toolBar));
 		dialogSystemEnvironment.setTitle("System Environment");
 		dialogInfoAbout.setTitle("Info About");
-		final var menuItemShowHidden = new CheckMenuItem("Show hidden directories");
-		final var paneFstv = new BorderPane(fileSystemTreeView.getComponent());
-		final var tabFstv = new Tab("Filesystem", paneFstv);
-		tabFstv.setClosable(false);
-		this.tabPane = new TabPane(tabFstv);
-		final var menuItemUpdate = new MenuItem("Update");
-		menuItemUpdate.setOnAction(e -> fileSystemTreeView.updateTree());
-		menuItemShowHidden.selectedProperty().bindBidirectional(showingHiddenDirsProperty);
-		showingHiddenDirsProperty.addListener(onChange(fileSystemTreeView::updateTree));
-		final var menuFstv = new Menu("View");
-		menuFstv.getItems().addAll(menuItemUpdate, menuItemShowHidden);
-		paneFstv.setTop(new VBox(new MenuBar(menuFstv)));
+		this.tabPane = new TabPane();
+	}
+
+	public void setFileSystemView(PaneFileSystem paneFileSystem)
+	{
+		if (this.paneFileSystem == null)
+		{
+			this.paneFileSystem = paneFileSystem;
+			final var fstv = paneFileSystem.getFileSystemTreeView();
+			menuItemClose.setOnAction(e -> fstv.clearSelection());
+			menuItemClose.disableProperty().bind(not(fstv.pathSelectedProperty()));
+			mainContent.setSelectedPathProperty(fstv.selectedPathProperty());
+			titleProperty.bind(StringBindingAppTitle.create(fstv.selectedPathProperty(),
+				ApplicationConfiguration.getState().developmentModeProperty()));
+			tabPane.getTabs().add(paneFileSystem.getTabFstv());
+		}
+		else
+		{
+			throw new IllegalStateException("PaneFileSystem initialized twice");
+		}
+	}
+
+	private @Nullable
+	FileSystemTreeView getFileSystemTreeView()
+	{
+		return paneFileSystem != null ? paneFileSystem.getFileSystemTreeView() : null;
 	}
 
 	/**
@@ -341,21 +318,29 @@ public class MainWindow
 	public void _start(Stage stage)
 	{
 		final var state = ApplicationConfiguration.getState();
-		final BooleanProperty developmentModeProperty = state.developmentModeProperty();
+		stage.titleProperty().bind(titleProperty);
 		// Actions:
 		final EventHandler<ActionEvent> actionOpen = e ->
 		{
 			final var directoryChooser = new DirectoryChooser();
-			final var selectedPath = selectedPathPersistedProperty.get();
-			if (selectedPath != null)
+			if (paneFileSystem != null)
 			{
-				directoryChooser.setTitle("Open directory");
-				directoryChooser.setInitialDirectory(selectedPath.toFile());
+				final var selectedPath = paneFileSystem.selectedPathPersistedProperty().get();
+				if (selectedPath != null)
+				{
+					directoryChooser.setTitle("Open directory");
+					directoryChooser.setInitialDirectory(selectedPath.toFile());
+				}
+				final File result = directoryChooser.showDialog(stage);
+				if (result != null)
+				{
+					final var fileSystemTreeView = paneFileSystem.getFileSystemTreeView();
+					fileSystemTreeView.expandPath(result.toPath(), true, true);
+				}
 			}
-			final File result = directoryChooser.showDialog(stage);
-			if (result != null)
+			else
 			{
-				fileSystemTreeView.expandPath(result.toPath(), true, true);
+				throw new IllegalStateException("PaneFileSystem not initialized");
 			}
 		};
 		final EventHandler<ActionEvent> actionSysEnv = e ->
@@ -411,8 +396,6 @@ public class MainWindow
 		}));
 		stage.maximizedProperty().addListener(onChange(maximized ->
 			preferences.putBoolean(PREF_KEY_MAXIMIZE.getKey(), maximized)));
-		stage.titleProperty().bind(StringBindingAppTitle.create(
-			fileSystemTreeView.selectedPathProperty(), developmentModeProperty));
 		stage.setOnCloseRequest(event -> onApplicationClose());
 		if (state.launchType() == UNIT_TEST)
 		{
@@ -454,8 +437,6 @@ public class MainWindow
 				}
 			}));
 			sidePaneVisibleProperty.bind(sidePaneVisiblePersistedProperty);
-			fileSystemTreeView.expandPath(selectedPathPersistedProperty.get(), true, true);
-			selectedPathPersistedProperty.bind(fileSystemTreeView.selectedPathProperty());
 			if (menuItemDevelopmentMode != null)
 			{
 				menuItemDevelopmentMode.selectedProperty().set(true);
@@ -481,10 +462,18 @@ public class MainWindow
 	private void onApplicationClose()
 	{
 		logger.log(TRACE, "Closing main window …");
-		try (fileSystemTreeView)
+		if (paneFileSystem != null)
 		{
-			selectedPathPersistedProperty.unbind();
-			mainContent.onApplicationClose();
+			paneFileSystem.selectedPathPersistedProperty().unbind();
+		}
+		mainContent.onApplicationClose();
+		try
+		{
+			final var fileSystemTreeView = getFileSystemTreeView();
+			if (fileSystemTreeView != null)
+			{
+				fileSystemTreeView.close();
+			}
 		}
 		catch (IOException ex)
 		{

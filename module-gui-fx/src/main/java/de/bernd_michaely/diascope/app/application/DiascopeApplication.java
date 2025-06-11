@@ -17,9 +17,13 @@
 package de.bernd_michaely.diascope.app.application;
 
 import de.bernd_michaely.diascope.app.stage.MainWindow;
+import de.bernd_michaely.diascope.app.stage.PaneFileSystem;
+import java.util.concurrent.Future;
 import javafx.application.Application;
 import javafx.stage.Stage;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static java.util.concurrent.ForkJoinPool.commonPool;
 
 /// Main application object of the Diascope application.
 ///
@@ -27,8 +31,9 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 ///
 public class DiascopeApplication extends Application
 {
-	private @MonotonicNonNull MainWindow mainWindow;
 	private final boolean optimizeMainWindowInit = true;
+	private @Nullable Future<MainWindow> futureMainWindow;
+	private @Nullable Future<PaneFileSystem> futurePaneFileSystem;
 
 	@Override
 	public void init() throws Exception
@@ -36,17 +41,35 @@ public class DiascopeApplication extends Application
 		super.init();
 		if (optimizeMainWindowInit)
 		{
-			mainWindow = new MainWindow();
+			futureMainWindow = commonPool().submit(MainWindow::new);
+			futurePaneFileSystem = commonPool().submit(PaneFileSystem::new);
 		}
 	}
 
 	@Override
 	public void start(Stage stage) throws Exception
 	{
-		if (mainWindow == null)
+		final MainWindow mainWindow;
+		final PaneFileSystem paneFileSystem;
+		if (futureMainWindow != null)
+		{
+			mainWindow = futureMainWindow.get();
+			futureMainWindow = null;
+		}
+		else
 		{
 			mainWindow = new MainWindow();
 		}
+		if (futurePaneFileSystem != null)
+		{
+			paneFileSystem = futurePaneFileSystem.get();
+			futurePaneFileSystem = null;
+		}
+		else
+		{
+			paneFileSystem = new PaneFileSystem();
+		}
 		mainWindow._start(stage);
+		mainWindow.setFileSystemView(paneFileSystem);
 	}
 }

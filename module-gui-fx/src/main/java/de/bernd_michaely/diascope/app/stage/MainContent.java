@@ -68,7 +68,7 @@ class MainContent
 	private final ProgressControl progressControl;
 	private final ListView<ImageGroupDescriptor> listView;
 	private final ReadOnlyListWrapper<ImageGroupDescriptor> listViewProperty;
-	private final ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty;
+	private @Nullable ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty;
 	private final ImageDirectoryReader imageDirectoryReader;
 	private final ChangeListener<@Nullable Path> pathChangeListener;
 	private final ImageLoader imageLoader = new ImageLoader();
@@ -78,10 +78,8 @@ class MainContent
 	private final BooleanProperty showStatusLineProperty;
 	private final MainContentComponents components;
 
-	MainContent(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
-		ReadOnlyBooleanProperty showStatusLinePersistedProperty)
+	MainContent(ReadOnlyBooleanProperty showStatusLinePersistedProperty)
 	{
-		this.selectedPathProperty = selectedPathProperty;
 		this.listView = new ListView<>();
 		this.listViewProperty = new ReadOnlyListWrapper<>(listView.getItems());
 		this.listView.setCellFactory(ImageListCell::new);
@@ -143,7 +141,6 @@ class MainContent
 		}));
 		this.imageDirectoryReader = new ImageDirectoryReader(listView.getItems(), this.progressControl);
 		this.pathChangeListener = onChange(imageDirectoryReader::accept);
-		selectedPathProperty.addListener(this.pathChangeListener);
 		this.showStatusLineProperty = new SimpleBooleanProperty();
 		this.showStatusLineProperty.addListener(onChange(newValue ->
 		{
@@ -158,6 +155,21 @@ class MainContent
 		}));
 		this.showStatusLineProperty.bind(showStatusLinePersistedProperty);
 		cursorDefault = outerPane.getCursor();
+	}
+
+	void setSelectedPathProperty(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty)
+	{
+		this.selectedPathProperty = selectedPathProperty;
+		selectedPathProperty.addListener(pathChangeListener);
+	}
+
+	private void removeSelectedPathProperty()
+	{
+		if (selectedPathProperty != null)
+		{
+			selectedPathProperty.removeListener(pathChangeListener);
+			selectedPathProperty = null;
+		}
 	}
 
 	private void updateSelectedIndex(Number selectedIndex)
@@ -310,7 +322,7 @@ class MainContent
 	{
 		try (imageDirectoryReader)
 		{
-			selectedPathProperty.removeListener(pathChangeListener);
+			removeSelectedPathProperty();
 		}
 	}
 
