@@ -21,9 +21,12 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListF
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import java.util.Optional;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+
+import static javafx.beans.binding.Bindings.isNotNull;
 
 /// Class describing the image layer selection.
 ///
@@ -33,11 +36,14 @@ public class LayerSelectionModel implements SelectableProperties
 {
 	private final SelectableProperties selectionModel;
 	private final ReadOnlyObjectWrapper<Optional<ImageLayer>> singleSelectedLayer;
+	private final ReadOnlyBooleanWrapper singleLayerSelected;
 
 	LayerSelectionModel(SelectableList<ImageLayer> layers)
 	{
 		this.selectionModel = SelectableListFactory.listSelectionHandler(layers);
 		this.singleSelectedLayer = new ReadOnlyObjectWrapper<>(Optional.empty());
+		this.singleLayerSelected = new ReadOnlyBooleanWrapper();
+		singleLayerSelected.bind(isNotNull(singleSelectedLayer));
 		layers.addSelectionListener(change ->
 		{
 			if (!change.isEmptyRange())
@@ -100,5 +106,10 @@ public class LayerSelectionModel implements SelectableProperties
 	ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty()
 	{
 		return singleSelectedLayer.getReadOnlyProperty();
+	}
+
+	ReadOnlyBooleanProperty singleLayerSelected()
+	{
+		return singleLayerSelected.getReadOnlyProperty();
 	}
 }

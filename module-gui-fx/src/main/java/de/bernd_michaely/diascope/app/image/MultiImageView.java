@@ -71,7 +71,7 @@ public class MultiImageView
 			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
 		spotModeAvailable.bind(viewport.multiLayerModeProperty()
-			.and(imageLayers.getLayerSelectionModel().numSelectedProperty().isEqualTo(1)));
+			.and(imageLayers.getLayerSelectionModel().singleLayerSelected()));
 	}
 
 	/// Returns the main component to be included in surrounding environment.
