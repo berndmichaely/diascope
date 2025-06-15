@@ -22,6 +22,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -30,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
+import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
 
 /// Facade of a component to display multiple images.
@@ -65,6 +67,13 @@ public class MultiImageView
 		this.numLayers = new ReadOnlyIntegerWrapper();
 		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
 		this.imageLayers = new ImageLayers(viewport);
+		viewport.modeProperty().addListener(onChange(mode ->
+		{
+			if (mode == null)
+			{
+				imageLayers.removeAllLayersButOne();
+			}
+		}));
 		numLayers.bind(imageLayers.getLayerSelectionModel().sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
@@ -111,12 +120,31 @@ public class MultiImageView
 		return (int) (C / imageLayers.getDividerRotationControl().getDividerMinGap());
 	}
 
+	/// Adds a new layer.
 	public void addLayer()
 	{
 		final Optional<ImageLayer> singleSelectedLayer = imageLayers.getSingleSelectedLayer();
 		final var layers = imageLayers.getLayers();
 		imageLayers.createImageLayer(singleSelectedLayer.isPresent() ?
 			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
+	}
+
+	/// Returns a property indicating the number of layers.
+	///
+	/// @return a property indicating the number of layers
+	///
+	public ReadOnlyIntegerProperty numLayersProperty()
+	{
+		return imageLayers.getLayerSelectionModel().sizeProperty();
+	}
+
+	/// Returns a property indicating the number of layers.
+	///
+	/// @return a property indicating the number of layers
+	///
+	public int getNumLayers()
+	{
+		return numLayersProperty().get();
 	}
 
 	/// Removes the selected layers.
@@ -166,7 +194,7 @@ public class MultiImageView
 	///
 	/// @return property to indicate the multi image mode
 	///
-	public ObjectProperty<Mode> modeProperty()
+	public ObjectProperty<@Nullable Mode> modeProperty()
 	{
 		return viewport.modeProperty();
 	}
@@ -193,7 +221,7 @@ public class MultiImageView
 	///
 	/// @param mode the given mode
 	///
-	public void setMode(Mode mode)
+	public void setMode(@Nullable Mode mode)
 	{
 		modeProperty().set(mode);
 	}

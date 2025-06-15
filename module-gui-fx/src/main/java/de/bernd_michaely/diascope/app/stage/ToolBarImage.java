@@ -29,6 +29,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -70,7 +71,6 @@ class ToolBarImage
 		buttonLayerAdd.setTooltip(new Tooltip("Add a new layer"));
 		buttonLayerAdd.disableProperty().bind(
 			numLayers.greaterThanOrEqualTo(multiImageView.getMaximumNumberOfLayers()));
-		buttonLayerAdd.setOnAction(_ -> multiImageView.addLayer());
 		final var buttonLayerRemove = new Button();
 		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
 		if (iconLayerRemove != null)
@@ -88,15 +88,38 @@ class ToolBarImage
 					.and(numSelectedLayers.lessThan(numLayers)))));
 		buttonLayerRemove.setOnAction(_ -> multiImageView.removeSelectedLayers());
 		// multi layer modes
-		final var buttonModeSplit = new Button();
+		final var buttonModeSplit = new ToggleButton();
 		buttonModeSplit.setText("Split");
 		buttonModeSplit.setTooltip(new Tooltip("Set multi image split mode"));
-		buttonModeSplit.setOnAction(_ -> multiImageView.setMode(SPLIT));
-		final var buttonModeSpot = new Button();
+		buttonModeSplit.setUserData(SPLIT);
+		final var buttonModeSpot = new ToggleButton();
 		buttonModeSpot.setText("Spot");
 		buttonModeSpot.setTooltip(new Tooltip("Set multi image spot mode"));
-		buttonModeSpot.setOnAction(_ -> multiImageView.setMode(SPOT));
+		buttonModeSpot.setUserData(SPOT);
 		buttonModeSpot.disableProperty().bind(not(multiImageView.spotModeAvailableProperty()));
+		final var toggleGroup = new ToggleGroup();
+		toggleGroup.getToggles().addAll(buttonModeSplit, buttonModeSpot);
+		toggleGroup.selectedToggleProperty().addListener(onChange(selectedToggle ->
+		{
+			if (selectedToggle != null && selectedToggle.getUserData() instanceof MultiImageView.Mode mode)
+			{
+				multiImageView.setMode(mode);
+			}
+			else
+			{
+				multiImageView.setMode(null);
+			}
+		}));
+		buttonLayerAdd.setOnAction(_ ->
+		{
+			if (toggleGroup.getSelectedToggle() == null && multiImageView.getNumLayers() == 1)
+			{
+				toggleGroup.getToggles().stream()
+					.filter(toggle -> toggle.getUserData() == getDefaultMode())
+					.findAny().ifPresent(toggleGroup::selectToggle);
+			}
+			multiImageView.addLayer();
+		});
 		// dividers
 		final var buttonShowDividers = new ToggleButton();
 		final Image iconShowDividers = Icons.ShowDividers.getIconImage();

@@ -21,6 +21,7 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListF
 import java.lang.System.Logger;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
@@ -223,14 +224,34 @@ class ImageLayers
 	///
 	boolean removeSelectedLayers()
 	{
-		final boolean anyRemoved = layers.removeIf(ImageLayer::isSelected);
+		return _removeLayersIf(ImageLayer::isSelected);
+	}
+
+	boolean removeAllLayersButOne()
+	{
+		if (layers.size() > 1)
+		{
+			final var imageLayer = layers.stream()
+				.filter(ImageLayer::isSelected)
+				.findAny().orElse(layers.getFirst());
+			return _removeLayersIf(l -> l != imageLayer);
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	private boolean _removeLayersIf(Predicate<ImageLayer> condition)
+	{
+		final boolean anyRemoved = layers.removeIf(condition);
 		if (anyRemoved)
 		{
 			updateScrollRangeBindings();
 			dividerRotationControl.initializeDividerAngles();
 			if (layers.size() == 1)
 			{
-				getLayerSelectionHandler().accept(layers.getFirst(), false);
+				layers.setSelected(0, true);
 			}
 		}
 		return anyRemoved;

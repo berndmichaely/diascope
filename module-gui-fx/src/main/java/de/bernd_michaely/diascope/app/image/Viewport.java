@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import java.lang.System.Logger;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -36,6 +37,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -60,8 +62,8 @@ class Viewport
 	private final BorderPane paneViewport = new BorderPane(paneSplitMode);
 	private final Pane paneSpotMode = new Pane();
 	private final ReadOnlyIntegerProperty numLayersProperty;
-	private final ObjectProperty<MultiImageView.Mode> modeProperty;
-	private final ReadOnlyObjectWrapper<MultiImageView.Mode> modeOrDefaultProperty;
+	private final ObjectProperty<@Nullable Mode> modeProperty;
+	private final ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
 	private final CornerAngles cornerAngles;
@@ -79,10 +81,9 @@ class Viewport
 	Viewport(ReadOnlyIntegerProperty numLayersProperty)
 	{
 		this.numLayersProperty = numLayersProperty;
-		this.modeProperty = new SimpleObjectProperty<>(getDefaultMode());
+		this.modeProperty = new SimpleObjectProperty<>();
 		this.modeOrDefaultProperty = new ReadOnlyObjectWrapper<>();
-		modeOrDefaultProperty.bind(
-			when(isNotNull(modeProperty)).then(modeProperty).otherwise(getDefaultMode()));
+		_initmodeProperties(modeOrDefaultProperty, modeProperty);
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
 		multiLayerMode.bind(numLayersProperty.greaterThanOrEqualTo(2));
 		this.dividersVisible = new SimpleBooleanProperty();
@@ -103,7 +104,7 @@ class Viewport
 		paneTopLayer.setBackground(Background.EMPTY);
 		paneDividerLines.setBackground(Background.EMPTY);
 		paneSpotMode.setBackground(Background.EMPTY);
-		modeProperty.addListener(onChange(mode ->
+		modeOrDefaultProperty.addListener(onChange(mode ->
 		{
 			logger.log(TRACE, () -> "Switching to mode " + mode);
 			switch (mode)
@@ -119,7 +120,7 @@ class Viewport
 					paneViewport.setCenter(paneSpotMode);
 				}
 				default -> throw new AssertionError(
-						"Invalid " + MultiImageView.Mode.class.getName() + " : " + mode);
+						"Invalid " + Mode.class.getName() + " : " + mode);
 			}
 		}));
 		paneTopLayer.getChildren().addAll(scrollBars.getControls());
@@ -170,6 +171,14 @@ class Viewport
 		});
 	}
 
+	@SuppressWarnings("argument")
+	private static void _initmodeProperties(ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty,
+		ObjectProperty<@Nullable Mode> modeProperty)
+	{
+		modeOrDefaultProperty.bind(
+			when(isNotNull(modeProperty)).then(modeProperty).otherwise(getDefaultMode()));
+	}
+
 	void addLayer(int index, ImageLayer imageLayer)
 	{
 		final int n = numLayersProperty.get();
@@ -203,12 +212,12 @@ class Viewport
 		return splitCenter;
 	}
 
-	ObjectProperty<MultiImageView.Mode> modeProperty()
+	ObjectProperty<@Nullable Mode> modeProperty()
 	{
 		return modeProperty;
 	}
 
-	ReadOnlyObjectProperty<MultiImageView.Mode> modeOrDefaultProperty()
+	ReadOnlyObjectProperty<Mode> modeOrDefaultProperty()
 	{
 		return modeOrDefaultProperty.getReadOnlyProperty();
 	}

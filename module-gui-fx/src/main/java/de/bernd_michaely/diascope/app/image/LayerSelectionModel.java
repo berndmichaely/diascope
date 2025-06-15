@@ -26,8 +26,6 @@ import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 
-import static javafx.beans.binding.Bindings.isNotNull;
-
 /// Class describing the image layer selection.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
@@ -43,7 +41,6 @@ public class LayerSelectionModel implements SelectableProperties
 		this.selectionModel = SelectableListFactory.listSelectionHandler(layers);
 		this.singleSelectedLayer = new ReadOnlyObjectWrapper<>(Optional.empty());
 		this.singleLayerSelected = new ReadOnlyBooleanWrapper();
-		singleLayerSelected.bind(isNotNull(singleSelectedLayer));
 		layers.addSelectionListener(change ->
 		{
 			if (!change.isEmptyRange())
@@ -55,7 +52,9 @@ public class LayerSelectionModel implements SelectableProperties
 						layers.get(i).selectedProperty().set(layers.isSelected(i));
 					}
 				}
-				singleSelectedLayer.set(selectionModel.getNumSelected() == 1 ?
+				final boolean isSingleSelected = selectionModel.getNumSelected() == 1;
+				singleLayerSelected.set(isSingleSelected);
+				singleSelectedLayer.set(isSingleSelected ?
 					layers.stream().filter(ImageLayer::isSelected).findAny() : Optional.empty());
 			}
 		});

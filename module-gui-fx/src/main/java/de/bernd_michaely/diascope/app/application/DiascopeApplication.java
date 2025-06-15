@@ -31,7 +31,7 @@ import static java.util.concurrent.ForkJoinPool.commonPool;
 ///
 public class DiascopeApplication extends Application
 {
-	private final boolean optimizeMainWindowInit = true;
+	private final boolean optimizeMainWindowInit = false;
 	private @Nullable Future<MainWindow> futureMainWindow;
 	private @Nullable Future<PaneFileSystem> futurePaneFileSystem;
 
