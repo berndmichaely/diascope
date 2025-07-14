@@ -41,8 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static java.lang.Double.max;
-import static java.lang.Double.min;
+import static java.lang.Math.clamp;
 import static java.lang.System.Logger.Level.*;
 import static javafx.beans.binding.Bindings.isNotNull;
 import static javafx.beans.binding.Bindings.when;
@@ -163,8 +162,8 @@ class Viewport
 				final double py = scrollRangeMaxHeight.doubleValue();
 				final double dx = (event.getX() - mouseDragStartX) / px;
 				final double dy = (event.getY() - mouseDragStartY) / py;
-				final double x = min(max(0.0, mouseScrollStartX - dx), 1.0);
-				final double y = min(max(0.0, mouseScrollStartY - dy), 1.0);
+				final double x = clamp(mouseScrollStartX - dx, 0.0, 1.0);
+				final double y = clamp(mouseScrollStartY - dy, 0.0, 1.0);
 				scrollBars.valueHProperty().setValue(x);
 				scrollBars.valueVProperty().setValue(y);
 			}
@@ -262,21 +261,19 @@ class Viewport
 		return getPaneViewport().heightProperty();
 	}
 
-	/**
-	 * The maximum of widths of all layers.
-	 *
-	 * @return a property holding the maximum of widths of all layers
-	 */
+	/// The maximum of widths of all layers.
+	///
+	/// @return a property holding the maximum of widths of all layers
+	///
 	DoubleProperty layersMaxWidthProperty()
 	{
 		return layersMaxWidth;
 	}
 
-	/**
-	 * The maximum of heights of all layers.
-	 *
-	 * @return a property holding the maximum of heights of all layers
-	 */
+	/// The maximum of heights of all layers.
+	///
+	/// @return a property holding the maximum of heights of all layers
+	///
 	DoubleProperty layersMaxHeightProperty()
 	{
 		return layersMaxHeight;

@@ -74,13 +74,14 @@ public class MultiImageView
 				imageLayers.removeAllLayersButOne();
 			}
 		}));
-		numLayers.bind(imageLayers.getLayerSelectionModel().sizeProperty());
+		final var layerSelectionModel = imageLayers.getLayerSelectionModel();
+		numLayers.bind(layerSelectionModel.sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
-		spotModeAvailable.bind(viewport.multiLayerModeProperty()
-			.and(imageLayers.getLayerSelectionModel().singleLayerSelected()));
+		spotModeAvailable.bind(numLayers.getReadOnlyProperty().isEqualTo(2)
+			.and(layerSelectionModel.singleLayerSelected()));
 	}
 
 	/// Returns the main component to be included in surrounding environment.
@@ -135,7 +136,7 @@ public class MultiImageView
 	///
 	public ReadOnlyIntegerProperty numLayersProperty()
 	{
-		return imageLayers.getLayerSelectionModel().sizeProperty();
+		return numLayers.getReadOnlyProperty();
 	}
 
 	/// Returns a property indicating the number of layers.
