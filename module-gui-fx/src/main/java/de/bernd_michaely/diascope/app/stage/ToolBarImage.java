@@ -70,7 +70,7 @@ class ToolBarImage
 		}
 		buttonLayerAdd.setTooltip(new Tooltip("Add a new layer"));
 		buttonLayerAdd.disableProperty().bind(
-			numLayers.greaterThanOrEqualTo(multiImageView.getMaximumNumberOfLayers()));
+			numLayers.greaterThanOrEqualTo(multiImageView.maximumNumberOfLayersProperty()));
 		final var buttonLayerRemove = new Button();
 		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
 		if (iconLayerRemove != null)

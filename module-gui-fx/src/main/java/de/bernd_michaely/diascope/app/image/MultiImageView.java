@@ -45,6 +45,7 @@ public class MultiImageView
 	private final ImageLayers imageLayers;
 	private final BooleanProperty scrollBarsEnabled;
 	private final ReadOnlyIntegerWrapper numLayers;
+	private final ReadOnlyIntegerWrapper maximumNumberOfLayers;
 	private final ReadOnlyBooleanWrapper spotModeAvailable;
 
 	/// Enum to describe the multi image mode.
@@ -67,11 +68,14 @@ public class MultiImageView
 		this.numLayers = new ReadOnlyIntegerWrapper();
 		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
 		this.imageLayers = new ImageLayers(viewport);
+		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
+			(int) (C / imageLayers.getDividerRotationControl().getDividerMinGap()));
 		viewport.modeProperty().addListener(onChange(mode ->
 		{
 			if (mode == null)
 			{
 				imageLayers.removeAllLayersButOne();
+				imageLayers.getLayers().setSelected(0, true);
 			}
 		}));
 		final var layerSelectionModel = imageLayers.getLayerSelectionModel();
@@ -111,20 +115,11 @@ public class MultiImageView
 		imageLayers.getDividerRotationControl().initializeDividerAngles();
 	}
 
-	/// Returns the maximum possible number of layers.
-	/// This number depends on the minimum divider angle gap.
-	///
-	/// @return the maximum possible number of layers
-	///
-	public int getMaximumNumberOfLayers()
-	{
-		return (int) (C / imageLayers.getDividerRotationControl().getDividerMinGap());
-	}
-
 	/// Adds a new layer.
 	public void addLayer()
 	{
-		final Optional<ImageLayer> singleSelectedLayer = imageLayers.getSingleSelectedLayer();
+		final Optional<ImageLayer> singleSelectedLayer = imageLayers.
+			getLayerSelectionModel().singleSelectedLayerProperty().get();
 		final var layers = imageLayers.getLayers();
 		imageLayers.createImageLayer(singleSelectedLayer.isPresent() ?
 			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
@@ -139,13 +134,33 @@ public class MultiImageView
 		return numLayers.getReadOnlyProperty();
 	}
 
-	/// Returns a property indicating the number of layers.
+	/// Returns the number of layers.
 	///
-	/// @return a property indicating the number of layers
+	/// @return the number of layers
 	///
 	public int getNumLayers()
 	{
 		return numLayersProperty().get();
+	}
+
+	/// Returns a property indicating the maximum possible number of layers.
+	/// This number depends on the minimum divider angle gap.
+	///
+	/// @return a property indicating the maximum possible number of layers
+	///
+	public ReadOnlyIntegerProperty maximumNumberOfLayersProperty()
+	{
+		return maximumNumberOfLayers.getReadOnlyProperty();
+	}
+
+	/// Returns the maximum possible number of layers.
+	/// This number depends on the minimum divider angle gap.
+	///
+	/// @return the maximum possible number of layers
+	///
+	public int getMaximumNumberOfLayers()
+	{
+		return maximumNumberOfLayersProperty().get();
 	}
 
 	/// Removes the selected layers.
@@ -167,7 +182,7 @@ public class MultiImageView
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
-		imageLayers.getSingleSelectedLayer().ifPresent(imageLayer ->
+		imageLayers.getLayerSelectionModel().singleSelectedLayerProperty().get().ifPresent(imageLayer ->
 			imageLayer.setImageDescriptor(imageDescriptor));
 	}
 

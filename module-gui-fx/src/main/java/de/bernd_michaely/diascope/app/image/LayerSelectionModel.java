@@ -16,15 +16,22 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
+import java.lang.System.Logger;
 import java.util.Optional;
+import java.util.function.IntFunction;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener.SelectionChange.SelectionChangeType.*;
+import static java.lang.System.Logger.Level.*;
 
 /// Class describing the image layer selection.
 ///
@@ -32,31 +39,57 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 ///
 public class LayerSelectionModel implements SelectableProperties
 {
+	private static final Logger logger = System.getLogger(LayerSelectionModel.class.getName());
 	private final SelectableProperties selectionModel;
 	private final ReadOnlyObjectWrapper<Optional<ImageLayer>> singleSelectedLayer;
+	private final ReadOnlyObjectWrapper<Optional<ImageLayer>> dualSelectedLayerFirst;
+	private final ReadOnlyObjectWrapper<Optional<ImageLayer>> dualSelectedLayerSecond;
 	private final ReadOnlyBooleanWrapper singleLayerSelected;
+	private final ReadOnlyBooleanWrapper dualLayerSelected;
 
 	LayerSelectionModel(SelectableList<ImageLayer> layers)
 	{
 		this.selectionModel = SelectableListFactory.listSelectionHandler(layers);
 		this.singleSelectedLayer = new ReadOnlyObjectWrapper<>(Optional.empty());
+		this.dualSelectedLayerFirst = new ReadOnlyObjectWrapper<>(Optional.empty());
+		this.dualSelectedLayerSecond = new ReadOnlyObjectWrapper<>(Optional.empty());
 		this.singleLayerSelected = new ReadOnlyBooleanWrapper();
+		this.dualLayerSelected = new ReadOnlyBooleanWrapper();
 		layers.addSelectionListener(change ->
 		{
-			if (!change.isEmptyRange())
+			logger.log(TRACE, () -> "· List Change: " + change);
+			final int from = change.getFrom();
+			final int to = change.getTo();
+			final boolean wasSingleSelected = singleLayerSelected.get();
+			final Optional<ImageLayer> optionalOldSingleSelectedLayer = singleSelectedLayer.get();
+			for (int i = from; i <= to; i++)
 			{
-				for (int i = change.getFrom(); i <= change.getTo(); i++)
-				{
-					if (i >= 0 && i < layers.size())
-					{
-						layers.get(i).selectedProperty().set(layers.isSelected(i));
-					}
-				}
-				final boolean isSingleSelected = selectionModel.getNumSelected() == 1;
-				singleLayerSelected.set(isSingleSelected);
-				singleSelectedLayer.set(isSingleSelected ?
-					layers.stream().filter(ImageLayer::isSelected).findAny() : Optional.empty());
+				layers.get(i).setSelected(layers.isSelected(i));
 			}
+			final int n = layers.size();
+			final int numSelected = selectionModel.getNumSelected();
+			final boolean isSingleSelected = numSelected == 1;
+			singleLayerSelected.set(isSingleSelected);
+			singleSelectedLayer.set(isSingleSelected ?
+				layers.stream().filter(ImageLayer::isSelected).findAny() : Optional.empty());
+			final boolean isDualSelected = wasSingleSelected && change.getSelectionChangeType() == SINGLE_INCREMENT;
+			dualLayerSelected.set(isDualSelected);
+			if (isDualSelected)
+			{
+				dualSelectedLayerFirst.set(optionalOldSingleSelectedLayer);
+				final var firstLayer = optionalOldSingleSelectedLayer.get();
+				dualSelectedLayerSecond.set(layers.stream()
+					.filter(ImageLayer::isSelected)
+					.filter(layer -> layer != firstLayer)
+					.findAny());
+			}
+			else
+			{
+				dualSelectedLayerFirst.set(Optional.empty());
+				dualSelectedLayerSecond.set(Optional.empty());
+			}
+			logger.log(TRACE, () -> "→ numSelected == %d – isDualSelected? %b – isFirstPresent? %b – isSecondPresent? %b"
+				.formatted(numSelected, isDualSelected, dualSelectedLayerFirst.get().isPresent(), dualSelectedLayerSecond.get().isPresent()));
 		});
 	}
 
@@ -91,7 +124,7 @@ public class LayerSelectionModel implements SelectableProperties
 	}
 
 	@Override
-	public void selectRange(int from, int to, Action action)
+	public void selectRange(int from, int to, @Nullable IntFunction<@Nullable Action> action)
 	{
 		selectionModel.selectRange(from, to, action);
 	}
@@ -107,8 +140,23 @@ public class LayerSelectionModel implements SelectableProperties
 		return singleSelectedLayer.getReadOnlyProperty();
 	}
 
+	ReadOnlyObjectProperty<Optional<ImageLayer>> dualSelectedLayerFirstProperty()
+	{
+		return dualSelectedLayerFirst.getReadOnlyProperty();
+	}
+
+	ReadOnlyObjectProperty<Optional<ImageLayer>> dualSelectedLayerSecondProperty()
+	{
+		return dualSelectedLayerSecond.getReadOnlyProperty();
+	}
+
 	ReadOnlyBooleanProperty singleLayerSelected()
 	{
 		return singleLayerSelected.getReadOnlyProperty();
+	}
+
+	ReadOnlyBooleanProperty dualLayerSelected()
+	{
+		return dualLayerSelected.getReadOnlyProperty();
 	}
 }

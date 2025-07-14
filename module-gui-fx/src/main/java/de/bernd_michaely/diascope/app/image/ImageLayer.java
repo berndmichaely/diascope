@@ -262,14 +262,14 @@ class ImageLayer
 		}
 	}
 
-	BooleanProperty selectedProperty()
-	{
-		return getImageLayerShape().selectedProperty();
-	}
-
 	boolean isSelected()
 	{
-		return selectedProperty().get();
+		return getImageLayerShape().selectedProperty().get();
+	}
+
+	void setSelected(boolean selected)
+	{
+		getImageLayerShape().selectedProperty().set(selected);
 	}
 
 	Divider getDivider()
