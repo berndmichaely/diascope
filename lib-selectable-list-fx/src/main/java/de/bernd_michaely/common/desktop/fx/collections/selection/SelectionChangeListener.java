@@ -105,11 +105,11 @@ public interface SelectionChangeListener<E>
 			{
 				throw new IndexOutOfBoundsException(index);
 			}
-			final SelectableList<E> list = getList();
-//      if (list != null && index >= list.size())
-//      {
-//        throw new IndexOutOfBoundsException(index);
-//      }
+			final var list = getList();
+			if (list != null && index >= list.size())
+			{
+				throw new IndexOutOfBoundsException(index);
+			}
 			from = from < 0 ? index : min(from, index);
 			to = to < 0 ? index : max(to, index);
 			if (selectionChangeType == null)

@@ -55,7 +55,7 @@ class NodeViewFX implements NodeView
 	public void setLeafNode(boolean leafNode)
 	{
 		treeItem.setLeaf(leafNode);
-		logger.log(TRACE, "SET FOR NODE »" + treeItem.getValue() + "« LEAF TO »" + leafNode + "«");
+		logger.log(TRACE, () -> "SET FOR NODE »" + treeItem.getValue() + "« LEAF TO »" + leafNode + "«");
 	}
 
 	TreeItem<PathView> getTreeItem()
@@ -77,7 +77,7 @@ class NodeViewFX implements NodeView
 				}
 				else
 				{
-					logger.log(WARNING, getClass().getName() +
+					logger.log(WARNING, () -> getClass().getName() +
 						"::insertSubNodeAt : Invalid NodeView : " + subNodeView);
 				}
 			});

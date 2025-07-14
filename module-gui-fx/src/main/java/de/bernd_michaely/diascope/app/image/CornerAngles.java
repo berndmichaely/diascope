@@ -17,14 +17,13 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.util.EnumMap;
+import java.util.Map;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.arctan;
-import static de.bernd_michaely.diascope.app.image.Border.BOTTOM;
-import static de.bernd_michaely.diascope.app.image.Border.LEFT;
-import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
-import static de.bernd_michaely.diascope.app.image.Border.TOP;
+import static de.bernd_michaely.diascope.app.image.Border.*;
+import static java.util.Collections.unmodifiableMap;
 
 /// Class to handle viewport corner angles.
 ///
@@ -32,7 +31,7 @@ import static de.bernd_michaely.diascope.app.image.Border.TOP;
 ///
 class CornerAngles
 {
-	private final EnumMap<Border, ReadOnlyDoubleWrapper> cornerAngles;
+	private final Map<Border, ReadOnlyDoubleWrapper> cornerAngles;
 
 	/// Creates a new instance.
 	///
@@ -45,25 +44,21 @@ class CornerAngles
 		ReadOnlyDoubleProperty x, ReadOnlyDoubleProperty y,
 		ReadOnlyDoubleProperty dx, ReadOnlyDoubleProperty dy)
 	{
-		this.cornerAngles = new EnumMap<>(Border.class);
+		final var map = new EnumMap<Border, ReadOnlyDoubleWrapper>(Border.class);
 		for (var border : Border.values())
 		{
 			final var property = new ReadOnlyDoubleWrapper();
-			cornerAngles.put(border, property);
+			map.put(border, property);
 			switch (border)
 			{
-				case RIGHT ->
-					property.bind(arctan(dy.divide(dx)));
-				case BOTTOM ->
-					property.bind(arctan(x.divide(dy)).add(90.0));
-				case LEFT ->
-					property.bind(arctan(y.divide(x)).add(180.0));
-				case TOP ->
-					property.bind(arctan(dx.divide(y)).add(270.0));
-				default ->
-					throw new IllegalStateException("Invalid border: " + border);
+				case RIGHT -> property.bind(arctan(dy.divide(dx)));
+				case BOTTOM -> property.bind(arctan(x.divide(dy)).add(90.0));
+				case LEFT -> property.bind(arctan(y.divide(x)).add(180.0));
+				case TOP -> property.bind(arctan(dx.divide(y)).add(270.0));
+				default -> throw new IllegalStateException("Invalid border: " + border);
 			}
 		}
+		this.cornerAngles = unmodifiableMap(map);
 	}
 
 	/// Returns a property indicating the angle of the split center point to the

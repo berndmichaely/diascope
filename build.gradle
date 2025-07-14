@@ -13,7 +13,7 @@ plugins {
 //apply plugin: 'extra-java-module-info'
 
 wrapper {
-	gradleVersion = '8.14.2'
+	gradleVersion = '8.14.3'
 }
 
 final def javaLangVersion = JavaLanguageVersion.of(24)
