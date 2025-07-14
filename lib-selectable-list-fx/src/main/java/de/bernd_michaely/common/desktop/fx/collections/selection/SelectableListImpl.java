@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.RandomAccess;
+import java.util.function.IntFunction;
 import javafx.collections.ModifiableObservableListBase;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -35,6 +36,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 	implements SelectableList<E>, RandomAccess
 {
+	static final int INDEX_REMOVED = -1;
+
 	/**
 	 * Class to encapsulate a list item with a selection state.
 	 *
@@ -125,12 +128,12 @@ class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 	@Override
 	protected E doRemove(int index)
 	{
-		final SelectableItem<E> selectableItem = delegate.get(index);
-		if (selectableItem.selected)
+		final SelectableItem<E> removed = delegate.remove(index);
+		if (removed.selected)
 		{
-			getSelectionControl().decrementSelectionCounter(index);
+			getSelectionControl().decrementSelectionCounter(INDEX_REMOVED);
 		}
-		return delegate.remove(index).item;
+		return removed.item;
 	}
 
 	@Override
@@ -155,9 +158,9 @@ class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 	}
 
 	@Override
-	public void selectRange(int from, int to, Action action)
+	public void selectRange(int from, int to, @Nullable IntFunction<@Nullable Action> function)
 	{
-		if (from < to && action != null)
+		if (from < to && function != null)
 		{
 			beginSelectionChange();
 			try
@@ -167,23 +170,27 @@ class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 					final SelectableItem<E> item = delegate.get(i);
 					final boolean oldValue = item.selected;
 					final boolean newValue;
-					switch (action)
+					final var action = function.apply(i);
+					if (action != null)
 					{
-						case SELECTION_SET -> newValue = true;
-						case SELECTION_UNSET -> newValue = false;
-						case SELECTION_TOGGLE -> newValue = !oldValue;
-						default -> throw new IllegalStateException("" + action);
-					}
-					if (oldValue != newValue)
-					{
-						item.selected = newValue;
-						if (newValue)
+						switch (action)
 						{
-							getSelectionControl().incrementSelectionCounter(i);
+							case SELECTION_SET -> newValue = true;
+							case SELECTION_UNSET -> newValue = false;
+							case SELECTION_TOGGLE -> newValue = !oldValue;
+							default -> throw new IllegalStateException("Invalid action: " + action);
 						}
-						else
+						if (oldValue != newValue)
 						{
-							getSelectionControl().decrementSelectionCounter(i);
+							item.selected = newValue;
+							if (newValue)
+							{
+								getSelectionControl().incrementSelectionCounter(i);
+							}
+							else
+							{
+								getSelectionControl().decrementSelectionCounter(i);
+							}
 						}
 					}
 				}

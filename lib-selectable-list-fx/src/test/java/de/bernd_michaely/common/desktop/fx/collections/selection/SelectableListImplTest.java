@@ -17,6 +17,7 @@ package de.bernd_michaely.common.desktop.fx.collections.selection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -88,7 +89,9 @@ public class SelectableListImplTest
 		System.out.println("test empty selection range");
 		listener.reset();
 		assertEquals(0, listener.changes.size());
-		list.selectRange(0, 10, null);
+		list.selectRange(0, 10, (Selectable.Action) null);
+		assertEquals(0, listener.changes.size());
+		list.selectRange(0, 10, (IntFunction<Selectable.Action>) null);
 		assertEquals(0, listener.changes.size());
 		list.selectRange(0, 0, Selectable.Action.SELECTION_SET);
 
@@ -105,7 +108,7 @@ public class SelectableListImplTest
 		assertEquals(0, list.get(2));
 		assertEquals(false, list.isSelected(2));
 
-		assertEquals(4, listener.changes.size());
+		assertEquals(0, listener.changes.size());
 
 		for (int i = 0; i < listener.changes.size(); i++)
 		{

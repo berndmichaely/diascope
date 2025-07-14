@@ -101,31 +101,30 @@ public interface SelectionChangeListener<E>
 		 */
 		void addIndex(int index, boolean selected)
 		{
-			if (index < 0)
+			if (index >= 0)
 			{
-				throw new IndexOutOfBoundsException(index);
-			}
-			final var list = getList();
-			if (list != null && index >= list.size())
-			{
-				throw new IndexOutOfBoundsException(index);
-			}
-			from = from < 0 ? index : min(from, index);
-			to = to < 0 ? index : max(to, index);
-			if (selectionChangeType == null)
-			{
-				if (selected)
+				final var list = getList();
+				if (list != null && index >= list.size())
 				{
-					selectionChangeType = SelectionChangeType.SINGLE_INCREMENT;
+					throw new IndexOutOfBoundsException(index);
+				}
+				from = from < 0 ? index : min(from, index);
+				to = to < 0 ? index : max(to, index);
+				if (selectionChangeType == null)
+				{
+					if (selected)
+					{
+						selectionChangeType = SelectionChangeType.SINGLE_INCREMENT;
+					}
+					else
+					{
+						selectionChangeType = SelectionChangeType.SINGLE_DECREMENT;
+					}
 				}
 				else
 				{
-					selectionChangeType = SelectionChangeType.SINGLE_DECREMENT;
+					selectionChangeType = SelectionChangeType.COMPLEX_CHANGE;
 				}
-			}
-			else
-			{
-				selectionChangeType = SelectionChangeType.COMPLEX_CHANGE;
 			}
 		}
 
@@ -143,7 +142,7 @@ public interface SelectionChangeListener<E>
 		/**
 		 * Returns the begin of the selection range.
 		 *
-		 * @return the begin of the selection range
+		 * @return the begin of the selection range (inclusive)
 		 */
 		public int getFrom()
 		{
@@ -153,7 +152,7 @@ public interface SelectionChangeListener<E>
 		/**
 		 * Returns the end of the selection range.
 		 *
-		 * @return the end of the selection range
+		 * @return the end of the selection range (inclusive)
 		 */
 		public int getTo()
 		{
@@ -185,7 +184,8 @@ public interface SelectionChangeListener<E>
 		public String toString()
 		{
 			return isEmptyRange() ? getClass().getSimpleName() + "[]" :
-				String.format("%s[%d,%d]", getClass().getSimpleName(), getFrom(), getTo());
+				String.format("%s→%s[%d,%d]", getClass().getSimpleName(),
+					getSelectionChangeType(), getFrom(), getTo());
 		}
 	}
 

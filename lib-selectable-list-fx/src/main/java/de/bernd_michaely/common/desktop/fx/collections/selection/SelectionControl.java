@@ -17,9 +17,8 @@ package de.bernd_michaely.common.desktop.fx.collections.selection;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener.SelectionChange;
 import java.lang.ref.WeakReference;
-import java.util.IdentityHashMap;
-import org.checkerframework.checker.nullness.qual.KeyFor;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -36,163 +35,163 @@ import static java.util.Objects.requireNonNull;
  */
 class SelectionControl<E>
 {
-  private final WeakReference<SelectableList<E>> selectableList;
-  private final IdentityHashMap<SelectionChangeListener<? super E>, Boolean> selectionChangeListeners;
-  private int stackCounter;
-  private int selectionCounter;
-  private @Nullable SelectionChange<E> selectionChange;
+	private final WeakReference<SelectableList<E>> selectableList;
+	private final Map<SelectionChangeListener<? super E>, Boolean> selectionChangeListeners;
+	private int stackCounter;
+	private int selectionCounter;
+	private @Nullable SelectionChange<E> selectionChange;
 
-  SelectionControl(WeakReference<SelectableList<E>> selectableList)
-  {
-    this.selectableList = requireNonNull(selectableList, "SelectableList is null");
-    this.selectionChangeListeners = new IdentityHashMap<>();
-  }
+	SelectionControl(WeakReference<SelectableList<E>> selectableList)
+	{
+		this.selectableList = requireNonNull(selectableList, "SelectableList is null");
+		this.selectionChangeListeners = new LinkedHashMap<>();
+	}
 
-  int getSelectionCounter()
-  {
-    return selectionCounter;
-  }
+	int getSelectionCounter()
+	{
+		return selectionCounter;
+	}
 
-  void incrementSelectionCounter(int indexChanged)
-  {
-    beginSelectionChange();
-    try
-    {
-      selectionCounter++;
-      if (selectionChange != null)
-      {
-        selectionChange.addIndex(indexChanged, true);
-      }
-      else
-      {
-        throw new IllegalStateException(getClass().getName() +
-          "#incrementSelectionCounter : invalid access to »selectionChange«");
-      }
-      notifySingleChangeRequestListeners(indexChanged, true);
-    }
-    finally
-    {
-      endSelectionChange();
-    }
-  }
+	void incrementSelectionCounter(int indexChanged)
+	{
+		beginSelectionChange();
+		try
+		{
+			selectionCounter++;
+			if (selectionChange != null)
+			{
+				selectionChange.addIndex(indexChanged, true);
+			}
+			else
+			{
+				throw new IllegalStateException(getClass().getName() +
+					"#incrementSelectionCounter : invalid access to »selectionChange«");
+			}
+			notifySingleChangeRequestListeners(indexChanged, true);
+		}
+		finally
+		{
+			endSelectionChange();
+		}
+	}
 
-  void decrementSelectionCounter(int indexChanged)
-  {
-    if (selectionCounter > 0)
-    {
-      beginSelectionChange();
-      try
-      {
-        selectionCounter--;
-        if (selectionChange != null)
-        {
-          selectionChange.addIndex(indexChanged, false);
-        }
-        else
-        {
-          throw new IllegalStateException(getClass().getName() +
-            "#decrementSelectionCounter : invalid access to »selectionChange«");
-        }
-        notifySingleChangeRequestListeners(indexChanged, false);
-      }
-      finally
-      {
-        endSelectionChange();
-      }
-    }
-    else
-    {
-      throw new IllegalStateException(getClass().getName() +
-        "#decrementSelectionCounter : invalid call");
-    }
-  }
+	void decrementSelectionCounter(int indexChanged)
+	{
+		if (selectionCounter > 0)
+		{
+			beginSelectionChange();
+			try
+			{
+				selectionCounter--;
+				if (selectionChange != null)
+				{
+					selectionChange.addIndex(indexChanged, false);
+				}
+				else
+				{
+					throw new IllegalStateException(getClass().getName() +
+						"#decrementSelectionCounter : invalid access to »selectionChange«");
+				}
+				notifySingleChangeRequestListeners(indexChanged, false);
+			}
+			finally
+			{
+				endSelectionChange();
+			}
+		}
+		else
+		{
+			throw new IllegalStateException(getClass().getName() +
+				"#decrementSelectionCounter : invalid call");
+		}
+	}
 
-  private void notifySingleChangeRequestListeners(int index, boolean selected)
-  {
-    selectionChangeListeners.keySet().stream()
-      .filter(key ->
-      {
-        @KeyFor("selectionChangeListeners") SelectionChangeListener<? super E> listener = key;
-        return selectionChangeListeners.get(listener);
-      })
-      .forEach(listener ->
-      {
-        final SelectionChange<E> change = new SelectionChange<>(selectableList);
-        change.addIndex(index, selected);
-        listener.onSelectionChanged(change);
-      });
-  }
+	private void notifySingleChangeRequestListeners(int index, boolean selected)
+	{
+		selectionChangeListeners.forEach((listener, requestSingleChangeEvents) ->
+		{
+			if (requestSingleChangeEvents)
+			{
+				final SelectionChange<E> change = new SelectionChange<>(selectableList);
+				change.addIndex(index, selected);
+				listener.onSelectionChanged(change);
+			}
+		});
+	}
 
-  void beginSelectionChange()
-  {
-    if (stackCounter < 0)
-    {
-      throw new IllegalStateException(getClass().getName() +
-        "#beginSelectionChange : invalid stack counter");
-    }
-    if (++stackCounter == 1)
-    {
-      selectionChange = new SelectionChange<>(selectableList);
-    }
-  }
+	void beginSelectionChange()
+	{
+		if (stackCounter < 0)
+		{
+			throw new IllegalStateException(getClass().getName() +
+				"#beginSelectionChange : invalid stack counter");
+		}
+		if (++stackCounter == 1)
+		{
+			selectionChange = new SelectionChange<>(selectableList);
+		}
+	}
 
-  void endSelectionChange()
-  {
-    if (--stackCounter >= 0)
-    {
-      if (stackCounter == 0)
-      {
-        try
-        {
-          if (selectionChange != null)
-          {
-            final @NonNull SelectionChange<E> change = selectionChange;
-            selectionChangeListeners.keySet().stream()
-              .filter(key ->
-              {
-                @KeyFor("selectionChangeListeners") SelectionChangeListener<? super E> listener = key;
-                return !selectionChangeListeners.get(listener);
-              })
-              .forEach(listener -> listener.onSelectionChanged(change));
-          }
-          else
-          {
-            throw new IllegalStateException("Invalid call of notifyListeners()");
-          }
-        }
-        finally
-        {
-          selectionChange = null;
-        }
-      }
-    }
-    else
-    {
-      throw new IllegalStateException("Invalid call of endSelectionChange()");
-    }
-  }
+	void endSelectionChange()
+	{
+		if (--stackCounter >= 0)
+		{
+			if (stackCounter == 0)
+			{
+				try
+				{
+					if (selectionChange != null)
+					{
+						final SelectionChange<E> change = selectionChange;
+						if (!change.isEmptyRange())
+						{
+							selectionChangeListeners.forEach((listener, requestSingleChangeEvents) ->
+							{
+								if (!requestSingleChangeEvents)
+								{
+									listener.onSelectionChanged(change);
+								}
+							});
+						}
+					}
+					else
+					{
+						throw new IllegalStateException("Invalid call of notifyListeners()");
+					}
+				}
+				finally
+				{
+					selectionChange = null;
+				}
+			}
+		}
+		else
+		{
+			throw new IllegalStateException("Invalid call of endSelectionChange()");
+		}
+	}
 
-  /**
-   * Adds the given listener.
-   *
-   * @param selectionChangeListener the listener to add
-   * @throws NullPointerException if the given listener is null
-   */
-  void addSelectionListener(SelectionChangeListener<? super E> selectionChangeListener,
-    boolean requestSingleChangeEvents)
-  {
-    selectionChangeListeners.put(requireNonNull(selectionChangeListener), requestSingleChangeEvents);
-  }
+	/**
+	 * Adds the given listener.
+	 *
+	 * @param selectionChangeListener the listener to add
+	 * @throws NullPointerException if the given listener is null
+	 */
+	void addSelectionListener(SelectionChangeListener<? super E> selectionChangeListener,
+		boolean requestSingleChangeEvents)
+	{
+		selectionChangeListeners.put(requireNonNull(selectionChangeListener), requestSingleChangeEvents);
+	}
 
-  /**
-   * Removes the given listener.
-   *
-   * @param selectionChangeListener the listener to remove
-   * @return true, iff the listener was present before
-   * @throws NullPointerException if the given listener is null
-   */
-  boolean removeSelectionListener(SelectionChangeListener<? super E> selectionChangeListener)
-  {
-    return selectionChangeListeners.remove(requireNonNull(selectionChangeListener)) != null;
-  }
+	/**
+	 * Removes the given listener.
+	 *
+	 * @param selectionChangeListener the listener to remove
+	 * @return true, iff the listener was present before
+	 * @throws NullPointerException if the given listener is null
+	 */
+	boolean removeSelectionListener(SelectionChangeListener<? super E> selectionChangeListener)
+	{
+		return selectionChangeListeners.remove(requireNonNull(selectionChangeListener)) != null;
+	}
 }
