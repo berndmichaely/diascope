@@ -28,7 +28,7 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 import static java.util.Collections.unmodifiableList;
 import static javafx.beans.binding.Bindings.max;
 
-/// Class to handle the image layer viewport layer.
+/// Class to handle the image layers for split mode.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
@@ -126,19 +126,38 @@ class ImageLayers
 				}
 				else
 				{
+					final var list = change.getList();
 					for (var imageLayer : change.getRemoved())
 					{
 						viewport.removeLayer(imageLayer);
 						// imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
 						imageLayer.getImageTransforms().unbindProperties(imageTransforms);
+						if (list.isEmpty())
+						{
+							imageTransforms.zoomFactorWrapperProperty().unbind();
+						}
+						else
+						{
+							imageTransforms.zoomFactorWrapperProperty().bind(
+								list.getFirst().getImageTransforms().zoomFactorWrapperProperty());
+						}
 						imageLayer.getDivider().angleProperty().removeListener(listenerClippingPoints);
 						imageLayer.clear();
 					}
 					for (int i = change.getFrom(); i < change.getTo(); i++)
 					{
-						final var imageLayer = change.getList().get(i);
+						final var imageLayer = list.get(i);
 						imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
 						imageLayer.getImageTransforms().bindProperties(imageTransforms);
+						if (list.isEmpty())
+						{
+							imageTransforms.zoomFactorWrapperProperty().unbind();
+						}
+						else
+						{
+							imageTransforms.zoomFactorWrapperProperty().bind(
+								list.getFirst().getImageTransforms().zoomFactorWrapperProperty());
+						}
 						// imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
 						viewport.addLayer(i, imageLayer);
 					}

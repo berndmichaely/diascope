@@ -31,20 +31,20 @@ import javafx.beans.property.SimpleObjectProperty;
 ///
 public class ImageTransforms
 {
-	private final ObjectProperty<ZoomMode> zoomModeProperty;
-	private final DoubleProperty zoomFixedProperty;
+	private final ObjectProperty<ZoomMode> zoomMode;
+	private final DoubleProperty zoomFixed;
 	private final ReadOnlyDoubleWrapper zoomFactor;
-	private final DoubleProperty rotateProperty;
-	private final BooleanProperty mirrorXProperty, mirrorYProperty;
+	private final DoubleProperty rotate;
+	private final BooleanProperty mirrorX, mirrorY;
 
 	ImageTransforms()
 	{
-		this.zoomModeProperty = new SimpleObjectProperty<>(ZoomMode.getDefault());
-		this.zoomFixedProperty = new SimpleDoubleProperty(1.0);
+		this.zoomMode = new SimpleObjectProperty<>(ZoomMode.getDefault());
+		this.zoomFixed = new SimpleDoubleProperty(1.0);
 		this.zoomFactor = new ReadOnlyDoubleWrapper();
-		this.rotateProperty = new SimpleDoubleProperty(0.0);
-		this.mirrorXProperty = new SimpleBooleanProperty();
-		this.mirrorYProperty = new SimpleBooleanProperty();
+		this.rotate = new SimpleDoubleProperty(0.0);
+		this.mirrorX = new SimpleBooleanProperty();
+		this.mirrorY = new SimpleBooleanProperty();
 	}
 
 	/// Bind this transforms to other transforms.
@@ -53,34 +53,36 @@ public class ImageTransforms
 	///
 	void bindProperties(ImageTransforms other)
 	{
-		this.zoomModeProperty.bind(other.zoomModeProperty);
-		this.zoomFixedProperty.bind(other.zoomFixedProperty);
-		other.zoomFactorWrapperProperty().bind(this.zoomFactor);
-		this.rotateProperty.bind(other.rotateProperty);
-		this.mirrorXProperty.bind(other.mirrorXProperty);
-		this.mirrorYProperty.bind(other.mirrorYProperty);
+		this.zoomMode.bind(other.zoomMode);
+		this.zoomFixed.bind(other.zoomFixed);
+//		other.zoomFactorWrapperProperty().bind(this.zoomFactor);
+		this.rotate.bind(other.rotate);
+		this.mirrorX.bind(other.mirrorX);
+		this.mirrorY.bind(other.mirrorY);
 	}
 
-	/// Unbind this transforms.
+	/// Unbind this transforms from other transforms.
+	///
+	/// @param other the other transforms
 	///
 	void unbindProperties(ImageTransforms other)
 	{
-		this.zoomModeProperty.unbind();
-		this.zoomFixedProperty.unbind();
-		other.zoomFactorWrapperProperty().unbind();
-		this.rotateProperty.unbind();
-		this.mirrorXProperty.unbind();
-		this.mirrorYProperty.unbind();
+		this.zoomMode.unbind();
+		this.zoomFixed.unbind();
+//		other.zoomFactorWrapperProperty().unbind();
+		this.rotate.unbind();
+		this.mirrorX.unbind();
+		this.mirrorY.unbind();
 	}
 
 	public ObjectProperty<ZoomMode> zoomModeProperty()
 	{
-		return zoomModeProperty;
+		return zoomMode;
 	}
 
 	public DoubleProperty zoomFixedProperty()
 	{
-		return zoomFixedProperty;
+		return zoomFixed;
 	}
 
 	ReadOnlyDoubleWrapper zoomFactorWrapperProperty()
@@ -95,16 +97,16 @@ public class ImageTransforms
 
 	public DoubleProperty rotateProperty()
 	{
-		return rotateProperty;
+		return rotate;
 	}
 
 	public BooleanProperty mirrorXProperty()
 	{
-		return mirrorXProperty;
+		return mirrorX;
 	}
 
 	public BooleanProperty mirrorYProperty()
 	{
-		return mirrorYProperty;
+		return mirrorY;
 	}
 }
