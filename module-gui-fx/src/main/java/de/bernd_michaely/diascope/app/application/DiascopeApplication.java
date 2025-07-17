@@ -31,7 +31,7 @@ import static java.util.concurrent.ForkJoinPool.commonPool;
 ///
 public class DiascopeApplication extends Application
 {
-	private final boolean optimizeMainWindowInit = false;
+	private final boolean optimizeMainWindowInit = true;
 	private @Nullable Future<MainWindow> futureMainWindow;
 	private @Nullable Future<PaneFileSystem> futurePaneFileSystem;
 
@@ -50,7 +50,6 @@ public class DiascopeApplication extends Application
 	public void start(Stage stage) throws Exception
 	{
 		final MainWindow mainWindow;
-		final PaneFileSystem paneFileSystem;
 		if (futureMainWindow != null)
 		{
 			mainWindow = futureMainWindow.get();
@@ -60,6 +59,8 @@ public class DiascopeApplication extends Application
 		{
 			mainWindow = new MainWindow();
 		}
+		mainWindow._start(stage);
+		final PaneFileSystem paneFileSystem;
 		if (futurePaneFileSystem != null)
 		{
 			paneFileSystem = futurePaneFileSystem.get();
@@ -69,7 +70,6 @@ public class DiascopeApplication extends Application
 		{
 			paneFileSystem = new PaneFileSystem();
 		}
-		mainWindow._start(stage);
 		mainWindow.setFileSystemView(paneFileSystem);
 	}
 }
