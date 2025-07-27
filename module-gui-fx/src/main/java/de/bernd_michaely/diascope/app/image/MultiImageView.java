@@ -42,6 +42,7 @@ public class MultiImageView
 {
 	private static final Logger logger = System.getLogger(MultiImageView.class.getName());
 	private final Viewport viewport;
+	private final ImageTransforms imageTransforms;
 	private final ImageLayers imageLayers;
 	private final ImageLayersSpot spotLayers;
 	private final BooleanProperty scrollBarsEnabled;
@@ -68,9 +69,10 @@ public class MultiImageView
 	{
 		this.numLayers = new ReadOnlyIntegerWrapper();
 		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
-		this.imageLayers = new ImageLayers(viewport);
+		this.imageTransforms = new ImageTransforms();
+		this.imageLayers = new ImageLayers(viewport, imageTransforms);
 		viewport.setLayerSelectionModel(imageLayers.layerSelectionModel);
-		this.spotLayers = new ImageLayersSpot(viewport);
+		this.spotLayers = new ImageLayersSpot(viewport, imageTransforms);
 		spotLayers.getSpotLayer().setSelected(true);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
 			(int) (C / imageLayers.getDividerRotationControl().getDividerMinGap()));
@@ -102,7 +104,7 @@ public class MultiImageView
 
 	public ImageTransforms getImageTransforms()
 	{
-		return imageLayers.imageTransforms;
+		return this.imageTransforms;
 	}
 
 	public LayerSelectionModel getLayerSelectionModel()

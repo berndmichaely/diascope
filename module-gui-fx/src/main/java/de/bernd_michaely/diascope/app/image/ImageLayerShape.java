@@ -79,27 +79,34 @@ class ImageLayerShape
 		}
 		shape.setOnMouseDragged(event ->
 		{
-			if (!mouseDragged)
+			try
 			{
-				mx = centerX.get();
-				my = centerY.get();
-				dx = mx - event.getX();
-				dy = my - event.getY();
-				mouseDragged = true;
+				if (!mouseDragged)
+				{
+					mx = centerX.get();
+					my = centerY.get();
+					dx = mx - event.getX();
+					dy = my - event.getY();
+					mouseDragged = true;
+				}
+				if (type == SPOT)
+				{
+					if (event.isControlDown())
+					{
+						final double x = event.getX() - mx;
+						final double y = event.getY() - my;
+						radius.set(max(SPOT_RADIUS_MIN, sqrt(x * x + y * y)));
+					}
+					else
+					{
+						centerX.set(dx + event.getX());
+						centerY.set(dy + event.getY());
+					}
+				}
 			}
-			if (type == SPOT)
+			finally
 			{
-				if (event.isControlDown())
-				{
-					final double x = event.getX() - mx;
-					final double y = event.getY() - my;
-					radius.set(max(SPOT_RADIUS_MIN, sqrt(x * x + y * y)));
-				}
-				else
-				{
-					centerX.set(dx + event.getX());
-					centerY.set(dy + event.getY());
-				}
+				event.consume();
 			}
 		});
 		shape.setOnMouseReleased(event ->
@@ -118,6 +125,7 @@ class ImageLayerShape
 			finally
 			{
 				mouseDragged = false;
+				event.consume();
 			}
 		});
 		shape.setFill(Color.TRANSPARENT);

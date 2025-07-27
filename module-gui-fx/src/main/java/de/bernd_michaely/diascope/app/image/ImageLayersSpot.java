@@ -29,9 +29,9 @@ final class ImageLayersSpot extends ImageLayersBase
 {
 	private final BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
 
-	ImageLayersSpot(Viewport viewport)
+	ImageLayersSpot(Viewport viewport, ImageTransforms imageTransforms)
 	{
-		super(viewport);
+		super(viewport, imageTransforms);
 		layerSelectionHandler = (imageLayer, _) ->
 			layers.selectAll(i -> layers.get(i) == imageLayer ? SELECTION_TOGGLE : SELECTION_UNSET);
 		layers.addAll(
@@ -43,8 +43,6 @@ final class ImageLayersSpot extends ImageLayersBase
 		{
 			imageLayer.getImageTransforms().bindProperties(imageTransforms);
 		});
-//		imageTransforms.zoomFactorWrapperProperty().bind(
-//			layers.getFirst().getImageTransforms().zoomFactorWrapperProperty());
 	}
 
 	ImageLayer getBaseLayer()

@@ -36,13 +36,13 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 	final LayerSelectionModel layerSelectionModel;
 	final ImageTransforms imageTransforms;
 
-	ImageLayersBase(Viewport viewport)
+	ImageLayersBase(Viewport viewport, ImageTransforms imageTransforms)
 	{
 		this.viewport = viewport;
+		this.imageTransforms = imageTransforms;
 		this.layers = SelectableListFactory.selectableList();
 		this.unmodifiableLayers = unmodifiableList(layers);
 		this.layerSelectionModel = new LayerSelectionModel(layers);
-		this.imageTransforms = new ImageTransforms();
 		// viewport.layersMax[Width|Height]Property bindings:
 		layers.addListener(new ListChangeListenerBuilder<ImageLayer>()
 			.onAdd(change ->
