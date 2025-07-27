@@ -30,9 +30,12 @@ import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.shape.StrokeType;
+import javafx.scene.text.Font;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
+import static java.lang.Math.max;
+import static java.lang.Math.sqrt;
 import static javafx.beans.binding.Bindings.when;
 
 /// Class to describe an ImageLayer selection shape.
@@ -45,16 +48,18 @@ class ImageLayerShape
 	private static final double STROKE_WIDTH_SELECTED = 4.0;
 	static final Color COLOR_UNSELECTED = Color.ALICEBLUE;
 	static final double STROKE_WIDTH_UNSELECTED = 1.0;
-	private static final double DEFAULT_SPOT_RADIUS = 100.0;
+	private static final double SPOT_RADIUS_MIN = Font.getDefault().getSize();
+	private static final double SPOT_RADIUS_DEFAULT = SPOT_RADIUS_MIN * 10;
 	private final Type type;
 	private final Shape shape;
 	private final BooleanProperty selected = new SimpleBooleanProperty();
 	private final BooleanProperty unselectedVisible = new SimpleBooleanProperty();
 	private boolean mouseDragged;
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
-	private final DoubleProperty centerX = new SimpleDoubleProperty(DEFAULT_SPOT_RADIUS);
-	private final DoubleProperty centerY = new SimpleDoubleProperty(DEFAULT_SPOT_RADIUS);
-	private double dx, dy;
+	private final DoubleProperty centerX = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
+	private final DoubleProperty centerY = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
+	private final DoubleProperty radius = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
+	private double mx, my, dx, dy;
 
 	ImageLayerShape(Type type)
 	{
@@ -64,25 +69,37 @@ class ImageLayerShape
 			case SPLIT, BASE ->
 				new Polygon();
 			case SPOT ->
-				new Circle(DEFAULT_SPOT_RADIUS);
+				new Circle(SPOT_RADIUS_DEFAULT);
 		};
 		if (shape instanceof Circle circle)
 		{
 			circle.centerXProperty().bind(centerX);
 			circle.centerYProperty().bind(centerY);
+			circle.radiusProperty().bind(radius);
 		}
 		shape.setOnMouseDragged(event ->
 		{
 			if (!mouseDragged)
 			{
-				dx = centerX.get() - event.getX();
-				dy = centerY.get() - event.getY();
+				mx = centerX.get();
+				my = centerY.get();
+				dx = mx - event.getX();
+				dy = my - event.getY();
 				mouseDragged = true;
 			}
 			if (type == SPOT)
 			{
-				centerX.set(dx + event.getX());
-				centerY.set(dy + event.getY());
+				if (event.isControlDown())
+				{
+					final double x = event.getX() - mx;
+					final double y = event.getY() - my;
+					radius.set(max(SPOT_RADIUS_MIN, sqrt(x * x + y * y)));
+				}
+				else
+				{
+					centerX.set(dx + event.getX());
+					centerY.set(dy + event.getY());
+				}
 			}
 		});
 		shape.setOnMouseReleased(event ->
