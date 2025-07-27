@@ -60,6 +60,7 @@ class MainContent
 	private static final Logger logger = System.getLogger(MainContent.class.getName());
 	private static final int INDEX_NO_SELECTION = -1;
 	private static final String MSG_FMT_LOADING_IMG = "%s ← loading…";
+	private static final Color COLOR_LABEL_LOADING_IMG = Color.SKYBLUE;
 	private final BorderPane outerPane;
 	private final MultiImageView multiImageView;
 	private final BorderPane statusLine;
@@ -183,8 +184,9 @@ class MainContent
 			getRegion().setCursor(Cursor.WAIT);
 			final var selectedItem = items.get(selectedIndex.intValue());
 			final Path pathSelected = selectedItem.getPath();
+			getDefaultTextPaint();
 			labelStatus.setText(MSG_FMT_LOADING_IMG.formatted(pathSelected));
-			labelStatus.setTextFill(Color.SKYBLUE);
+			labelStatus.setTextFill(COLOR_LABEL_LOADING_IMG);
 			// read ahead:
 			final boolean backward = index < this.indexSelectedPrevious;
 			final boolean forward = index > this.indexSelectedPrevious;
@@ -270,7 +272,6 @@ class MainContent
 
 	void postVisibleInit()
 	{
-		getDefaultTextPaint();
 		this.imageLoader.setOnResult(taskResult -> Platform.runLater(() ->
 		{
 			final Path path = taskResult.path();
@@ -285,7 +286,7 @@ class MainContent
 			else
 			{
 				labelStatus.setText(MSG_FMT_LOADING_IMG.formatted(strPath));
-				labelStatus.setTextFill(Color.SKYBLUE);
+				labelStatus.setTextFill(COLOR_LABEL_LOADING_IMG);
 			}
 			setImageDescriptor(taskResult);
 		}));
