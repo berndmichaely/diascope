@@ -43,6 +43,7 @@ public class MultiImageView
 	private static final Logger logger = System.getLogger(MultiImageView.class.getName());
 	private final Viewport viewport;
 	private final ImageLayers imageLayers;
+	private final ImageLayersSpot spotLayers;
 	private final BooleanProperty scrollBarsEnabled;
 	private final ReadOnlyIntegerWrapper numLayers;
 	private final ReadOnlyIntegerWrapper maximumNumberOfLayers;
@@ -68,6 +69,9 @@ public class MultiImageView
 		this.numLayers = new ReadOnlyIntegerWrapper();
 		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
 		this.imageLayers = new ImageLayers(viewport);
+		viewport.setLayerSelectionModel(imageLayers.layerSelectionModel);
+		this.spotLayers = new ImageLayersSpot(viewport);
+		spotLayers.getSpotLayer().setSelected(true);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
 			(int) (C / imageLayers.getDividerRotationControl().getDividerMinGap()));
 		viewport.modeProperty().addListener(onChange(mode ->
@@ -75,17 +79,16 @@ public class MultiImageView
 			if (mode == null)
 			{
 				imageLayers.removeAllLayersButOne();
-				imageLayers.getLayers().setSelected(0, true);
+				imageLayers.layers.setSelected(0, true);
 			}
 		}));
-		final var layerSelectionModel = imageLayers.getLayerSelectionModel();
-		numLayers.bind(layerSelectionModel.sizeProperty());
+		numLayers.bind(imageLayers.layerSelectionModel.sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
-			scrollBarsEnabled.and(imageLayers.getImageTransforms().zoomModeProperty().isNotEqualTo(FIT)));
+			scrollBarsEnabled.and(imageLayers.imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
-		spotModeAvailable.bind(numLayers.getReadOnlyProperty().isEqualTo(2)
-			.and(layerSelectionModel.singleLayerSelected()));
+		spotModeAvailable.bind(imageLayers.layerSelectionModel.dualLayerSelected().or(
+			imageLayers.layerSelectionModel.sizeProperty().isEqualTo(2)));
 	}
 
 	/// Returns the main component to be included in surrounding environment.
@@ -99,12 +102,12 @@ public class MultiImageView
 
 	public ImageTransforms getImageTransforms()
 	{
-		return imageLayers.getImageTransforms();
+		return imageLayers.imageTransforms;
 	}
 
 	public LayerSelectionModel getLayerSelectionModel()
 	{
-		return imageLayers.getLayerSelectionModel();
+		return imageLayers.layerSelectionModel;
 	}
 
 	/// Centers the split center in the viewport and
@@ -118,9 +121,9 @@ public class MultiImageView
 	/// Adds a new layer.
 	public void addLayer()
 	{
-		final Optional<ImageLayer> singleSelectedLayer = imageLayers.
-			getLayerSelectionModel().singleSelectedLayerProperty().get();
-		final var layers = imageLayers.getLayers();
+		final Optional<ImageLayer> singleSelectedLayer =
+			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get();
+		final var layers = imageLayers.layers;
 		imageLayers.createImageLayer(singleSelectedLayer.isPresent() ?
 			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
 	}
@@ -182,7 +185,7 @@ public class MultiImageView
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
-		imageLayers.getLayerSelectionModel().singleSelectedLayerProperty().get().ifPresent(imageLayer ->
+		imageLayers.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(imageLayer ->
 			imageLayer.setImageDescriptor(imageDescriptor));
 	}
 

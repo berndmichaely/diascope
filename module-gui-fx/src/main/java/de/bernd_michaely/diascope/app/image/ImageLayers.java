@@ -16,169 +16,104 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
-import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
+import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import java.util.function.Predicate;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.ListChangeListener;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
-import static de.bernd_michaely.diascope.app.image.Border.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static java.util.Collections.unmodifiableList;
-import static javafx.beans.binding.Bindings.max;
 
 /// Class to handle the image layers for split mode.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class ImageLayers
+final class ImageLayers extends ImageLayersBase
 {
-	private static final Double ZERO = 0.0;
-	private final Viewport viewport;
-	private final SelectableList<ImageLayer> layers;
-	private final LayerSelectionModel layerSelectionModel;
 	private final DividerRotationControl dividerRotationControl;
-	private final ImageTransforms imageTransforms;
-	private final ChangeListener<Number> listenerClippingPoints;
+	private final ChangeListener<Number> clippingPointsListener;
 
 	ImageLayers(Viewport viewport)
 	{
-		this.viewport = viewport;
-		this.layers = SelectableListFactory.selectableList();
-		this.layerSelectionModel = new LayerSelectionModel(layers);
-		this.dividerRotationControl = new DividerRotationControl(unmodifiableList(layers));
-		this.imageTransforms = new ImageTransforms();
-		this.listenerClippingPoints = onChange(() ->
-		{
-			if (viewport.isMultiLayerMode())
-			{
-				final int n = layers.size();
-				for (int i = 0; i < n; i++)
-				{
-					final var layer = layers.get(i);
-					final var divider = layer.getDivider();
-					final var corner = divider.getBorder();
-					final var layerNext = layers.get(i == n - 1 ? 0 : i + 1);
-					final var dividerNext = layerNext.getDivider();
-					final var cornerNext = dividerNext.getBorder();
-					final int numIntermediateCorners = numberOfCornerPointsBetween(
-						corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
-					final int numPoints = 2 * (3 + numIntermediateCorners);
-					final Double[] points = new Double[numPoints];
-					int index = 0;
-					points[index++] = viewport.getSplitCenter().xProperty().getValue();
-					points[index++] = viewport.getSplitCenter().yProperty().getValue();
-					points[index++] = divider.getBorderIntersectionX();
-					points[index++] = divider.getBorderIntersectionY();
-					var c = corner;
-					for (int k = 0; k < numIntermediateCorners; k++, c = c.next())
-					{
-						points[index++] = switch (c)
-						{
-							case TOP, RIGHT ->
-								viewport.widthProperty().getValue();
-							case BOTTOM, LEFT ->
-								ZERO;
-						};
-						points[index++] = switch (c)
-						{
-							case RIGHT, BOTTOM ->
-								viewport.heightProperty().getValue();
-							case LEFT, TOP ->
-								ZERO;
-						};
-					}
-					points[index++] = dividerNext.getBorderIntersectionX();
-					points[index++] = dividerNext.getBorderIntersectionY();
-					layer.setShapePoints(points);
-				}
-			}
-		});
-		viewport.multiLayerModeProperty().addListener(onChange((Boolean enabled) ->
+		super(viewport);
+		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers);
+		this.clippingPointsListener = onChange(new ClippingPointsListener(viewport, unmodifiableLayers));
+		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
 		{
 			if (enabled)
 			{
-				viewport.widthProperty().addListener(listenerClippingPoints);
-				viewport.heightProperty().addListener(listenerClippingPoints);
-				viewport.getSplitCenter().xProperty().addListener(listenerClippingPoints);
-				viewport.getSplitCenter().yProperty().addListener(listenerClippingPoints);
+				viewport.widthProperty().addListener(clippingPointsListener);
+				viewport.heightProperty().addListener(clippingPointsListener);
+				viewport.getSplitCenter().xProperty().addListener(clippingPointsListener);
+				viewport.getSplitCenter().yProperty().addListener(clippingPointsListener);
 			}
 			else
 			{
-				viewport.widthProperty().removeListener(listenerClippingPoints);
-				viewport.heightProperty().removeListener(listenerClippingPoints);
-				viewport.getSplitCenter().xProperty().removeListener(listenerClippingPoints);
-				viewport.getSplitCenter().yProperty().removeListener(listenerClippingPoints);
+				viewport.widthProperty().removeListener(clippingPointsListener);
+				viewport.heightProperty().removeListener(clippingPointsListener);
+				viewport.getSplitCenter().xProperty().removeListener(clippingPointsListener);
+				viewport.getSplitCenter().yProperty().removeListener(clippingPointsListener);
 			}
 		}));
-		layers.addListener((ListChangeListener.Change<? extends ImageLayer> change) ->
-		{
-			while (change.next())
+		// listener for imageLayer:
+		layers.addListener(new ListChangeListenerBuilder<ImageLayer>()
+			.onAdd(change ->
 			{
-				if (change.wasPermutated())
+				final var list = change.getList();
+				for (int i = change.getFrom(); i < change.getTo(); i++)
 				{
-					throw new IllegalStateException("ImageLayers→ListChangeListener: Unexpected list permutation");
+					final var imageLayer = list.get(i);
+					imageLayer.getDivider().angleProperty().addListener(clippingPointsListener);
+					viewport.addSplitLayer(i, imageLayer);
 				}
-				else if (change.wasUpdated())
+				dividerRotationControl.initializeDividerAngles();
+			})
+			.onRemove(change ->
+			{
+				for (var imageLayer : change.getRemoved())
 				{
-					throw new IllegalStateException("ImageLayers→ListChangeListener: Unexpected list item update");
+					viewport.removeLayer(imageLayer);
+					imageLayer.getDivider().angleProperty().removeListener(clippingPointsListener);
+					imageLayer.clear();
 				}
-				else
+				dividerRotationControl.initializeDividerAngles();
+			}).build());
+		// listener for imageTransforms:
+		layers.addListener(new ListChangeListenerBuilder<ImageLayer>()
+			.onAdd(change ->
+			{
+				final var list = change.getList();
+				for (int i = change.getFrom(); i < change.getTo(); i++)
 				{
-					final var list = change.getList();
-					for (var imageLayer : change.getRemoved())
+					final var imageLayer = list.get(i);
+					imageLayer.getImageTransforms().bindProperties(imageTransforms);
+					if (list.isEmpty())
 					{
-						viewport.removeLayer(imageLayer);
-						// imageLayer.getImageLayerShape().unselectedVisibleProperty().unbind();
-						imageLayer.getImageTransforms().unbindProperties(imageTransforms);
-						if (list.isEmpty())
-						{
-							imageTransforms.zoomFactorWrapperProperty().unbind();
-						}
-						else
-						{
-							imageTransforms.zoomFactorWrapperProperty().bind(
-								list.getFirst().getImageTransforms().zoomFactorWrapperProperty());
-						}
-						imageLayer.getDivider().angleProperty().removeListener(listenerClippingPoints);
-						imageLayer.clear();
+						imageTransforms.zoomFactorWrapperProperty().unbind();
 					}
-					for (int i = change.getFrom(); i < change.getTo(); i++)
+					else
 					{
-						final var imageLayer = list.get(i);
-						imageLayer.getDivider().angleProperty().addListener(listenerClippingPoints);
-						imageLayer.getImageTransforms().bindProperties(imageTransforms);
-						if (list.isEmpty())
-						{
-							imageTransforms.zoomFactorWrapperProperty().unbind();
-						}
-						else
-						{
-							imageTransforms.zoomFactorWrapperProperty().bind(
-								list.getFirst().getImageTransforms().zoomFactorWrapperProperty());
-						}
-						// imageLayer.getImageLayerShape().unselectedVisibleProperty().bind(viewport.dividersVisibleProperty());
-						viewport.addLayer(i, imageLayer);
+						imageTransforms.zoomFactorWrapperProperty().bind(
+							list.getFirst().getImageTransforms().zoomFactorWrapperProperty());
 					}
 				}
-			}
-		});
-	}
-
-	SelectableList<ImageLayer> getLayers()
-	{
-		return layers;
-	}
-
-	LayerSelectionModel getLayerSelectionModel()
-	{
-		return layerSelectionModel;
-	}
-
-	ImageTransforms getImageTransforms()
-	{
-		return imageTransforms;
+			})
+			.onRemove(change ->
+			{
+				final var list = change.getList();
+				for (var imageLayer : change.getRemoved())
+				{
+					imageLayer.getImageTransforms().unbindProperties(imageTransforms);
+					if (list.isEmpty())
+					{
+						imageTransforms.zoomFactorWrapperProperty().unbind();
+					}
+					else
+					{
+						imageTransforms.zoomFactorWrapperProperty().bind(
+							list.getFirst().getImageTransforms().zoomFactorWrapperProperty());
+					}
+				}
+			}).build());
 	}
 
 	DividerRotationControl getDividerRotationControl()
@@ -191,8 +126,6 @@ class ImageLayers
 		final var imageLayer = ImageLayer.createInstance(
 			viewport, this::selectImageLayer, dividerRotationControl);
 		layers.add(index, imageLayer);
-		updateScrollRangeBindings();
-		dividerRotationControl.initializeDividerAngles();
 		selectImageLayer(imageLayer);
 		return imageLayer;
 	}
@@ -223,14 +156,18 @@ class ImageLayers
 		return _removeLayersIf(ImageLayer::isSelected);
 	}
 
+	/// Removes all but one layer.
+	/// A selected layer will be retained preferably.
+	///
+	/// @return true, iff anything has been changed
+	///
 	boolean removeAllLayersButOne()
 	{
 		if (layers.size() > 1)
 		{
-			final var imageLayer = layers.stream()
-				.filter(ImageLayer::isSelected)
-				.findAny().orElse(layers.getFirst());
-			return _removeLayersIf(l -> l != imageLayer);
+			final var imageLayerRetained = layers.stream()
+				.filter(ImageLayer::isSelected).findAny().orElse(layers.getFirst());
+			return _removeLayersIf(l -> l != imageLayerRetained);
 		}
 		else
 		{
@@ -238,46 +175,21 @@ class ImageLayers
 		}
 	}
 
+	/// Removes all layers which meet the condition.
+	///
+	/// @param condition the condition to delete a layer
+	/// @return true, iff anything has been changed
+	///
 	private boolean _removeLayersIf(Predicate<ImageLayer> condition)
 	{
 		final boolean anyRemoved = layers.removeIf(condition);
 		if (anyRemoved)
 		{
-			updateScrollRangeBindings();
-			dividerRotationControl.initializeDividerAngles();
 			if (layers.size() == 1)
 			{
 				selectImageLayer(layers.getFirst());
 			}
 		}
 		return anyRemoved;
-	}
-
-	private void updateScrollRangeBindings()
-	{
-		if (layers.isEmpty())
-		{
-			viewport.layersMaxWidthProperty().unbind();
-			viewport.layersMaxWidthProperty().set(0.0);
-			viewport.layersMaxHeightProperty().unbind();
-			viewport.layersMaxHeightProperty().set(0.0);
-		}
-		else
-		{
-			final ImageLayer first = layers.getFirst();
-			first.maxToPreviousWidthProperty().bind(max(first.layerWidthProperty(), 0.0));
-			first.maxToPreviousHeightProperty().bind(max(first.layerHeightProperty(), 0.0));
-			for (int i = 1; i < layers.size(); i++)
-			{
-				final ImageLayer lPrev = layers.get(i - 1);
-				final ImageLayer lNext = layers.get(i);
-				lNext.maxToPreviousWidthProperty().bind(
-					max(lPrev.maxToPreviousWidthProperty(), lNext.layerWidthProperty()));
-				lNext.maxToPreviousHeightProperty().bind(
-					max(lPrev.maxToPreviousHeightProperty(), lNext.layerHeightProperty()));
-			}
-			viewport.layersMaxWidthProperty().bind(layers.getLast().maxToPreviousWidthProperty());
-			viewport.layersMaxHeightProperty().bind(layers.getLast().maxToPreviousHeightProperty());
-		}
 	}
 }

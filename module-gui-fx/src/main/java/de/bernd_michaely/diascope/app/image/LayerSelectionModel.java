@@ -73,23 +73,46 @@ public class LayerSelectionModel implements SelectableProperties
 			singleSelectedLayer.set(isSingleSelected ?
 				layers.stream().filter(ImageLayer::isSelected).findAny() : Optional.empty());
 			final boolean isDualSelected = wasSingleSelected && change.getSelectionChangeType() == SINGLE_INCREMENT;
-			dualLayerSelected.set(isDualSelected);
-			if (isDualSelected)
+			final boolean isDualLayer = n == 2;
+			final boolean isDualMode = isDualSelected || isDualLayer;
+			dualLayerSelected.set(isDualMode);
+			if (isDualMode)
 			{
-				dualSelectedLayerFirst.set(optionalOldSingleSelectedLayer);
-				final var firstLayer = optionalOldSingleSelectedLayer.get();
-				dualSelectedLayerSecond.set(layers.stream()
-					.filter(ImageLayer::isSelected)
-					.filter(layer -> layer != firstLayer)
-					.findAny());
+				if (isDualSelected)
+				{
+					dualSelectedLayerFirst.set(optionalOldSingleSelectedLayer);
+					final var firstLayer = optionalOldSingleSelectedLayer.get();
+					dualSelectedLayerSecond.set(layers.stream()
+						.filter(ImageLayer::isSelected)
+						.filter(layer -> layer != firstLayer)
+						.findAny());
+				}
+				else // n == 2
+				{
+					if (isSingleSelected)
+					{
+						dualSelectedLayerSecond.set(singleSelectedLayer.get());
+						final var firstLayer = singleSelectedLayer.get().get();
+						dualSelectedLayerFirst.set(layers.stream()
+							.filter(layer -> layer != firstLayer)
+							.findAny());
+					}
+					else
+					{
+						dualSelectedLayerFirst.set(Optional.of(layers.getFirst()));
+						dualSelectedLayerSecond.set(Optional.of(layers.getLast()));
+					}
+				}
 			}
 			else
 			{
 				dualSelectedLayerFirst.set(Optional.empty());
 				dualSelectedLayerSecond.set(Optional.empty());
 			}
-			logger.log(TRACE, () -> "→ numSelected == %d – isDualSelected? %b – isFirstPresent? %b – isSecondPresent? %b"
-				.formatted(numSelected, isDualSelected, dualSelectedLayerFirst.get().isPresent(), dualSelectedLayerSecond.get().isPresent()));
+			logger.log(TRACE, () ->
+				"→ numSelected == %d – isDualSelected? %b – isFirstPresent? %b – isSecondPresent? %b"
+					.formatted(numSelected, isDualSelected,
+						dualSelectedLayerFirst.get().isPresent(), dualSelectedLayerSecond.get().isPresent()));
 		});
 	}
 

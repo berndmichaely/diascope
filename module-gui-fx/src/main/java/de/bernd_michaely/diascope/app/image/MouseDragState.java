@@ -65,10 +65,6 @@ class MouseDragState
 		{
 			onRotate.run();
 		}
-		else
-		{
-			throw new IllegalStateException("Divider callback not initialized");
-		}
 	}
 
 	private boolean handleMouseEvent(MouseEvent event)

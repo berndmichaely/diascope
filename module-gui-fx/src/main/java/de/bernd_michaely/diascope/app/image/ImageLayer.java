@@ -33,15 +33,17 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ZoomMode.FILL;
-import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
+import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
+import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static javafx.beans.binding.Bindings.isNull;
 import static javafx.beans.binding.Bindings.max;
@@ -58,9 +60,9 @@ class ImageLayer
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
-	private final Polygon clippingShape = new Polygon();
+	private final Shape clippingShape;
 	private final BooleanProperty clippingEnabled = new SimpleBooleanProperty();
-	private final ImageLayerShape imageLayerShape = new ImageLayerShape();
+	private final ImageLayerShape imageLayerShape;
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
 	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
@@ -77,13 +79,37 @@ class ImageLayer
 	private final Scale scale;
 	private final Rotate rotate;
 	private final Translate translateScroll;
+	private @Nullable ImageDescriptor imageDescriptor;
 	private String imageTitle = "";
 
-	private ImageLayer(Viewport viewport)
+	/// ImageLayer types.
+	enum Type
 	{
+		/// split mode layer with polygonal selection shape
+		SPLIT,
+		/// base layer of spot mode with rectangular selection shape
+		BASE,
+		/// spot layers of spot mode with rounded selection shape
+		SPOT
+	}
+
+	private ImageLayer(Viewport viewport, Type type)
+	{
+		this.clippingShape = switch (type)
+		{
+			case SPLIT, BASE ->
+				new Polygon();
+			case SPOT ->
+				new Circle();
+		};
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		this.imageLayerShape = new ImageLayerShape(type);
+		if (clippingShape instanceof Circle circle)
+		{
+			imageLayerShape.bindShape(circle);
+		}
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.imageWidth = new ReadOnlyDoubleWrapper();
 		this.imageHeight = new ReadOnlyDoubleWrapper();
@@ -161,12 +187,23 @@ class ImageLayer
 
 	static ImageLayer createInstance(Viewport viewport,
 		BiConsumer<ImageLayer, Boolean> layerSelectionHandler,
-		Consumer<Divider> onDividerRotate)
+		@Nullable Consumer<Divider> onDividerRotate)
 	{
-		final var imageLayer = new ImageLayer(viewport);
+		final var imageLayer = createInstance(SPLIT, viewport, layerSelectionHandler);
 		// post init:
 		final Divider d = imageLayer.getDivider();
-		d.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(d));
+		if (onDividerRotate != null)
+		{
+			d.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(d));
+		}
+		return imageLayer;
+	}
+
+	static ImageLayer createInstance(Type type, Viewport viewport,
+		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
+	{
+		final var imageLayer = new ImageLayer(viewport, type);
+		// post init:
 		imageLayer.getImageLayerShape().setLayerSelectionHandler(new Consumer<Boolean>()
 		{
 			private final WeakReference<ImageLayer> wImageLayer = new WeakReference<>(imageLayer);
@@ -187,7 +224,7 @@ class ImageLayer
 		});
 		imageLayer.clippingEnabled.addListener(onChange(enabled ->
 		{
-			if (enabled)
+			if (enabled && type != BASE)
 			{
 				imageLayer.setNullableClip(imageLayer.clippingShape);
 			}
@@ -230,12 +267,19 @@ class ImageLayer
 		return paneLayer;
 	}
 
+	@Nullable
+	ImageDescriptor getImageDescriptor()
+	{
+		return imageDescriptor;
+	}
+
 	/// Set the image to display.
 	///
 	/// @param imageDescriptor the given image, may be null to clear the display
 	///
 	void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
+		this.imageDescriptor = imageDescriptor;
 		final var image = imageDescriptor != null ? imageDescriptor.getImage() : null;
 		setNullableImage(image);
 		imageTitle = imageDescriptor != null ? imageDescriptor.getTitle() : "";
@@ -284,8 +328,11 @@ class ImageLayer
 
 	private void clearShapePoints()
 	{
-		clippingShape.getPoints().clear();
-		getImageLayerShape().clearPoints();
+		if (clippingShape instanceof Polygon polygon)
+		{
+			polygon.getPoints().clear();
+			getImageLayerShape().clearPoints();
+		}
 	}
 
 	void clearClip()
@@ -296,8 +343,11 @@ class ImageLayer
 
 	void setShapePoints(Double... points)
 	{
-		clippingShape.getPoints().setAll(points);
-		getImageLayerShape().setShapePoints(points);
+		if (clippingShape instanceof Polygon polygon)
+		{
+			polygon.getPoints().setAll(points);
+			getImageLayerShape().setShapePoints(points);
+		}
 	}
 
 	@Override

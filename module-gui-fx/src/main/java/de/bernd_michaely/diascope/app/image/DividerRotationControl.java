@@ -27,13 +27,14 @@ import static de.bernd_michaely.diascope.app.image.Bindings.*;
 import static java.lang.Math.max;
 import static java.lang.System.Logger.Level.*;
 
-/// Class to handle divider rorations.
+/// Class to handle divider rotations.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
 class DividerRotationControl implements Consumer<Divider>
 {
 	private static final Logger logger = System.getLogger(DividerRotationControl.class.getName());
+	private static final double DIVIDERS_START_ANGLE = 90.0;
 	private static final double DEFAULT_DIVIDER_MIN_GAP = 10.0;
 	private static final double C2 = 2 * C;
 	private final DoubleProperty dividerMinGapProperty;
@@ -69,7 +70,7 @@ class DividerRotationControl implements Consumer<Divider>
 		if (numLayers > 0)
 		{
 			final double da = C / numLayers;
-			double a = 90.0;
+			double a = DIVIDERS_START_ANGLE;
 			for (int i = 0; i < numLayers; i++, a += da)
 			{
 				layers.get(i).getDivider().setAngle(a);
