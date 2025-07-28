@@ -17,11 +17,13 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
+import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -31,9 +33,11 @@ import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.shape.StrokeType;
 import javafx.scene.text.Font;
+import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
+import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Math.max;
 import static java.lang.Math.sqrt;
 import static javafx.beans.binding.Bindings.when;
@@ -55,15 +59,28 @@ class ImageLayerShape
 	private final BooleanProperty selected = new SimpleBooleanProperty();
 	private final BooleanProperty unselectedVisible = new SimpleBooleanProperty();
 	private boolean mouseDragged;
-	private @Nullable Consumer<Boolean> layerSelectionHandler;
-	private final DoubleProperty centerX = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
-	private final DoubleProperty centerY = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
-	private final DoubleProperty radius = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
 	private double mx, my, dx, dy;
+	private @Nullable Consumer<Boolean> layerSelectionHandler;
+	private final DoubleProperty centerX = new SimpleDoubleProperty();
+	private final DoubleProperty centerY = new SimpleDoubleProperty();
+	private final DoubleProperty radius = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
+	private final Viewport viewport;
+	private final ChangeListener<@Nullable Mode> spotInitListener;
 
-	ImageLayerShape(Type type)
+	ImageLayerShape(Type type, Viewport viewport)
 	{
 		this.type = type;
+		this.viewport = viewport;
+		this.spotInitListener = onChange(newValue ->
+		{
+			if (newValue == Mode.SPOT)
+			{
+				centerX.set(viewport.widthProperty().get() / 2);
+				centerY.set(viewport.heightProperty().get() / 2);
+				removeSpotInitListener(viewport);
+			}
+		});
+		viewport.modeProperty().addListener(spotInitListener);
 		this.shape = switch (type)
 		{
 			case SPLIT, BASE ->
@@ -136,6 +153,15 @@ class ImageLayerShape
 			when(unselectedVisible).then(COLOR_UNSELECTED).otherwise(Color.TRANSPARENT)));
 		shape.strokeWidthProperty().bind(when(selected).then(STROKE_WIDTH_SELECTED).otherwise(
 			when(unselectedVisible).then(STROKE_WIDTH_UNSELECTED).otherwise(0.0)));
+	}
+
+	private void removeSpotInitListener(@UnderInitialization ImageLayerShape this,
+		Viewport viewport)
+	{
+		if (viewport != null && spotInitListener != null)
+		{
+			viewport.modeProperty().removeListener(spotInitListener);
+		}
 	}
 
 	Type getType()

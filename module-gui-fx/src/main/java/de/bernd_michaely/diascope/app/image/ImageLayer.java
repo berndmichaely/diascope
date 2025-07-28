@@ -105,7 +105,7 @@ class ImageLayer
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		this.imageLayerShape = new ImageLayerShape(type);
+		this.imageLayerShape = new ImageLayerShape(type, viewport);
 		if (clippingShape instanceof Circle circle)
 		{
 			imageLayerShape.bindShape(circle);
