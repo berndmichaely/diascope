@@ -31,10 +31,11 @@ final class ImageLayers extends ImageLayersBase
 {
 	private final DividerRotationControl dividerRotationControl;
 	private final ChangeListener<Number> clippingPointsListener;
+	private final Viewport viewport;
 
 	ImageLayers(Viewport viewport, ImageTransforms imageTransforms)
 	{
-		super(viewport);
+		this.viewport = viewport;
 		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers);
 		this.clippingPointsListener = onChange(new ClippingPointsListener(viewport, unmodifiableLayers));
 		viewport.multiLayerModeProperty().addListener(onChange(enabled ->

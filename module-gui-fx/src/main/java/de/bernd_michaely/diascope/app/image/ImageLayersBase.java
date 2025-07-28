@@ -20,6 +20,8 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import java.util.List;
+import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.property.ReadOnlyDoubleWrapper;
 
 import static java.util.Collections.unmodifiableList;
 import static javafx.beans.binding.Bindings.max;
@@ -30,14 +32,15 @@ import static javafx.beans.binding.Bindings.max;
 ///
 abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 {
-	final Viewport viewport;
+	final ReadOnlyDoubleWrapper layersMaxWidth, layersMaxHeight;
 	final SelectableList<ImageLayer> layers;
 	final List<ImageLayer> unmodifiableLayers;
 	final LayerSelectionModel layerSelectionModel;
 
-	ImageLayersBase(Viewport viewport)
+	ImageLayersBase()
 	{
-		this.viewport = viewport;
+		this.layersMaxWidth = new ReadOnlyDoubleWrapper();
+		this.layersMaxHeight = new ReadOnlyDoubleWrapper();
 		this.layers = SelectableListFactory.selectableList();
 		this.unmodifiableLayers = unmodifiableList(layers);
 		this.layerSelectionModel = new LayerSelectionModel(layers);
@@ -70,8 +73,8 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 				}
 				if (to == n)
 				{
-					viewport.layersMaxWidthProperty().bind(layers.getLast().maxToPreviousWidthProperty());
-					viewport.layersMaxHeightProperty().bind(layers.getLast().maxToPreviousHeightProperty());
+					layersMaxWidth.bind(layers.getLast().maxToPreviousWidthProperty());
+					layersMaxHeight.bind(layers.getLast().maxToPreviousHeightProperty());
 				}
 			})
 			.onRemove(change ->
@@ -99,8 +102,8 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 				}
 				else if (!isEmpty)
 				{
-					viewport.layersMaxWidthProperty().bind(layers.getLast().maxToPreviousWidthProperty());
-					viewport.layersMaxHeightProperty().bind(layers.getLast().maxToPreviousHeightProperty());
+					layersMaxWidth.bind(layers.getLast().maxToPreviousWidthProperty());
+					layersMaxHeight.bind(layers.getLast().maxToPreviousHeightProperty());
 				}
 				change.getRemoved().forEach(imageLayer ->
 				{
@@ -109,11 +112,29 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 				});
 				if (isEmpty)
 				{
-					viewport.layersMaxWidthProperty().unbind();
-					viewport.layersMaxWidthProperty().set(0.0);
-					viewport.layersMaxHeightProperty().unbind();
-					viewport.layersMaxHeightProperty().set(0.0);
+					layersMaxWidth.unbind();
+					layersMaxWidth.set(0.0);
+					layersMaxHeight.unbind();
+					layersMaxHeight.set(0.0);
 				}
 			}).build());
+	}
+
+	/// The maximum of widths of all layers.
+	///
+	/// @return a property holding the maximum of widths of all layers
+	///
+	ReadOnlyDoubleProperty layersMaxWidthProperty()
+	{
+		return layersMaxWidth.getReadOnlyProperty();
+	}
+
+	/// The maximum of heights of all layers.
+	///
+	/// @return a property holding the maximum of heights of all layers
+	///
+	ReadOnlyDoubleProperty layersMaxHeightProperty()
+	{
+		return layersMaxHeight.getReadOnlyProperty();
 	}
 }

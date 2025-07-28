@@ -31,7 +31,6 @@ final class ImageLayersSpot extends ImageLayersBase
 
 	ImageLayersSpot(Viewport viewport, ImageTransforms imageTransforms)
 	{
-		super(viewport);
 		layerSelectionHandler = (imageLayer, _) ->
 			layers.selectAll(i -> layers.get(i) == imageLayer ? SELECTION_TOGGLE : SELECTION_UNSET);
 		layers.addAll(
