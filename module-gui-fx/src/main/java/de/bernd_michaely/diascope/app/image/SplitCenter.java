@@ -28,8 +28,7 @@ import javafx.scene.text.Font;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
+import static java.lang.Math.clamp;
 
 /// Class to handle split center shape.
 ///
@@ -63,13 +62,15 @@ class SplitCenter
 		viewportWidth.addListener(onChange((oldWidth, newWidth) ->
 		{
 			final double w = newWidth.doubleValue();
-			final double x = splitCenterX.get() * w / oldWidth.doubleValue();
+			final double ow = oldWidth.doubleValue();
+			final double x = ow != 0 ? splitCenterX.get() * w / ow : 0;
 			splitCenterX.set(normX(w, x));
 		}));
 		viewportHeight.addListener(onChange((oldHeight, newHeight) ->
 		{
 			final double h = newHeight.doubleValue();
-			final double y = splitCenterY.get() * h / oldHeight.doubleValue();
+			final double oh = oldHeight.doubleValue();
+			final double y = oh != 0 ? splitCenterY.get() * h / oh : 0;
 			splitCenterY.set(normY(h, y));
 		}));
 		shapeSplitCenter.setOnMouseDragged(event ->
@@ -99,13 +100,13 @@ class SplitCenter
 	private double normX(@UnderInitialization SplitCenter this,
 		double width, double x)
 	{
-		return width < diameter ? width / 2.0 : max(radius, min(x, width - radius));
+		return width < diameter ? width / 2.0 : clamp(x, radius, width - radius);
 	}
 
 	private double normY(@UnderInitialization SplitCenter this,
 		double height, double y)
 	{
-		return height < diameter ? height / 2.0 : max(radius, min(y, height - radius));
+		return height < diameter ? height / 2.0 : clamp(y, radius, height - radius);
 	}
 
 	/// Centers the split center in the viewport.

@@ -28,6 +28,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
@@ -81,10 +82,24 @@ class ImageLayerShape
 			}
 		});
 		viewport.modeProperty().addListener(spotInitListener);
+		viewport.widthProperty().addListener(onChange((oldWidth, newWidth) ->
+		{
+			final double w = newWidth.doubleValue();
+			final double x = centerX.get() * w / oldWidth.doubleValue();
+			centerX.set(x);
+		}));
+		viewport.heightProperty().addListener(onChange((oldHeight, newHeight) ->
+		{
+			final double h = newHeight.doubleValue();
+			final double y = centerY.get() * h / oldHeight.doubleValue();
+			centerY.set(y);
+		}));
 		this.shape = switch (type)
 		{
-			case SPLIT, BASE ->
+			case SPLIT ->
 				new Polygon();
+			case BASE ->
+				new Rectangle();
 			case SPOT ->
 				new Circle(SPOT_RADIUS_DEFAULT);
 		};
