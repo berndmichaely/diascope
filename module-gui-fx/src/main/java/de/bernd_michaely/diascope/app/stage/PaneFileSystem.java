@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.stage;
 import de.bernd_michaely.common.filesystem.view.base.Configuration;
 import de.bernd_michaely.common.filesystem.view.base.UserNodeConfiguration;
 import de.bernd_michaely.common.filesystem.view.fx.FileSystemTreeView;
+import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import java.io.IOException;
 import java.lang.System.Logger;
 import java.nio.file.Files;
@@ -96,7 +97,12 @@ public class PaneFileSystem
 		showingHiddenDirsProperty.addListener(onChange(fileSystemTreeView::updateTree));
 		this.selectedPathPersistedProperty = newPersistedObjectProperty(
 			PREF_KEY_SELECTED_PATH, getClass(), PATH_USER_HOME.toString(), Paths::get);
-		fileSystemTreeView.expandPath(selectedPathPersistedProperty.get(), true, true);
+		final var path = ApplicationConfiguration.getState().commandLineArguments()
+			.stream().map(Path::of).filter(Files::isDirectory)
+			.findFirst().orElse(selectedPathPersistedProperty.get());
+		logger.log(INFO, () -> "Path to open at launch: »%s«"
+			.formatted(path != null ? path.toString() : ""));
+		fileSystemTreeView.expandPath(path, true, true);
 		selectedPathPersistedProperty.bind(fileSystemTreeView.selectedPathProperty());
 	}
 
