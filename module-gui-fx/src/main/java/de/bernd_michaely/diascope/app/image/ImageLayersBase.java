@@ -34,12 +34,10 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 	final SelectableList<ImageLayer> layers;
 	final List<ImageLayer> unmodifiableLayers;
 	final LayerSelectionModel layerSelectionModel;
-	final ImageTransforms imageTransforms;
 
-	ImageLayersBase(Viewport viewport, ImageTransforms imageTransforms)
+	ImageLayersBase(Viewport viewport)
 	{
 		this.viewport = viewport;
-		this.imageTransforms = imageTransforms;
 		this.layers = SelectableListFactory.selectableList();
 		this.unmodifiableLayers = unmodifiableList(layers);
 		this.layerSelectionModel = new LayerSelectionModel(layers);

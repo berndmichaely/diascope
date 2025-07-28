@@ -34,7 +34,7 @@ final class ImageLayers extends ImageLayersBase
 
 	ImageLayers(Viewport viewport, ImageTransforms imageTransforms)
 	{
-		super(viewport, imageTransforms);
+		super(viewport);
 		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers);
 		this.clippingPointsListener = onChange(new ClippingPointsListener(viewport, unmodifiableLayers));
 		viewport.multiLayerModeProperty().addListener(onChange(enabled ->

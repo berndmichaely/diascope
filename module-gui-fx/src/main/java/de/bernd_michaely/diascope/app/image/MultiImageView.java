@@ -87,7 +87,7 @@ public class MultiImageView
 		numLayers.bind(imageLayers.layerSelectionModel.sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
-			scrollBarsEnabled.and(imageLayers.imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
+			scrollBarsEnabled.and(imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
 		spotModeAvailable.bind(imageLayers.layerSelectionModel.dualLayerSelected().or(
 			imageLayers.layerSelectionModel.sizeProperty().isEqualTo(2)));
