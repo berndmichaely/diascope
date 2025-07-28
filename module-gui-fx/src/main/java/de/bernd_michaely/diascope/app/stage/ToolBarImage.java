@@ -91,20 +91,20 @@ class ToolBarImage
 		final var buttonModeSplit = new ToggleButton();
 		buttonModeSplit.setText("Split");
 		buttonModeSplit.setTooltip(new Tooltip("""
-Set multi image SPLIT mode.
+			Set multi image SPLIT mode.
 
-To enable SPOT mode, open at least 2 layers,
-single-select the base layer and then
-<Ctrl>-select the spot layer."""));
+			To enable SPOT mode, open at least 2 layers,
+			single-select the base layer and then
+			<Ctrl>-select the spot layer."""));
 		buttonModeSplit.setUserData(SPLIT);
 		final var buttonModeSpot = new ToggleButton();
 		buttonModeSpot.setText("Spot");
 		buttonModeSpot.setTooltip(new Tooltip("""
-Set multi image SPOT mode.
+			Set multi image SPOT mode.
 
-To enable SPOT mode, open at least 2 layers,
-single-select the base layer and then
-<Ctrl>-select the spot layer."""));
+			To enable SPOT mode, open at least 2 layers,
+			single-select the base layer and then
+			<Ctrl>-select the spot layer."""));
 		buttonModeSpot.setUserData(SPOT);
 		buttonModeSpot.disableProperty().bind(not(multiImageView.spotModeAvailableProperty()));
 		final var toggleGroup = new ToggleGroup();
