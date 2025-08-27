@@ -22,6 +22,7 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.value.ObservableDoubleValue;
 import javafx.collections.ObservableList;
 
 /// List binding utilities.
@@ -49,13 +50,9 @@ public class ListBindings
 		@Override
 		protected double computeValue()
 		{
-			double result = observableList.isEmpty() ? neutralElement :
-				selector.apply(observableList.getFirst()).get();
-			for (int i = 1; i < observableList.size(); i++)
-			{
-				result = operator.applyAsDouble(result, selector.apply(observableList.get(i)).get());
-			}
-			return result;
+			return observableList.stream()
+				.map(selector).mapToDouble(ObservableDoubleValue::get)
+				.reduce(neutralElement, operator);
 		}
 
 		private static <B> DoubleBinding newInstance(ObservableList<B> observableList,
@@ -82,7 +79,7 @@ public class ListBindings
 	/// reconfigured.
 	///
 	/// @param observableList  the observable list
-	/// @param operator        function to combine two parameters
+	/// @param operator        an associative operator to combine two parameters
 	/// @param neutralElement  value for empty list
 	/// @return a DoubleBinding containing the combined result
 	///
@@ -103,7 +100,7 @@ public class ListBindings
 	/// @param <T>             the type of the observable list
 	/// @param observableList  the observable list
 	/// @param selector        property holding the parameters to combine
-	/// @param operator        function to combine two parameters
+	/// @param operator        an associative operator to combine two parameters
 	/// @param neutralElement  value for empty list
 	/// @return a DoubleBinding containing the combined result
 	///

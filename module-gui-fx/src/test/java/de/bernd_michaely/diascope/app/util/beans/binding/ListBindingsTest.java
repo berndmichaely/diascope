@@ -77,6 +77,11 @@ public class ListBindingsTest
 			return property.doubleValue();
 		}
 
+		private void setValue(double value)
+		{
+			property.set(value);
+		}
+
 		@Override
 		public String toString()
 		{
@@ -132,6 +137,22 @@ public class ListBindingsTest
 	}
 
 	@Test
+	public void test_observed_list_items()
+	{
+		System.out.println("test_observed_list_items");
+		final ObservableList<Item> list = observableArrayList();
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		check(0, result.get());
+		list.addAll(new Item(1), new Item(2), new Item(3));
+		check(6, result.get());
+		list.get(0).setValue(4);
+		list.get(1).setValue(5);
+		list.get(2).setValue(6);
+		check(15, result.get());
+	}
+
+	@Test
 	public void test_operand_positionss()
 	{
 		System.out.println("test_2_operands");
@@ -177,8 +198,8 @@ public class ListBindingsTest
 		System.out.println("test_3_operands_add");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
-		check(-1, result.get());
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		check(0, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
 		list.add(new Item(2));
@@ -196,7 +217,7 @@ public class ListBindingsTest
 		list.remove(0);
 		check(6, result.get());
 		list.remove(0);
-		check(-1, result.get());
+		check(0, result.get());
 	}
 
 	@Test
@@ -205,8 +226,8 @@ public class ListBindingsTest
 		System.out.println("test_3_operands_max");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, Math::max, -1));
-		check(-1, result.get());
+		result.bind(cumulatedOperations(list, Item::valueProperty, Math::max, 0));
+		check(0, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
 		list.add(new Item(2));
@@ -227,10 +248,10 @@ public class ListBindingsTest
 		check(6, result.get());
 		list.remove(1);
 		check(4, result.get());
-		list.set(0, new Item(0));
-		check(0, result.get());
+		list.set(0, new Item(1));
+		check(1, result.get());
 		list.remove(0);
-		check(-1, result.get());
+		check(0, result.get());
 	}
 
 	@Test
@@ -247,7 +268,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
 		check(expected, result.get());
 		for (int i = 15; i >= 0; i -= 2)
 		{
@@ -257,7 +278,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		list.clear();
-		check(-1, result.get());
+		check(0, result.get());
 		printList(list);
 	}
 
@@ -267,8 +288,8 @@ public class ListBindingsTest
 		System.out.println("testChainedObservableDoubleValues_add_remove_empty");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
-		check(-1, result.get());
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		check(0, result.get());
 		double expected = 0;
 		for (int i = 0; i < 16; i++)
 		{
@@ -286,7 +307,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		list.clear();
-		check(-1, result.get());
+		check(0, result.get());
 		printList(list);
 	}
 
@@ -304,9 +325,9 @@ public class ListBindingsTest
 		}
 		printList(list);
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
 		check(expected, result.get());
-		list.getFirst().valueProperty().set(5.7);
+		list.getFirst().setValue(5.7);
 		expected += 4.7;
 		check(expected, result.get());
 	}
@@ -325,7 +346,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
 		check(expected, result.get());
 		// permutate:
 		list.subList(1, 12).sort(null);
