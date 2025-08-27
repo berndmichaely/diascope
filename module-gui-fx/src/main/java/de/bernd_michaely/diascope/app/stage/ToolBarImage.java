@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
+import de.bernd_michaely.diascope.app.util.action.Action;
 import java.util.List;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -123,7 +124,7 @@ class ToolBarImage
 		// create ToolBar:
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		toolBar.getItems().addAll(actions.actionThumbnails.createToolBarButtons());
-		toolBar.getItems().add(new Separator());
+		toolBar.getItems().add(Action.createToolBarSeparator());
 		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
 		if (isShapeClipSupported)
 		{
@@ -131,17 +132,17 @@ class ToolBarImage
 			toolBar.getItems().addAll(actions.actionLayerRemove.createToolBarButtons());
 			toolBar.getItems().addAll(actions.actionShowDividers.createToolBarButtons());
 			// TODO : icons
-//			toolBar.getItems().add(new Separator());
+//			toolBar.getItems().add(Action.createToolBarSeparator());
 //			toolBar.getItems().addAll(actions.actionSelectAll.createToolBarButtons());
 //			toolBar.getItems().addAll(actions.actionSelectNone.createToolBarButtons());
 //			toolBar.getItems().addAll(actions.actionSelectToggle.createToolBarButtons());
-			toolBar.getItems().add(new Separator());
+			toolBar.getItems().add(Action.createToolBarSeparator());
 			toolBar.getItems().addAll(actions.actionMode.createToolBarButtons());
-			toolBar.getItems().add(new Separator());
+			toolBar.getItems().add(Action.createToolBarSeparator());
 		}
 		toolBar.getItems().addAll(actions.actionZoom.createToolBarButtons());
 		toolBar.getItems().addAll(stackPaneZoom, sliderZoom);
-		toolBar.getItems().add(new Separator());
+		toolBar.getItems().add(Action.createToolBarSeparator());
 		toolBar.getItems().addAll(sliderRotation, stackPaneRotation);
 		toolBar.getItems().add(new Separator());
 		toolBar.getItems().addAll(actions.actionMirrorX.createToolBarButtons());

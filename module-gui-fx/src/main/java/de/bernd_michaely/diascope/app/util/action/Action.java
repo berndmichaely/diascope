@@ -34,15 +34,25 @@ public interface Action
 		@Override
 		public List<SeparatorMenuItem> createMenuItems()
 		{
-			return List.of(new SeparatorMenuItem());
+			return List.of(createSeparatorMenuItem());
 		}
 
 		@Override
 		public List<Separator> createToolBarButtons()
 		{
-			return List.of(new Separator());
+			return List.of(createToolBarSeparator());
 		}
 	};
+
+	static SeparatorMenuItem createSeparatorMenuItem()
+	{
+		return new SeparatorMenuItem();
+	}
+
+	static Separator createToolBarSeparator()
+	{
+		return new Separator();
+	}
 
 	/// Creates toolbar buttons corresponding to the action.
 	///
