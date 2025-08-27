@@ -352,7 +352,12 @@ public class ListBindingsTest
 		// remove 0..99
 		for (int i = 0; i < num; i++)
 		{
-			check(num - i, list.removeFirst().get());
+			final int delta = num - i;
+			sum -= delta;
+			System.out.print("· %2d : ".formatted(i));
+			check(delta, list.removeFirst().get());
+			System.out.print("→ %2d : ".formatted(i));
+			check(sum, result.getfinalResult());
 		}
 		check(0.0, result.getfinalResult());
 	}
