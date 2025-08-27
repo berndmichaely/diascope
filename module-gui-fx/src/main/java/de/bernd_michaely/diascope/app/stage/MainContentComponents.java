@@ -59,7 +59,6 @@ class MainContentComponents
 	private final FullScreen fullScreen;
 	private final MainContentProperties properties;
 	private final MainContentProperties persistedProperties;
-	private final EventHandler<KeyEvent> keyEventHandler;
 	private final ImageControlProperties imageControlProperties;
 
 	MainContentComponents(MultiImageView multiImageView, ListView<ImageGroupDescriptor> listView)
@@ -93,7 +92,7 @@ class MainContentComponents
 				contextMenu.show(paneContent, contextMenuEvent.getScreenX(), contextMenuEvent.getScreenY());
 			}
 		});
-		this.keyEventHandler = event ->
+		final EventHandler<KeyEvent> keyEventHandler = event ->
 		{
 			final Consumer<BooleanProperty> propertyToggle = prop ->
 			{
@@ -105,6 +104,7 @@ class MainContentComponents
 				final var actionZoom = actions.actionZoom;
 				actionZoom.setSelectedId(
 					actionZoom.getSelectedId() != zoomMode ? zoomMode : actionZoom.getUnselectedId());
+				event.consume();
 			};
 			switch (event.getCode())
 			{
@@ -122,11 +122,9 @@ class MainContentComponents
 				case DIGIT3 -> zoomModeToggle.accept(FILL);
 			}
 		};
-		paneOuter.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
-		paneListView.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
-		paneToolBar.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
-		multiImageView.getRegion().addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
-
+		paneOuter.setOnKeyPressed(keyEventHandler);
+		paneListView.setOnKeyPressed(keyEventHandler);
+		paneToolBar.setOnKeyPressed(keyEventHandler);
 		// window and fullscreen modes properties bindings:
 		properties.toolBarVisibleProperty().addListener(onChange(visible ->
 		{
@@ -138,6 +136,10 @@ class MainContentComponents
 			else
 			{
 				paneToolBar.getChildren().remove(toolBar);
+				if (!properties.thumbnailsVisibleProperty().get())
+				{
+					multiImageView.getRegion().requestFocus();
+				}
 			}
 		}));
 		SplitPane.setResizableWithParent(multiImageView.getRegion(), false);
@@ -163,6 +165,10 @@ class MainContentComponents
 					paneListView.getChildren().remove(sp);
 					paneListView.setCenter(imgView);
 					splitPane = null;
+					if (!properties.toolBarVisibleProperty().get())
+					{
+						multiImageView.getRegion().requestFocus();
+					}
 				}
 			}
 		}));
