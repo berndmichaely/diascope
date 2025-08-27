@@ -27,6 +27,7 @@ import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.layout.Region;
+import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
@@ -77,20 +78,8 @@ public class MultiImageView
 		imageLayersSpot.getSpotLayer().setSelected(true);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
 			(int) (C / imageLayersSplit.getDividerRotationControl().getDividerMinGap()));
-		viewport.modeProperty().addListener(onChange(mode ->
-		{
-			if (mode != null)
-			{
-				final var layers = mode == SPOT ? imageLayersSpot : imageLayersSplit;
-				viewport.layersMaxWidthProperty().bind(layers.layersMaxWidthProperty());
-				viewport.layersMaxHeightProperty().bind(layers.layersMaxHeightProperty());
-			}
-			else
-			{
-				viewport.layersMaxWidthProperty().unbind();
-				viewport.layersMaxHeightProperty().unbind();
-			}
-		}));
+		bindViewportToImageLayers(getDefaultMode());
+		viewport.modeOrDefaultProperty().addListener(onChange(this::bindViewportToImageLayers));
 		viewport.modeProperty().addListener(onChange(mode ->
 		{
 			if (mode == null)
@@ -106,6 +95,17 @@ public class MultiImageView
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
 		spotModeAvailable.bind(imageLayersSplit.layerSelectionModel.dualLayerSelected().or(
 			imageLayersSplit.layerSelectionModel.sizeProperty().isEqualTo(2)));
+	}
+
+	private void bindViewportToImageLayers(@UnderInitialization MultiImageView this,
+		Mode mode)
+	{
+		final ImageLayersBase imageLayers = mode == SPOT ? imageLayersSpot : imageLayersSplit;
+		if (imageLayers != null && viewport != null)
+		{
+			viewport.layersMaxWidthProperty().bind(imageLayers.layersMaxWidthProperty());
+			viewport.layersMaxHeightProperty().bind(imageLayers.layersMaxHeightProperty());
+		}
 	}
 
 	/// Returns the main component to be included in surrounding environment.
@@ -202,8 +202,11 @@ public class MultiImageView
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
-		imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(imageLayer ->
-			imageLayer.setImageDescriptor(imageDescriptor));
+		if (viewport.modeOrDefaultProperty().get() == SPLIT)
+		{
+			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(imageLayer ->
+				imageLayer.setImageDescriptor(imageDescriptor));
+		}
 	}
 
 	public BooleanProperty scrollBarsEnabledProperty()
