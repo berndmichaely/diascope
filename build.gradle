@@ -117,7 +117,7 @@ allprojects {
 	version = semVer
 	
 	ext.versionJUnit = '5.13.4'
-	ext.versionJUnitVintage = '4.13.2'
+	// ext.versionJUnitVintage = '4.13.2'
 	
 	ext.versionCheckerFramework = '3.49.5'
 	ext.versionCheckerFrameworkPlugin = '0.6.56'
@@ -144,8 +144,12 @@ logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}
 logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"
 logger.lifecycle "==> Root project »$name ($version)«"
 logger.lifecycle " -> Base dir is »${file('.')}«"
-logger.lifecycle " -> Using »JUnit         ${versionJUnit}«"
-logger.lifecycle " -> Using »JUnit vintage ${versionJUnitVintage}«"
+if (ext.has('versionJUnitVintage')) {
+	logger.lifecycle " -> Using »JUnit         ${versionJUnit}«"
+	logger.lifecycle " -> Using »JUnit vintage ${versionJUnitVintage}«"
+} else {
+	logger.lifecycle " -> Using »JUnit  ${versionJUnit}«"
+}
 logger.lifecycle " -> Using »JaCoCo ${jacoco.toolVersion}«"
 logger.lifecycle " -> Using »Checker Framework        ${versionCheckerFramework}«"
 logger.lifecycle " -> Using »Checker Framework Plugin ${versionCheckerFrameworkPlugin}«"
