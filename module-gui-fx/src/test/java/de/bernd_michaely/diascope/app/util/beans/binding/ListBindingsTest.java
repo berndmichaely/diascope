@@ -106,7 +106,7 @@ public class ListBindingsTest
 		System.out.println("test_identity_selector");
 		final ObservableList<DoubleProperty> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Double::sum, 0));
 		check(0, result.get());
 		list.add(new SimpleDoubleProperty(1));
 		check(1, result.get());
@@ -124,7 +124,7 @@ public class ListBindingsTest
 		System.out.println("test_1_operand");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(0, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
@@ -142,7 +142,7 @@ public class ListBindingsTest
 		System.out.println("test_observed_list_items");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(0, result.get());
 		list.addAll(new Item(1), new Item(2), new Item(3));
 		check(6, result.get());
@@ -158,7 +158,7 @@ public class ListBindingsTest
 		System.out.println("test_2_operands");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0.0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0.0));
 		check(0, result.get());
 		//init:
 		list.add(new Item(2));
@@ -198,7 +198,7 @@ public class ListBindingsTest
 		System.out.println("test_3_operands_add");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(0, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
@@ -226,7 +226,7 @@ public class ListBindingsTest
 		System.out.println("test_3_operands_max");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, Math::max, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::max, 0));
 		check(0, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
@@ -268,7 +268,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(expected, result.get());
 		for (int i = 15; i >= 0; i -= 2)
 		{
@@ -288,7 +288,7 @@ public class ListBindingsTest
 		System.out.println("testChainedObservableDoubleValues_add_remove_empty");
 		final ObservableList<Item> list = observableArrayList();
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(0, result.get());
 		double expected = 0;
 		for (int i = 0; i < 16; i++)
@@ -325,7 +325,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(expected, result.get());
 		list.getFirst().setValue(5.7);
 		expected += 4.7;
@@ -346,7 +346,7 @@ public class ListBindingsTest
 		}
 		printList(list);
 		final DoubleProperty result = new SimpleDoubleProperty();
-		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
+		result.bind(cumulatedOperations(list, Item::valueProperty, Double::sum, 0));
 		check(expected, result.get());
 		// permutate:
 		list.subList(1, 12).sort(null);
