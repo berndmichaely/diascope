@@ -28,10 +28,7 @@ import javafx.scene.text.Font;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
 import static de.bernd_michaely.diascope.app.image.Bindings.tan;
-import static de.bernd_michaely.diascope.app.image.Border.BOTTOM;
-import static de.bernd_michaely.diascope.app.image.Border.LEFT;
-import static de.bernd_michaely.diascope.app.image.Border.RIGHT;
-import static de.bernd_michaely.diascope.app.image.Border.TOP;
+import static de.bernd_michaely.diascope.app.image.Border.*;
 import static java.lang.Math.ceil;
 import static javafx.beans.binding.Bindings.when;
 
@@ -42,6 +39,8 @@ import static javafx.beans.binding.Bindings.when;
  */
 class Divider
 {
+	private static final Color COLOR_DEFAULT = ImageLayerShape.COLOR_UNSELECTED;
+	private static final Color COLOR_HOVER = Color.LIGHTCORAL;
 	private final DoubleProperty angle;
 	private final ReadOnlyDoubleWrapper angleNorm;
 	private final ReadOnlyDoubleProperty angleNormalized;
@@ -101,7 +100,7 @@ class Divider
 						.otherwise(0.0)))); // TOP
 		final double sizeDefault = Font.getDefault().getSize();
 		lineShape = new Line();
-		lineShape.setStroke(ImageLayerShape.COLOR_UNSELECTED);
+		lineShape.setStroke(COLOR_DEFAULT);
 		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * ImageLayerShape.STROKE_WIDTH_UNSELECTED);
 		lineShape.startXProperty().bind(splitCenterX);
 		lineShape.startYProperty().bind(splitCenterY);
@@ -115,6 +114,8 @@ class Divider
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
 		lineEvent.setCursor(Cursor.MOVE);
+		lineEvent.setOnMouseEntered(_ -> lineShape.setStroke(COLOR_HOVER));
+		lineEvent.setOnMouseExited(_ -> lineShape.setStroke(COLOR_DEFAULT));
 		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
 		mouseDragState.setListenersFor(lineEvent);
 	}

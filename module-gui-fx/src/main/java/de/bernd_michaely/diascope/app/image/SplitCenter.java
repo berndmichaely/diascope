@@ -36,6 +36,8 @@ import static java.lang.Math.clamp;
 ///
 class SplitCenter
 {
+	private static final Color COLOR_DEFAULT = Color.WHITESMOKE;
+	private static final Color COLOR_HOVER = Color.MEDIUMSPRINGGREEN;
 	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
 	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
 	private final Circle shapeSplitCenter;
@@ -54,11 +56,14 @@ class SplitCenter
 		this.diameter = Font.getDefault().getSize();
 		this.radius = diameter / 2.0;
 		this.shapeSplitCenter = new Circle(radius);
-		shapeSplitCenter.setFill(Color.WHITESMOKE);
+		shapeSplitCenter.setFill(COLOR_DEFAULT);
 		shapeSplitCenter.setOpacity(0.8);
 		shapeSplitCenter.setCursor(Cursor.MOVE);
 		shapeSplitCenter.centerXProperty().bind(splitCenterX);
 		shapeSplitCenter.centerYProperty().bind(splitCenterY);
+		shapeSplitCenter.setOnMouseEntered(_ -> shapeSplitCenter.setFill(COLOR_HOVER));
+		shapeSplitCenter.setOnMouseExited(_ -> shapeSplitCenter.setFill(COLOR_DEFAULT));
+
 		viewportWidth.addListener(onChange((oldWidth, newWidth) ->
 		{
 			final double w = newWidth.doubleValue();
