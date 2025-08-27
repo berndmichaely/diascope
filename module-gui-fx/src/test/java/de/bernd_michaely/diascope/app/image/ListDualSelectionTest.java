@@ -55,13 +55,13 @@ public class ListDualSelectionTest
 
 	private void _add(String item, String singleItemSelected, String first, String second)
 	{
-		list.add(item);
+		assertTrue(list.add(item));
 		_check(Action.ADD, -1, false, item, singleItemSelected, first, second);
 	}
 
 	private void _del(String item, String singleItemSelected, String first, String second)
 	{
-		list.remove(item);
+		assertTrue(list.remove(item));
 		_check(Action.DEL, -1, false, item, singleItemSelected, first, second);
 	}
 
@@ -119,6 +119,12 @@ public class ListDualSelectionTest
 		_add("b", null, "a", "b");
 		//
 		_add("c", null, null, null);
+		//
+		_del("a", null, "b", "c");
+		//
+		_del("b", null, null, null);
+		//
+		_del("c", null, null, null);
 	}
 
 	@Test
