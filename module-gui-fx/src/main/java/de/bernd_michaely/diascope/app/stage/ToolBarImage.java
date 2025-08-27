@@ -21,6 +21,7 @@ import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -47,7 +48,15 @@ import static javafx.geometry.Pos.CENTER_RIGHT;
 class ToolBarImage
 {
 	private final ToolBar toolBar;
+	private final ToggleGroup toggleGroupMode = new ToggleGroup();
 	private final ToggleGroup toggleGroupZoom = new ToggleGroup();
+	private final Button buttonLayerAdd = new Button();
+	private final Button buttonLayerRemove = new Button();
+	private final ToggleButton buttonZoom100 = new ToggleButton();
+	private final ToggleButton buttonZoomFitWindow = new ToggleButton();
+	private final ToggleButton buttonZoomFillWindow = new ToggleButton();
+	private final ToggleButton buttonModeSplit = new ToggleButton();
+	private final ToggleButton buttonModeSpot = new ToggleButton();
 
 	ToolBarImage(MultiImageView multiImageView)
 	{
@@ -55,7 +64,6 @@ class ToolBarImage
 		final var numLayers = layerSelectionModel.sizeProperty();
 		final var numSelectedLayers = layerSelectionModel.numSelectedProperty();
 		// add/remove layers
-		final var buttonLayerAdd = new Button();
 		final Image iconLayerAdd = Icons.LayerAdd.getIconImage();
 		if (iconLayerAdd != null)
 		{
@@ -69,7 +77,6 @@ class ToolBarImage
 		buttonLayerAdd.disableProperty().bind(
 			numLayers.greaterThanOrEqualTo(multiImageView.maximumNumberOfLayersProperty()).or(
 				multiImageView.modeOrDefaultProperty().isEqualTo(SPOT)));
-		final var buttonLayerRemove = new Button();
 		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
 		if (iconLayerRemove != null)
 		{
@@ -87,7 +94,6 @@ class ToolBarImage
 				.or(multiImageView.modeOrDefaultProperty().isEqualTo(SPOT)));
 		buttonLayerRemove.setOnAction(_ -> multiImageView.removeSelectedLayers());
 		// multi layer modes
-		final var buttonModeSplit = new ToggleButton();
 		buttonModeSplit.setText("Split");
 		buttonModeSplit.setTooltip(new Tooltip("""
 			Set multi image SPLIT mode.
@@ -96,7 +102,6 @@ class ToolBarImage
 			single-select the base layer and then
 			<Ctrl>-select the spot layer."""));
 		buttonModeSplit.setUserData(SPLIT);
-		final var buttonModeSpot = new ToggleButton();
 		buttonModeSpot.setText("Spot");
 		buttonModeSpot.setTooltip(new Tooltip("""
 			Set multi image SPOT mode.
@@ -106,7 +111,6 @@ class ToolBarImage
 			<Ctrl>-select the spot layer."""));
 		buttonModeSpot.setUserData(SPOT);
 		buttonModeSpot.disableProperty().bind(not(multiImageView.spotModeAvailableProperty()));
-		final var toggleGroupMode = new ToggleGroup();
 		toggleGroupMode.getToggles().addAll(buttonModeSplit, buttonModeSpot);
 		toggleGroupMode.selectedToggleProperty().addListener(onChange(selectedToggle ->
 		{
@@ -145,31 +149,6 @@ class ToolBarImage
 		buttonShowDividers.setSelected(true);
 		multiImageView.dividersVisibleProperty().bindBidirectional(buttonShowDividers.selectedProperty());
 		// zoom modes
-		final var buttonZoomFitWindow = new ToggleButton();
-		buttonZoomFitWindow.setUserData(ZoomMode.FIT);
-		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
-		if (iconZoomFitWindow != null)
-		{
-			buttonZoomFitWindow.setGraphic(new ImageView(iconZoomFitWindow));
-		}
-		else
-		{
-			buttonZoomFitWindow.setText("Fit");
-		}
-		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
-		final var buttonZoomFillWindow = new ToggleButton();
-		buttonZoomFillWindow.setUserData(ZoomMode.FILL);
-		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
-		if (iconZoomFillWindow != null)
-		{
-			buttonZoomFillWindow.setGraphic(new ImageView(iconZoomFillWindow));
-		}
-		else
-		{
-			buttonZoomFillWindow.setText("Fill");
-		}
-		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
-		final var buttonZoom100 = new ToggleButton();
 		buttonZoom100.setUserData(ZoomMode.ORIGINAL);
 		final Image iconZoom100 = Icons.Zoom100.getIconImage();
 		if (iconZoom100 != null)
@@ -181,6 +160,28 @@ class ToolBarImage
 			buttonZoom100.setText("100%");
 		}
 		buttonZoom100.setTooltip(new Tooltip("Zoom image to 100%"));
+		buttonZoomFitWindow.setUserData(ZoomMode.FIT);
+		final Image iconZoomFitWindow = Icons.ZoomFitWindow.getIconImage();
+		if (iconZoomFitWindow != null)
+		{
+			buttonZoomFitWindow.setGraphic(new ImageView(iconZoomFitWindow));
+		}
+		else
+		{
+			buttonZoomFitWindow.setText("Fit");
+		}
+		buttonZoomFitWindow.setTooltip(new Tooltip("Zoom image to fit window"));
+		buttonZoomFillWindow.setUserData(ZoomMode.FILL);
+		final Image iconZoomFillWindow = Icons.ZoomFillWindow.getIconImage();
+		if (iconZoomFillWindow != null)
+		{
+			buttonZoomFillWindow.setGraphic(new ImageView(iconZoomFillWindow));
+		}
+		else
+		{
+			buttonZoomFillWindow.setText("Fill");
+		}
+		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
 		final var sliderZoom = new Slider(0.01, 4, 1);
 		toggleGroupZoom.getToggles().addAll(buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100);
 		toggleGroupZoom.selectedToggleProperty().addListener(onChange(selectedToggle ->
@@ -206,7 +207,10 @@ class ToolBarImage
 			multiImageView.getImageTransforms().zoomModeProperty().set(ZoomMode.FIXED);
 			multiImageView.getImageTransforms().zoomFixedProperty().set(value.doubleValue());
 		}));
-		sliderZoom.setTooltip(new Tooltip("Set zoom factor"));
+		sliderZoom.setTooltip(new Tooltip("""
+      Set zoom factor
+
+      Double-Click to set slider to the actual zoom factor"""));
 		sliderZoom.setOnMouseClicked(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2 &&
@@ -225,13 +229,24 @@ class ToolBarImage
 //		stackPaneZoom.setBackground(Background.fill(Color.ROSYBROWN));
 		stackPaneZoom.setAlignment(CENTER_RIGHT);
 		// transformations
-		final var sliderRotation = new Slider(0, 360, 0);
-		sliderRotation.setTooltip(new Tooltip("Set image rotation"));
+		final var sliderRotation = new Slider(-180, 180, 0);
+		sliderRotation.setBlockIncrement(30);
+		sliderRotation.setTooltip(new Tooltip("""
+      Set image rotation
+
+      Double-Click to reset to 0"""));
+		sliderRotation.setOnMouseClicked(event ->
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
+			{
+				sliderRotation.setValue(0);
+			}
+		});
 		final var labelRotation = new Label("0°");
 		labelRotation.setTooltip(new Tooltip("Current image rotation"));
 		labelRotation.textProperty().bind(
 			multiImageView.getImageTransforms().rotateProperty().asString("%.0f° "));
-		final var labelRotationWidth = new Label(" 360° ");
+		final var labelRotationWidth = new Label(" -180° ");
 		labelRotationWidth.setVisible(false);
 		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);
 		stackPaneRotation.setAlignment(CENTER_RIGHT);
@@ -272,7 +287,7 @@ class ToolBarImage
 			toolBar.getItems().add(buttonShowDividers);
 		}
 		toolBar.getItems().addAll(
-			buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100,
+			buttonZoom100, buttonZoomFitWindow, buttonZoomFillWindow,
 			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
 			buttonMirrorX, buttonMirrorY);
 	}
@@ -284,12 +299,56 @@ class ToolBarImage
 		toggleGroup.selectToggle(null);
 	}
 
+	private <T extends Enum<T>> void selectToggle(ToggleGroup toggleGroup, T key)
+	{
+		toggleGroup.getToggles().stream()
+			.filter(toggle -> toggle.getUserData() == key)
+			.findAny().ifPresent(toggle -> toggle.setSelected(!toggle.isSelected()));
+	}
+
 	void setZoomMode(ZoomMode zoomMode)
 	{
-		toggleGroupZoom.getToggles().stream()
-			.filter(toggle -> toggle.getUserData() == zoomMode)
-			.findAny()
-			.ifPresent(toggle -> toggle.setSelected(true));
+		selectToggle(toggleGroupZoom, zoomMode);
+	}
+
+	void setMode(MultiImageView.Mode mode)
+	{
+		selectToggle(toggleGroupMode, mode);
+	}
+
+	Button getButtonLayerAdd()
+	{
+		return buttonLayerAdd;
+	}
+
+	Button getButtonLayerRemove()
+	{
+		return buttonLayerRemove;
+	}
+
+	BooleanProperty getModeSplitSelectedProperty()
+	{
+		return buttonModeSplit.selectedProperty();
+	}
+
+	BooleanProperty getModeSpotSelectedProperty()
+	{
+		return buttonModeSpot.selectedProperty();
+	}
+
+	BooleanProperty getZoom100SelectedProperty()
+	{
+		return buttonZoom100.selectedProperty();
+	}
+
+	BooleanProperty getZoomFitWindowSelectedProperty()
+	{
+		return buttonZoomFitWindow.selectedProperty();
+	}
+
+	BooleanProperty getZoomFillWindowSelectedProperty()
+	{
+		return buttonZoomFillWindow.selectedProperty();
 	}
 
 	ToolBar getToolBar()
