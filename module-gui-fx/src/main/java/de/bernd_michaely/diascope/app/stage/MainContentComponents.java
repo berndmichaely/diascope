@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
+import de.bernd_michaely.diascope.app.image.ZoomMode;
 import java.util.function.Consumer;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
@@ -163,11 +164,19 @@ class MainContentComponents
 		menuItemThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
 		// ---
 		final var menuItemFit = new MenuItem("Zoom to fit window");
-		menuItemFit.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyFitWindow());
+		menuItemFit.setOnAction(_ -> toolBarImage.setZoomMode(ZoomMode.FIT));
+		menuItemFit.disableProperty().bind(
+			multiImageView.getImageTransforms().zoomModeProperty().isEqualTo(ZoomMode.FIT));
 		final var menuItemFill = new MenuItem("Zoom to fill window");
-		menuItemFill.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyFillWindow());
-		final var menuItemFixed = new MenuItem("Zoom to actual size");
-		menuItemFixed.onActionProperty().bindBidirectional(toolBarImage.getOnActionPropertyZoom100());
+		menuItemFill.setOnAction(_ -> toolBarImage.setZoomMode(ZoomMode.FILL));
+		menuItemFill.disableProperty().bind(
+			multiImageView.getImageTransforms().zoomModeProperty().isEqualTo(ZoomMode.FILL));
+		final var menuItemZoom100 = new MenuItem("Zoom to actual size");
+		menuItemZoom100.setOnAction(_ -> toolBarImage.setZoomMode(ZoomMode.ORIGINAL));
+		menuItemZoom100.disableProperty().bind(
+			multiImageView.getImageTransforms().zoomModeProperty().isEqualTo(ZoomMode.ORIGINAL));
+		toolBarImage.setZoomMode(multiImageView.getImageTransforms().zoomModeProperty().get());
+
 		// ---
 		final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
 		menuItemDivider.selectedProperty().bindBidirectional(properties.dividersVisibleProperty());
@@ -196,7 +205,7 @@ class MainContentComponents
 		return new ContextMenu(
 			menuItemToolbar, menuItemThumbnails,
 			new SeparatorMenuItem(),
-			menuItemFit, menuItemFill, menuItemFixed,
+			menuItemFit, menuItemFill, menuItemZoom100,
 			new SeparatorMenuItem(),
 			menuItemDivider, menuItemScrollbars,
 			new SeparatorMenuItem(),

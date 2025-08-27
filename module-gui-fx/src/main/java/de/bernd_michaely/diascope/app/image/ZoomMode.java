@@ -26,6 +26,8 @@ public enum ZoomMode
 	FIT,
 	/// The image will be zoomed to fill the viewport.
 	FILL,
+	/// The image will be shown in original size.
+	ORIGINAL,
 	/// The image will be zoomed according to a given zoom factor.
 	FIXED;
 

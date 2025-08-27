@@ -64,17 +64,13 @@ class ClippingPointsListener implements Runnable
 				{
 					points[index++] = switch (c)
 					{
-						case TOP, RIGHT ->
-							viewport.widthProperty().getValue();
-						case BOTTOM, LEFT ->
-							ZERO;
+						case TOP, RIGHT -> viewport.widthProperty().getValue();
+						case BOTTOM, LEFT -> ZERO;
 					};
 					points[index++] = switch (c)
 					{
-						case RIGHT, BOTTOM ->
-							viewport.heightProperty().getValue();
-						case LEFT, TOP ->
-							ZERO;
+						case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
+						case LEFT, TOP -> ZERO;
 					};
 				}
 				points[index++] = dividerNext.getBorderIntersectionX();
