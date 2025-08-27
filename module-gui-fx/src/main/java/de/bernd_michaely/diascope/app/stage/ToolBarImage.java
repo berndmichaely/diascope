@@ -22,6 +22,7 @@ import de.bernd_michaely.diascope.app.image.ZoomMode;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.event.EventHandler;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
@@ -33,6 +34,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.StackPane;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 
@@ -182,7 +184,25 @@ class ToolBarImage
 			buttonZoomFillWindow.setText("Fill");
 		}
 		buttonZoomFillWindow.setTooltip(new Tooltip("Zoom image to fill window"));
-		final var sliderZoom = new Slider(0.01, 4, 1);
+		final EventHandler<ScrollEvent> sliderScrollEventHandler = event ->
+		{
+			if (event.getSource() instanceof Slider slider)
+			{
+				final double deltaY = event.getDeltaY();
+				final boolean forward = deltaY < 0.0;
+				final boolean backward = deltaY > 0.0;
+				if (forward)
+				{
+					slider.increment();
+				}
+				else if (backward)
+				{
+					slider.decrement();
+				}
+			}
+		};
+		final var sliderZoom = new Slider(0.05, 4, 1);
+		sliderZoom.setBlockIncrement(0.05);
 		toggleGroupZoom.getToggles().addAll(buttonZoomFitWindow, buttonZoomFillWindow, buttonZoom100);
 		toggleGroupZoom.selectedToggleProperty().addListener(onChange(selectedToggle ->
 		{
@@ -219,6 +239,7 @@ class ToolBarImage
 				sliderZoom.setValue(multiImageView.getImageTransforms().zoomFactorProperty().get());
 			}
 		});
+		sliderZoom.setOnScroll(sliderScrollEventHandler);
 		final var labelZoom = new Label("100.0%");
 		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
 		labelZoom.textProperty().bind(
@@ -242,6 +263,7 @@ class ToolBarImage
 				sliderRotation.setValue(0);
 			}
 		});
+		sliderRotation.setOnScroll(sliderScrollEventHandler);
 		final var labelRotation = new Label("0°");
 		labelRotation.setTooltip(new Tooltip("Current image rotation"));
 		labelRotation.textProperty().bind(
@@ -288,7 +310,7 @@ class ToolBarImage
 		}
 		toolBar.getItems().addAll(
 			buttonZoom100, buttonZoomFitWindow, buttonZoomFillWindow,
-			sliderZoom, stackPaneZoom, sliderRotation, stackPaneRotation,
+			stackPaneZoom, sliderZoom, sliderRotation, stackPaneRotation,
 			buttonMirrorX, buttonMirrorY);
 	}
 
