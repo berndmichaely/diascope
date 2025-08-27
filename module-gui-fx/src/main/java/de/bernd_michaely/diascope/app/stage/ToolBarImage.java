@@ -25,6 +25,7 @@ import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToolBar;
@@ -43,8 +44,8 @@ import static javafx.geometry.Pos.CENTER_RIGHT;
 ///
 class ToolBarImage
 {
-	private final ToolBar toolBar = new ToolBar();
-	private final ContextMenu contextMenu = new ContextMenu();
+	private final ToolBar toolBar;
+	private final ContextMenu contextMenu;
 
 	ToolBarImage(ImageControlActions actions, MultiImageView multiImageView)
 	{
@@ -123,6 +124,7 @@ class ToolBarImage
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		// create ToolBar:
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+		this.toolBar = new ToolBar();
 		toolBar.getItems().addAll(actions.actionThumbnails.createToolBarButtons());
 		toolBar.getItems().add(Action.createToolBarSeparator());
 		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
@@ -150,29 +152,30 @@ class ToolBarImage
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		// create ContextMenu:
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-		List.of(
-			actions.actionToolbar,
-			actions.actionThumbnails,
-			actions.actionScrollbars,
-			SEPARATOR,
-			actions.actionLayerAdd,
-			actions.actionLayerRemove,
-			actions.actionShowDividers,
-			SEPARATOR,
-			actions.actionMode,
-			SEPARATOR,
-			actions.actionZoom,
-			SEPARATOR,
-			actions.actionSelectAll,
-			actions.actionSelectNone,
-			actions.actionSelectToggle,
-			SEPARATOR,
-			actions.actionMirrorX,
-			actions.actionMirrorY,
-			SEPARATOR,
-			actions.actionResetAngles,
-			actions.actionFullScreen
-		).forEach(action -> contextMenu.getItems().addAll(action.createMenuItems()));
+		this.contextMenu = new ContextMenu(
+			List.of(
+				actions.actionToolbar,
+				actions.actionThumbnails,
+				actions.actionScrollbars,
+				SEPARATOR,
+				actions.actionLayerAdd,
+				actions.actionLayerRemove,
+				actions.actionShowDividers,
+				SEPARATOR,
+				actions.actionMode,
+				SEPARATOR,
+				actions.actionZoom,
+				SEPARATOR,
+				actions.actionSelectAll,
+				actions.actionSelectNone,
+				actions.actionSelectToggle,
+				SEPARATOR,
+				actions.actionMirrorX,
+				actions.actionMirrorY,
+				SEPARATOR,
+				actions.actionResetAngles,
+				actions.actionFullScreen
+			).stream().map(Action::createMenuItems).flatMap(List::stream).toArray(MenuItem[]::new));
 	}
 
 	ToolBar getToolBar()
