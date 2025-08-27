@@ -26,24 +26,47 @@ import javafx.collections.ObservableList;
 import org.junit.jupiter.api.Test;
 
 import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.*;
-import static java.util.Comparator.comparing;
 import static javafx.collections.FXCollections.observableArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * ListBindings Test.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// ListBindings Test.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class ListBindingsTest
 {
-	private static class Item
+	private static class Item implements Comparable<Item>
 	{
 		private final DoubleProperty property;
 
 		private Item(double value)
 		{
 			this.property = new SimpleDoubleProperty(value);
+		}
+
+		@Override
+		public int compareTo(Item other)
+		{
+			return Double.compare(this.getValue(), other.getValue());
+		}
+
+		@Override
+		public boolean equals(Object object)
+		{
+			if (object instanceof Item other)
+			{
+				return compareTo(other) == 0;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return property.intValue();
 		}
 
 		private DoubleProperty valueProperty()
@@ -109,24 +132,42 @@ public class ListBindingsTest
 	}
 
 	@Test
-	public void test_2_operands()
+	public void test_operand_positionss()
 	{
 		System.out.println("test_2_operands");
 		final ObservableList<Item> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
-		check(-1, result.get());
-		list.add(new Item(1));
-		check(1, result.get());
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, 0.0);
+		check(0, result.get());
+		//init:
 		list.add(new Item(2));
+		check(2, result.get());
+		list.add(new Item(1));
 		check(3, result.get());
-		list.set(0, new Item(3));
-		check(5, result.get());
-		list.set(1, new Item(4));
+		// add/remove @ first/middle/last:
+		list.add(0, new Item(3));
+		check(6, result.get());
+		list.remove(0);
+		check(3, result.get());
+		list.add(1, new Item(3));
+		check(6, result.get());
+		list.remove(1);
+		check(3, result.get());
+		list.add(2, new Item(3));
+		check(6, result.get());
+		list.remove(2);
+		check(3, result.get());
+		// update @ first/middle/last:
+		list.add(0, new Item(3));
+		check(6, result.get());
+		list.set(0, new Item(4));
 		check(7, result.get());
-		list.remove(0);
-		check(4, result.get());
-		list.remove(0);
-		check(-1, result.get());
+		list.set(1, new Item(5));
+		check(10, result.get());
+		list.set(2, new Item(6));
+		check(15, result.get());
+		// permutate:
+		list.sort(null);
+		check(15, result.get());
 	}
 
 	@Test
@@ -183,6 +224,8 @@ public class ListBindingsTest
 		check(6, result.get());
 		list.remove(1);
 		check(4, result.get());
+		list.set(0, new Item(0));
+		check(0, result.get());
 		list.remove(0);
 		check(-1, result.get());
 	}
@@ -278,7 +321,7 @@ public class ListBindingsTest
 		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
 		check(expected, result.get());
 		// permutate:
-		list.subList(1, 12).sort(comparing(Item::getValue));
+		list.subList(1, 12).sort(null);
 		printList(list);
 		// some changes after permutate:
 		final List<Item> list2 = new ArrayList<>();

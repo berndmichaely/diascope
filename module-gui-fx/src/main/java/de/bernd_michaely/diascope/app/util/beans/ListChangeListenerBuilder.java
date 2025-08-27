@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.util.beans;
 import java.util.function.Consumer;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ListChangeListener.Change;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Builder to create a ListChangeListener.
 ///
@@ -26,59 +27,45 @@ import javafx.collections.ListChangeListener.Change;
 ///
 public class ListChangeListenerBuilder<T>
 {
-	private Consumer<Change<? extends T>> onAdd, onRemove, onUpdate, onPermutate;
+	private @Nullable Consumer<Change<? extends T>> onAdd;
+	private @Nullable Consumer<Change<? extends T>> onRemove;
+	private @Nullable Consumer<Change<? extends T>> onUpdate;
+	private @Nullable Consumer<Change<? extends T>> onPermutate;
+	private boolean replaceAsUpdate;
 
-	public ListChangeListenerBuilder()
-	{
-		this.onAdd = change ->
-		{
-			throw new IllegalStateException("Unexpected add in ListChangeListener of: " +
-				change.getList().getClass().getName());
-		};
-		this.onRemove = change ->
-		{
-			throw new IllegalStateException("Unexpected remove in ListChangeListener of: " +
-				change.getList().getClass().getName());
-		};
-		this.onUpdate = change ->
-		{
-			throw new IllegalStateException("Unexpected update in ListChangeListener of: " +
-				change.getList().getClass().getName());
-		};
-		this.onPermutate = change ->
-		{
-			throw new IllegalStateException("Unexpected permutate in ListChangeListener of: " +
-				change.getList().getClass().getName());
-		};
-	}
-
-	public ListChangeListenerBuilder<T> onAdd(Consumer<Change<? extends T>> onAdd)
+	public ListChangeListenerBuilder<T> onAdd(@Nullable Consumer<Change<? extends T>> onAdd)
 	{
 		this.onAdd = onAdd;
 		return this;
 	}
 
-	public ListChangeListenerBuilder<T> onRemove(Consumer<Change<? extends T>> onRemove)
+	public ListChangeListenerBuilder<T> onRemove(@Nullable Consumer<Change<? extends T>> onRemove)
 	{
 		this.onRemove = onRemove;
 		return this;
 	}
 
-	public ListChangeListenerBuilder<T> onUpdate(Consumer<Change<? extends T>> onUpdate)
+	public ListChangeListenerBuilder<T> onUpdate(@Nullable Consumer<Change<? extends T>> onUpdate)
 	{
 		this.onUpdate = onUpdate;
 		return this;
 	}
 
-	public ListChangeListenerBuilder<T> onPermutate(Consumer<Change<? extends T>> onPermutate)
+	public ListChangeListenerBuilder<T> onPermutate(@Nullable Consumer<Change<? extends T>> onPermutate)
 	{
 		this.onPermutate = onPermutate;
 		return this;
 	}
 
+	public ListChangeListenerBuilder<T> replaceAsUpdate(boolean replaceAsUpdate)
+	{
+		this.replaceAsUpdate = replaceAsUpdate;
+		return this;
+	}
+
 	public ListChangeListener<T> build()
 	{
-		return (Change<? extends T> change) ->
+		return change ->
 		{
 			while (change.next())
 			{
@@ -92,13 +79,26 @@ public class ListChangeListenerBuilder<T>
 				}
 				else
 				{
-					if (change.wasRemoved() && onRemove != null)
+					if (change.wasRemoved() && !(change.wasReplaced() && replaceAsUpdate) && onRemove != null)
 					{
 						onRemove.accept(change);
 					}
-					if (change.wasAdded() && onAdd != null)
+					if (change.wasAdded())
 					{
-						onAdd.accept(change);
+						if (change.wasReplaced() && replaceAsUpdate)
+						{
+							if (onUpdate != null)
+							{
+								onUpdate.accept(change);
+							}
+						}
+						else
+						{
+							if (onAdd != null)
+							{
+								onAdd.accept(change);
+							}
+						}
 					}
 				}
 			}
