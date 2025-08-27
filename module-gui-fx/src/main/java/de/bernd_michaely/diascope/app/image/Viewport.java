@@ -52,6 +52,7 @@ class Viewport
 	private final ReadOnlyIntegerProperty numLayersProperty;
 	private final ObjectProperty<@Nullable Mode> modeProperty;
 	private final ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty;
+	private final ReadOnlyBooleanWrapper spotProperty;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
 	private final CornerAngles cornerAngles;
@@ -74,7 +75,9 @@ class Viewport
 		this.numLayersProperty = numLayersProperty;
 		this.modeProperty = new SimpleObjectProperty<>();
 		this.modeOrDefaultProperty = new ReadOnlyObjectWrapper<>();
+		this.spotProperty = new ReadOnlyBooleanWrapper();
 		_initmodeProperties(modeOrDefaultProperty, modeProperty);
+		spotProperty.bind(modeOrDefaultProperty.isEqualTo(SPOT));
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
 		multiLayerMode.bind(numLayersProperty.greaterThanOrEqualTo(2));
 		this.dividersVisible = new SimpleBooleanProperty();
@@ -301,9 +304,9 @@ class Viewport
 		return multiLayerMode.getReadOnlyProperty();
 	}
 
-	boolean isMultiLayerMode()
+	ReadOnlyBooleanProperty spotProperty()
 	{
-		return multiLayerModeProperty().get();
+		return spotProperty.getReadOnlyProperty();
 	}
 
 	CornerAngles getCornerAngles()

@@ -70,7 +70,8 @@ class ToolBarImage
 		}
 		buttonLayerAdd.setTooltip(new Tooltip("Add a new layer"));
 		buttonLayerAdd.disableProperty().bind(
-			numLayers.greaterThanOrEqualTo(multiImageView.maximumNumberOfLayersProperty()));
+			numLayers.greaterThanOrEqualTo(multiImageView.maximumNumberOfLayersProperty()).or(
+				multiImageView.modeOrDefaultProperty().isEqualTo(SPOT)));
 		final var buttonLayerRemove = new Button();
 		final Image iconLayerRemove = Icons.LayerRemove.getIconImage();
 		if (iconLayerRemove != null)
@@ -82,10 +83,11 @@ class ToolBarImage
 			buttonLayerRemove.setText("-");
 		}
 		buttonLayerRemove.setTooltip(new Tooltip("Remove selected layers"));
-		buttonLayerRemove.disableProperty().bind(not(
-			numLayers.greaterThan(1)
+		buttonLayerRemove.disableProperty().bind(
+			not(numLayers.greaterThan(1)
 				.and(numSelectedLayers.greaterThan(0)
-					.and(numSelectedLayers.lessThan(numLayers)))));
+					.and(numSelectedLayers.lessThan(numLayers))))
+				.or(multiImageView.modeOrDefaultProperty().isEqualTo(SPOT)));
 		buttonLayerRemove.setOnAction(_ -> multiImageView.removeSelectedLayers());
 		// multi layer modes
 		final var buttonModeSplit = new ToggleButton();

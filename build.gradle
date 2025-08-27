@@ -16,7 +16,7 @@ wrapper {
 	gradleVersion = '8.14.3'
 }
 
-final def javaLangVersion = JavaLanguageVersion.of(24)
+final def javaLangVersion = JavaLanguageVersion.of(23)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
 
@@ -109,6 +109,8 @@ final String fileNameSemVer = 'src/main/resources/de/bernd_michaely/diascope/app
 final def fileSemVer = project(':module-gui-fx').file(fileNameSemVer)
 
 final def fileVersionShield = file("doc/shields/version.svg")
+
+description = 'A JavaFX based image viewer with multi layer image comparison.'
 		
 allprojects {
 	group = 'de.bernd_michaely'

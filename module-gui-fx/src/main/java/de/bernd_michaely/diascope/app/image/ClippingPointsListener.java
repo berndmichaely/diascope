@@ -39,7 +39,7 @@ class ClippingPointsListener implements Runnable
 	@Override
 	public void run()
 	{
-		if (viewport.isMultiLayerMode())
+		if (viewport.multiLayerModeProperty().get())
 		{
 			final int n = unmodifiableLayers.size();
 			for (int i = 0; i < n; i++)

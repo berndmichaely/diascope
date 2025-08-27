@@ -18,13 +18,15 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
-import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
-import java.util.List;
-import javafx.beans.property.ReadOnlyDoubleProperty;
+import java.lang.System.Logger;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.collections.ObservableList;
 
-import static java.util.Collections.unmodifiableList;
-import static javafx.beans.binding.Bindings.max;
+import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.chainedObservableDoubleValues;
+import static java.lang.System.Logger.Level.*;
+import static javafx.collections.FXCollections.unmodifiableObservableList;
 
 /// Base class to handle image layers.
 ///
@@ -32,9 +34,10 @@ import static javafx.beans.binding.Bindings.max;
 ///
 abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 {
+	private static final Logger logger = System.getLogger(ImageLayersBase.class.getName());
 	final ReadOnlyDoubleWrapper layersMaxWidth, layersMaxHeight;
 	final SelectableList<ImageLayer> layers;
-	final List<ImageLayer> unmodifiableLayers;
+	final ObservableList<ImageLayer> unmodifiableLayers;
 	final LayerSelectionModel layerSelectionModel;
 
 	ImageLayersBase()
@@ -42,99 +45,18 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 		this.layersMaxWidth = new ReadOnlyDoubleWrapper();
 		this.layersMaxHeight = new ReadOnlyDoubleWrapper();
 		this.layers = SelectableListFactory.selectableList();
-		this.unmodifiableLayers = unmodifiableList(layers);
+		this.unmodifiableLayers = unmodifiableObservableList(layers);
 		this.layerSelectionModel = new LayerSelectionModel(layers);
 		// viewport.layersMax[Width|Height]Property bindings:
-		layers.addListener(new ListChangeListenerBuilder<ImageLayer>()
-			.onAdd(change ->
-			{
-				final var list = change.getList();
-				final int n = list.size();
-				final int from = change.getFrom();
-				final int to = change.getTo();
-				final int end = to < n ? to + 1 : to;
-				for (int i = from; i < end; i++)
-				{
-					if (i == 0)
-					{
-						final ImageLayer first = list.getFirst();
-						first.maxToPreviousWidthProperty().bind(first.layerWidthProperty());
-						first.maxToPreviousHeightProperty().bind(first.layerHeightProperty());
-					}
-					else
-					{
-						final ImageLayer lPrev = list.get(i - 1);
-						final ImageLayer lNext = list.get(i);
-						lNext.maxToPreviousWidthProperty().bind(
-							max(lPrev.maxToPreviousWidthProperty(), lNext.layerWidthProperty()));
-						lNext.maxToPreviousHeightProperty().bind(
-							max(lPrev.maxToPreviousHeightProperty(), lNext.layerHeightProperty()));
-					}
-				}
-				if (to == n)
-				{
-					layersMaxWidth.bind(layers.getLast().maxToPreviousWidthProperty());
-					layersMaxHeight.bind(layers.getLast().maxToPreviousHeightProperty());
-				}
-			})
-			.onRemove(change ->
-			{
-				final var list = change.getList();
-				final boolean isEmpty = list.isEmpty();
-				if (change.getTo() < list.size())
-				{
-					final int from = change.getFrom();
-					if (from == 0)
-					{
-						final ImageLayer first = list.getFirst();
-						first.maxToPreviousWidthProperty().bind(first.layerWidthProperty());
-						first.maxToPreviousHeightProperty().bind(first.layerHeightProperty());
-					}
-					else
-					{
-						final ImageLayer lPrev = list.get(from - 1);
-						final ImageLayer lNext = list.get(from);
-						lNext.maxToPreviousWidthProperty().bind(
-							max(lPrev.maxToPreviousWidthProperty(), lNext.layerWidthProperty()));
-						lNext.maxToPreviousHeightProperty().bind(
-							max(lPrev.maxToPreviousHeightProperty(), lNext.layerHeightProperty()));
-					}
-				}
-				else if (!isEmpty)
-				{
-					layersMaxWidth.bind(layers.getLast().maxToPreviousWidthProperty());
-					layersMaxHeight.bind(layers.getLast().maxToPreviousHeightProperty());
-				}
-				change.getRemoved().forEach(imageLayer ->
-				{
-					imageLayer.maxToPreviousWidthProperty().unbind();
-					imageLayer.maxToPreviousHeightProperty().unbind();
-				});
-				if (isEmpty)
-				{
-					layersMaxWidth.unbind();
-					layersMaxWidth.set(0.0);
-					layersMaxHeight.unbind();
-					layersMaxHeight.set(0.0);
-				}
-			}).build());
-	}
-
-	/// The maximum of widths of all layers.
-	///
-	/// @return a property holding the maximum of widths of all layers
-	///
-	ReadOnlyDoubleProperty layersMaxWidthProperty()
-	{
-		return layersMaxWidth.getReadOnlyProperty();
-	}
-
-	/// The maximum of heights of all layers.
-	///
-	/// @return a property holding the maximum of heights of all layers
-	///
-	ReadOnlyDoubleProperty layersMaxHeightProperty()
-	{
-		return layersMaxHeight.getReadOnlyProperty();
+		layersMaxWidth.bind(chainedObservableDoubleValues(unmodifiableLayers,
+			ImageLayer::layerWidthProperty, Bindings::max, 0.0));
+		layersMaxHeight.bind(chainedObservableDoubleValues(unmodifiableLayers,
+			ImageLayer::layerHeightProperty, Bindings::max, 0.0));
+		layersMaxWidth.addListener(onChange(newValue ->
+			logger.log(TRACE, () -> "→ %s → maxWidth = %.1f".formatted(
+				getClass().getSimpleName(), newValue.doubleValue()))));
+		layersMaxHeight.addListener(onChange(newValue ->
+			logger.log(TRACE, () -> "→ %s → maxHeight = %.1f".formatted(
+				getClass().getSimpleName(), newValue.doubleValue()))));
 	}
 }

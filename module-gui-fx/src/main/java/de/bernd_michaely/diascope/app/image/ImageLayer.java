@@ -67,7 +67,6 @@ class ImageLayer
 	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
 	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
 	private final ReadOnlyDoubleWrapper imageWidthTransformed, imageHeightTransformed;
-	private final DoubleProperty maxToPreviousWidth, maxToPreviousHeight;
 	private final ImageTransforms imageTransforms;
 	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
 	private final DoubleProperty zoomFill;
@@ -117,8 +116,6 @@ class ImageLayer
 		this.imageHeightRotated = new ReadOnlyDoubleWrapper();
 		this.imageWidthTransformed = new ReadOnlyDoubleWrapper();
 		this.imageHeightTransformed = new ReadOnlyDoubleWrapper();
-		this.maxToPreviousWidth = new SimpleDoubleProperty();
-		this.maxToPreviousHeight = new SimpleDoubleProperty();
 		this.imageTransforms = new ImageTransforms();
 		this.zoomFitWidth = new SimpleDoubleProperty();
 		this.zoomFitHeight = new SimpleDoubleProperty();
@@ -252,16 +249,6 @@ class ImageLayer
 		return imageHeightTransformed.getReadOnlyProperty();
 	}
 
-	DoubleProperty maxToPreviousWidthProperty()
-	{
-		return maxToPreviousWidth;
-	}
-
-	DoubleProperty maxToPreviousHeightProperty()
-	{
-		return maxToPreviousHeight;
-	}
-
 	Region getRegion()
 	{
 		return paneLayer;
@@ -283,8 +270,8 @@ class ImageLayer
 		final var image = imageDescriptor != null ? imageDescriptor.getImage() : null;
 		setNullableImage(image);
 		imageTitle = imageDescriptor != null ? imageDescriptor.getTitle() : "";
-		final double width = image != null ? Double.max(image.getWidth(), 0) : 0;
-		final double height = image != null ? Double.max(image.getHeight(), 0) : 0;
+		final double width = image != null ? Math.max(image.getWidth(), 0.0) : 0.0;
+		final double height = image != null ? Math.max(image.getHeight(), 0.0) : 0.0;
 		imageWidth.set(width);
 		imageHeight.set(height);
 		imageRotated.setWidth(width);

@@ -33,21 +33,11 @@ final class ImageLayersSpot extends ImageLayersBase
 	{
 		layerSelectionHandler = (imageLayer, _) ->
 			layers.selectAll(i -> layers.get(i) == imageLayer ? SELECTION_TOGGLE : SELECTION_UNSET);
-		layers.addAll(
-			ImageLayer.createInstance(BASE, viewport, layerSelectionHandler),
-			ImageLayer.createInstance(SPOT, viewport, layerSelectionHandler));
-		viewport.addSpotBaseLayer(layers.getFirst());
-		viewport.addSpotLayer(layers.getLast());
+		final var baseLayer = ImageLayer.createInstance(BASE, viewport, layerSelectionHandler);
+		final var spotLayer = ImageLayer.createInstance(SPOT, viewport, layerSelectionHandler);
+		layers.addAll(baseLayer, spotLayer);
+		viewport.addSpotBaseLayer(baseLayer);
+		viewport.addSpotLayer(spotLayer);
 		layers.forEach(l -> l.getImageTransforms().bindProperties(imageTransforms));
-	}
-
-	ImageLayer getBaseLayer()
-	{
-		return layers.getFirst();
-	}
-
-	ImageLayer getSpotLayer()
-	{
-		return layers.getLast();
 	}
 }

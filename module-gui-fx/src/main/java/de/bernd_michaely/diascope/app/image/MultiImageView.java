@@ -27,7 +27,6 @@ import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.layout.Region;
-import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
@@ -35,6 +34,7 @@ import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
+import static javafx.beans.binding.Bindings.when;
 
 /// Facade of a component to display multiple images.
 ///
@@ -75,11 +75,13 @@ public class MultiImageView
 		this.imageLayersSplit = new ImageLayers(viewport, imageTransforms);
 		viewport.setLayerSelectionModel(imageLayersSplit.layerSelectionModel);
 		this.imageLayersSpot = new ImageLayersSpot(viewport, imageTransforms);
-		imageLayersSpot.getSpotLayer().setSelected(true);
+		imageLayersSpot.layerSelectionModel.setSelected(1, true);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
 			(int) (C / imageLayersSplit.getDividerRotationControl().getDividerMinGap()));
-		bindViewportToImageLayers(getDefaultMode());
-		viewport.modeOrDefaultProperty().addListener(onChange(this::bindViewportToImageLayers));
+		viewport.layersMaxWidthProperty().bind(when(viewport.spotProperty())
+			.then(imageLayersSpot.layersMaxWidth).otherwise(imageLayersSplit.layersMaxWidth));
+		viewport.layersMaxHeightProperty().bind(when(viewport.spotProperty())
+			.then(imageLayersSpot.layersMaxHeight).otherwise(imageLayersSplit.layersMaxHeight));
 		viewport.modeProperty().addListener(onChange(mode ->
 		{
 			if (mode == null)
@@ -95,17 +97,6 @@ public class MultiImageView
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
 		spotModeAvailable.bind(imageLayersSplit.layerSelectionModel.dualLayerSelected().or(
 			imageLayersSplit.layerSelectionModel.sizeProperty().isEqualTo(2)));
-	}
-
-	private void bindViewportToImageLayers(@UnderInitialization MultiImageView this,
-		Mode mode)
-	{
-		final ImageLayersBase imageLayers = mode == SPOT ? imageLayersSpot : imageLayersSplit;
-		if (imageLayers != null && viewport != null)
-		{
-			viewport.layersMaxWidthProperty().bind(imageLayers.layersMaxWidthProperty());
-			viewport.layersMaxHeightProperty().bind(imageLayers.layersMaxHeightProperty());
-		}
 	}
 
 	/// Returns the main component to be included in surrounding environment.
