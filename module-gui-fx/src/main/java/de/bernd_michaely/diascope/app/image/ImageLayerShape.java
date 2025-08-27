@@ -109,17 +109,17 @@ class ImageLayerShape
 		}
 		shape.setOnMouseDragged(event ->
 		{
-			try
+			if (!mouseDragged)
 			{
-				if (!mouseDragged)
-				{
-					mx = centerX.get();
-					my = centerY.get();
-					dx = mx - event.getX();
-					dy = my - event.getY();
-					mouseDragged = true;
-				}
-				if (type == SPOT)
+				mx = centerX.get();
+				my = centerY.get();
+				dx = mx - event.getX();
+				dy = my - event.getY();
+				mouseDragged = true;
+			}
+			if (type == SPOT)
+			{
+				try
 				{
 					if (event.isControlDown())
 					{
@@ -133,10 +133,10 @@ class ImageLayerShape
 						centerY.set(dy + event.getY());
 					}
 				}
-			}
-			finally
-			{
-				event.consume();
+				finally
+				{
+					event.consume();
+				}
 			}
 		});
 		shape.setOnMouseReleased(event ->
@@ -155,7 +155,10 @@ class ImageLayerShape
 			finally
 			{
 				mouseDragged = false;
-				event.consume();
+				if (type == SPOT)
+				{
+					event.consume();
+				}
 			}
 		});
 		this.unselectedVisible = new SimpleBooleanProperty(type == SPOT);

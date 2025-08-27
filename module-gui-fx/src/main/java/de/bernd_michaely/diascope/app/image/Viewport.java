@@ -184,7 +184,7 @@ class Viewport
 		this.cornerAngles = new CornerAngles(
 			splitCenter.xProperty(), splitCenter.yProperty(),
 			splitCenter.dxProperty(), splitCenter.dyProperty());
-		paneViewport.setOnMousePressed(event ->
+		paneTopLayer.setOnMousePressed(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
@@ -194,7 +194,7 @@ class Viewport
 				mouseScrollStartY = scrollBars.valueVProperty().doubleValue();
 			}
 		});
-		paneViewport.setOnMouseDragged(event ->
+		paneTopLayer.setOnMouseDragged(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY))
 			{
