@@ -208,6 +208,11 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 		}
 	}
 
+	public E getUnselectedId()
+	{
+		return unselectedId;
+	}
+
 	public ObjectProperty<E> selectedIdProperty()
 	{
 		return selectedId;

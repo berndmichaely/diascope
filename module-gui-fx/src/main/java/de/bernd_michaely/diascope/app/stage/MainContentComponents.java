@@ -103,7 +103,8 @@ class MainContentComponents
 			final Consumer<ZoomMode> zoomModeToggle = zoomMode ->
 			{
 				final var actionZoom = actions.actionZoom;
-				actionZoom.setSelectedId(actionZoom.getSelectedId() == zoomMode ? FIXED : zoomMode);
+				actionZoom.setSelectedId(
+					actionZoom.getSelectedId() != zoomMode ? zoomMode : actionZoom.getUnselectedId());
 			};
 			switch (event.getCode())
 			{
