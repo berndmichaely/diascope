@@ -58,20 +58,18 @@ class ImageLayerShape
 	private final Type type;
 	private final Shape shape;
 	private final BooleanProperty selected = new SimpleBooleanProperty();
-	private final BooleanProperty unselectedVisible = new SimpleBooleanProperty();
+	private final BooleanProperty unselectedVisible;
 	private boolean mouseDragged;
 	private double mx, my, dx, dy;
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
 	private final DoubleProperty centerX = new SimpleDoubleProperty();
 	private final DoubleProperty centerY = new SimpleDoubleProperty();
 	private final DoubleProperty radius = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
-	private final Viewport viewport;
 	private final ChangeListener<@Nullable Mode> spotInitListener;
 
 	ImageLayerShape(Type type, Viewport viewport)
 	{
 		this.type = type;
-		this.viewport = viewport;
 		this.spotInitListener = onChange(newValue ->
 		{
 			if (newValue == Mode.SPOT)
@@ -160,6 +158,7 @@ class ImageLayerShape
 				event.consume();
 			}
 		});
+		this.unselectedVisible = new SimpleBooleanProperty(type == SPOT);
 		shape.setFill(Color.TRANSPARENT);
 		shape.setStrokeLineCap(StrokeLineCap.ROUND);
 		shape.setStrokeLineJoin(StrokeLineJoin.ROUND);
@@ -192,11 +191,6 @@ class ImageLayerShape
 	BooleanProperty selectedProperty()
 	{
 		return selected;
-	}
-
-	BooleanProperty unselectedVisibleProperty()
-	{
-		return unselectedVisible;
 	}
 
 	void setShapePoints(Double... points)
