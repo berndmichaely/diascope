@@ -58,16 +58,19 @@ The Spot Mode allows to view part of an image in a spot on top of a base image.
 
 To enter the spot mode:
 
-  1. in split mode, select a base image in one layer
-  2. add a second layer and select the spot image
-  3. enter the spot mode with the toolbar button.
+  1. in *split mode*, select a *base image* in one layer
+  2. add a *second layer* and select the *spot image*
+  3. enter the *spot mode* with the toolbar button.
 
-In more detail, images from split mode are selected as base and spot image for spot mode as follows:
+In more detail, images from split mode are selected as *base* and *spot* image for spot mode as follows:
 
   * If 2 layers are open and none is selected, the image of the first layer will be the base image, and the image of the second layer will be the spot image.
   * If 2 layers are open and 1 is selected, the selected image will be the spot image.
-  * If 2 or more layers are open, select base and spot image as follows:
+  * If 2 or more layers are open, select *base* and *spot* image as follows:
     1. Single-Click to select the base layer
     2. Ctrl-Single-Click a second layer to become the spot.
 
-You can move the spot by dragging with the mouse and resize the spot by Ctrl-mouse-dragging.
+You can
+
+  * *move* the spot by dragging with the mouse and
+  * *resize* the spot by Ctrl-mouse-dragging.
