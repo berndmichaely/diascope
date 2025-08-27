@@ -33,9 +33,9 @@ import javafx.scene.text.Text;
 public class TextFactory
 {
 	private final Paint paint;
-	private final int fontSize;
+	private final double fontSize;
 
-	public TextFactory(Paint paint, int fontSize)
+	public TextFactory(Paint paint, double fontSize)
 	{
 		this.paint = paint;
 		this.fontSize = fontSize;

@@ -74,6 +74,8 @@ import static javafx.beans.binding.Bindings.not;
 public class MainWindow
 {
 	private static final Logger logger = System.getLogger(MainWindow.class.getName());
+	private static final String FILE_RES_ICON_STAGE = "diascope.png";
+	private final @MonotonicNonNull Image iconStage;
 	private static final double INITIAL_WINDOW_SIZE = 2.0 / 3.0;
 	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
 	private @MonotonicNonNull PaneFileSystem paneFileSystem;
@@ -272,6 +274,24 @@ public class MainWindow
 		dialogSystemEnvironment.setTitle("System Environment");
 		dialogInfoAbout.setTitle("Info About");
 		this.tabPane = new TabPane();
+		Image _iconStage = null;
+		try (var inputStream = getClass().getResourceAsStream(FILE_RES_ICON_STAGE))
+		{
+			if (inputStream != null)
+			{
+				_iconStage = new Image(inputStream);
+			}
+		}
+		catch (IOException ex)
+		{
+			logger.log(TRACE, "Can't find stage icon »%s«".formatted(FILE_RES_ICON_STAGE), ex);
+			_iconStage = null;
+		}
+		if (_iconStage == null)
+		{
+			logger.log(WARNING, "Can't find stage icon (ignoring…)");
+		}
+		this.iconStage = _iconStage;
 	}
 
 	public void setFileSystemView(PaneFileSystem paneFileSystem)
@@ -306,6 +326,10 @@ public class MainWindow
 	 */
 	public void _start(Stage stage)
 	{
+		if (iconStage != null)
+		{
+			stage.getIcons().add(iconStage);
+		}
 		final var state = ApplicationConfiguration.getState();
 		stage.titleProperty().bind(titleProperty);
 		// Actions:
@@ -335,7 +359,7 @@ public class MainWindow
 		final EventHandler<ActionEvent> actionSysEnv = e ->
 			dialogSystemEnvironment.show(stage, new PaneInfoSysEnv().getDisplay());
 		final EventHandler<ActionEvent> actionInfoAbout = e ->
-			dialogInfoAbout.show(stage, new PaneInfoAbout(getApplicationName()).getDisplay());
+			dialogInfoAbout.show(stage, new PaneInfoAbout(getApplicationName(), null).getDisplay());
 		menuItemExit.setOnAction(e ->
 		{
 			try

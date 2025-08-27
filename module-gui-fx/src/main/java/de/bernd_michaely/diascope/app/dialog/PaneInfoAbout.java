@@ -21,9 +21,13 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static javafx.scene.control.TabPane.TabClosingPolicy.UNAVAILABLE;
 
@@ -37,7 +41,7 @@ public class PaneInfoAbout implements InfoPane
 	private final BorderPane pane;
 	private final String title;
 
-	public PaneInfoAbout(String title)
+	public PaneInfoAbout(String title, @Nullable Image iconStage)
 	{
 		this.title = title;
 //		final InfoPaneAbout infoPaneAbout = new InfoPaneAbout();
@@ -47,13 +51,25 @@ public class PaneInfoAbout implements InfoPane
 			new Tab(infoPaneSystemInfo.getTitle(), infoPaneSystemInfo.getDisplay()));
 		tabPane.setTabClosingPolicy(UNAVAILABLE);
 		this.pane = new BorderPane(tabPane);
-		final TextFactory textFactory = new TextFactory(
-			Color.STEELBLUE.brighter(), (int) (DEFAULT_FONT_SIZE * 32 / 13));
+		final double sizeText = (DEFAULT_FONT_SIZE * 32 / 13);
+		final TextFactory textFactory = new TextFactory(Color.STEELBLUE.brighter(), sizeText);
 		final Node textNode = textFactory.createTextNode(this.title);
-		this.pane.setTop(textNode);
+		if (iconStage != null)
+		{
+			final var imageView = new ImageView(iconStage);
+			final double sizeImage = sizeText * 1.2;
+			imageView.setFitWidth(sizeImage);
+			imageView.setFitHeight(sizeImage);
+			final var paneTop = new HBox(sizeImage * 0.5, imageView, textNode);
+			this.pane.setTop(paneTop);
+		}
+		else
+		{
+			this.pane.setTop(textNode);
+		}
 		final double vgap = DEFAULT_FONT_SIZE * 8 / 13;
 		final double hgap = DEFAULT_FONT_SIZE * 8;
-		BorderPane.setMargin(textNode, new Insets(vgap, hgap, vgap, hgap));
+		BorderPane.setMargin(pane.getTop(), new Insets(vgap, hgap, vgap, hgap));
 	}
 
 	@Override
