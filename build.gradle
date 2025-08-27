@@ -225,6 +225,11 @@ task getVersionShield {
 application {
 	mainModule = 'de.bernd_michaely.diascope'
 	mainClass  = 'de.bernd_michaely.diascope.Launcher'
+	
+	if (javaLangVersion == JavaLanguageVersion.of(24) && javafx.version ==~ /24(\.\d+(\.\d+)?)?/) {
+		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
+	}
+	logger.lifecycle "==> applicationDefaultJvmArgs -> " + applicationDefaultJvmArgs
 }
 
 jar {
