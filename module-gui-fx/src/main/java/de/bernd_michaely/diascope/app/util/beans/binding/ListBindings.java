@@ -19,10 +19,10 @@ package de.bernd_michaely.diascope.app.util.beans.binding;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import javafx.beans.binding.DoubleExpression;
 import javafx.beans.binding.NumberBinding;
 import javafx.beans.property.DoubleProperty;
@@ -43,12 +43,12 @@ public class ListBindings
 		private final ReadOnlyDoubleWrapper finalResult = new ReadOnlyDoubleWrapper();
 		private final List<ReadOnlyDoubleWrapper> intermediateResults = new ArrayList<>();
 
-		public ChainedObservableDoubleValues(ObservableList<T> observableList,
+		public ChainedObservableDoubleValues(ObservableList<T> list,
 			Function<T, ReadOnlyDoubleProperty> selector,
 			BiFunction<ObservableNumberValue, ObservableNumberValue, NumberBinding> operator,
 			double neutralElement)
 		{
-			final BiConsumer<ObservableList<? extends T>, Integer> bindItems = (list, index) ->
+			final IntConsumer bindItems = index ->
 			{
 				if (index > 0)
 				{
@@ -63,18 +63,17 @@ public class ListBindings
 			};
 			final Consumer<Change<? extends T>> recreateBindings = change ->
 			{
-				final var list = change.getList();
 				final int n = list.size();
 				final int from = change.getFrom();
 				final int to = change.getTo();
 				intermediateResults.subList(from, to).forEach(DoubleProperty::unbind);
 				for (int i = from; i < to; i++)
 				{
-					bindItems.accept(list, i);
+					bindItems.accept(i);
 				}
 				if (to < n)
 				{
-					bindItems.accept(list, to);
+					bindItems.accept(to);
 				}
 				else
 				{
@@ -82,23 +81,22 @@ public class ListBindings
 				}
 			};
 			// handle initially given list items:
-			if (observableList.isEmpty())
+			if (list.isEmpty())
 			{
 				finalResult.set(neutralElement);
 			}
 			else
 			{
-				for (int i = 0; i < observableList.size(); i++)
+				for (int i = 0; i < list.size(); i++)
 				{
 					intermediateResults.add(new ReadOnlyDoubleWrapper());
-					bindItems.accept(observableList, i);
+					bindItems.accept(i);
 				}
 				finalResult.bind(intermediateResults.getLast());
 			}
-			observableList.addListener(new ListChangeListenerBuilder<T>()
+			list.addListener(new ListChangeListenerBuilder<T>()
 				.onAdd(change ->
 				{
-					final var list = change.getList();
 					final int n = list.size();
 					final int from = change.getFrom();
 					final int to = change.getTo();
@@ -111,11 +109,11 @@ public class ListBindings
 						for (int i = from; i < to; i++)
 						{
 							intermediateResults.add(i, new ReadOnlyDoubleWrapper());
-							bindItems.accept(list, i);
+							bindItems.accept(i);
 						}
 						if (to < n)
 						{
-							bindItems.accept(list, to);
+							bindItems.accept(to);
 						}
 						else
 						{
@@ -127,7 +125,6 @@ public class ListBindings
 				{
 					if (!change.wasReplaced())
 					{
-						final var list = change.getList();
 						final int n = list.size();
 						final int removedSize = change.getRemovedSize();
 						final int from = change.getFrom();
@@ -143,7 +140,7 @@ public class ListBindings
 						{
 							if (from < n)
 							{
-								bindItems.accept(list, from);
+								bindItems.accept(from);
 							}
 							else
 							{
