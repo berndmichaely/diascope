@@ -17,19 +17,11 @@
 package de.bernd_michaely.diascope.app.util.beans.binding;
 
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
-import java.util.function.IntConsumer;
-import javafx.beans.binding.DoubleExpression;
-import javafx.beans.binding.NumberBinding;
-import javafx.beans.property.DoubleProperty;
+import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleWrapper;
-import javafx.beans.value.ObservableNumberValue;
-import javafx.collections.ListChangeListener.Change;
 import javafx.collections.ObservableList;
 
 /// List binding utilities.
@@ -38,130 +30,47 @@ import javafx.collections.ObservableList;
 ///
 public class ListBindings
 {
-	public static class ChainedObservableDoubleValues<T>
+	private static class CumulatedOperations<E> extends DoubleBinding
 	{
-		private final ReadOnlyDoubleWrapper finalResult = new ReadOnlyDoubleWrapper();
-		private final List<ReadOnlyDoubleWrapper> intermediateResults = new ArrayList<>();
+		private final ObservableList<E> observableList;
+		private final Function<E, ReadOnlyDoubleProperty> selector;
+		private final DoubleBinaryOperator operator;
+		private final double neutralElement;
 
-		public ChainedObservableDoubleValues(ObservableList<T> list,
-			Function<T, ReadOnlyDoubleProperty> selector,
-			BiFunction<ObservableNumberValue, ObservableNumberValue, NumberBinding> operator,
-			double neutralElement)
+		private CumulatedOperations(ObservableList<E> observableList,
+			Function<E, ReadOnlyDoubleProperty> selector, DoubleBinaryOperator operator, double neutralElement)
 		{
-			final IntConsumer bindItems = index ->
+			this.observableList = observableList;
+			this.selector = selector;
+			this.operator = operator;
+			this.neutralElement = neutralElement;
+		}
+
+		@Override
+		protected double computeValue()
+		{
+			double result = observableList.isEmpty() ? neutralElement :
+				selector.apply(observableList.getFirst()).get();
+			for (int i = 1; i < observableList.size(); i++)
 			{
-				if (index > 0)
-				{
-					intermediateResults.get(index).bind(operator.apply(
-						intermediateResults.get(index - 1).getReadOnlyProperty(),
-						selector.apply(list.get(index))));
-				}
-				else
-				{
-					intermediateResults.getFirst().bind(selector.apply(list.getFirst()));
-				}
-			};
-			final Consumer<Change<? extends T>> recreateBindings = change ->
-			{
-				final int n = list.size();
-				final int from = change.getFrom();
-				final int to = change.getTo();
-				intermediateResults.subList(from, to).forEach(DoubleProperty::unbind);
-				for (int i = from; i < to; i++)
-				{
-					bindItems.accept(i);
-				}
-				if (to < n)
-				{
-					bindItems.accept(to);
-				}
-				else
-				{
-					finalResult.bind(intermediateResults.getLast());
-				}
-			};
-			// handle initially given list items:
-			if (list.isEmpty())
-			{
-				finalResult.set(neutralElement);
+				result = operator.applyAsDouble(result, selector.apply(observableList.get(i)).get());
 			}
-			else
-			{
-				for (int i = 0; i < list.size(); i++)
-				{
-					intermediateResults.add(new ReadOnlyDoubleWrapper());
-					bindItems.accept(i);
-				}
-				finalResult.bind(intermediateResults.getLast());
-			}
-			list.addListener(new ListChangeListenerBuilder<T>()
-				.onAdd(change ->
-				{
-					if (change.wasReplaced())
-					{
-						recreateBindings.accept(change);
-					}
-					else
-					{
-						final int n = list.size();
-						final int from = change.getFrom();
-						final int to = change.getTo();
-						for (int i = from; i < to; i++)
-						{
-							intermediateResults.add(i, new ReadOnlyDoubleWrapper());
-							bindItems.accept(i);
-						}
-						if (to < n)
-						{
-							bindItems.accept(to);
-						}
-						else
-						{
-							finalResult.bind(intermediateResults.getLast());
-						}
-					}
-				})
-				.onRemove(change ->
-				{
-					if (!change.wasReplaced())
-					{
-						final int n = list.size();
-						final int removedSize = change.getRemovedSize();
-						final int from = change.getFrom();
-						final var subList = intermediateResults.subList(from, from + removedSize);
-						subList.forEach(DoubleProperty::unbind);
-						subList.clear();
-						if (list.isEmpty())
-						{
-							finalResult.unbind();
-							finalResult.set(neutralElement);
-						}
-						else
-						{
-							if (from < n)
-							{
-								bindItems.accept(from);
-							}
-							else
-							{
-								finalResult.bind(intermediateResults.getLast());
-							}
-						}
-					}
-				})
-				.onPermutate(recreateBindings)
-				.onUpdate(recreateBindings)
+			return result;
+		}
+
+		private static <B> DoubleBinding newInstance(ObservableList<B> observableList,
+			Function<B, ReadOnlyDoubleProperty> selector, DoubleBinaryOperator operator, double neutralElement)
+		{
+			final var binding = new CumulatedOperations<>(observableList, selector, operator, neutralElement);
+			final Consumer<B> listenerAdd = item -> binding.bind(selector.apply(item));
+			final Consumer<B> listenerRemove = item -> binding.unbind(selector.apply(item));
+			observableList.forEach(listenerAdd);
+			binding.bind(observableList);
+			observableList.addListener(new ListChangeListenerBuilder<B>()
+				.onAdd(change -> change.getAddedSubList().forEach(listenerAdd))
+				.onRemove(change -> change.getRemoved().forEach(listenerRemove))
 				.build());
-		}
-
-		public double getIntermediateResult(int index)
-		{
-			return intermediateResults.get(index).getReadOnlyProperty().get();
-		}
-
-		public double getfinalResult()
-		{
-			return finalResult.getReadOnlyProperty().get();
+			return binding;
 		}
 	}
 
@@ -175,14 +84,13 @@ public class ListBindings
 	/// @param observableList  the observable list
 	/// @param operator        function to combine two parameters
 	/// @param neutralElement  value for empty list
-	/// @return a DoubleExpression containing the combined result
+	/// @return a DoubleBinding containing the combined result
 	///
-	public static DoubleExpression chainedObservableDoubleValues(
+	public static DoubleBinding cumulatedOperations(
 		ObservableList<? extends ReadOnlyDoubleProperty> observableList,
-		BiFunction<ObservableNumberValue, ObservableNumberValue, NumberBinding> operator,
-		double neutralElement)
+		DoubleBinaryOperator operator, double neutralElement)
 	{
-		return chainedObservableDoubleValues(observableList, p -> p, operator, neutralElement);
+		return cumulatedOperations(observableList, p -> p, operator, neutralElement);
 	}
 
 	/// Creates a property to hold the dynamically cumulated result of
@@ -197,16 +105,11 @@ public class ListBindings
 	/// @param selector        property holding the parameters to combine
 	/// @param operator        function to combine two parameters
 	/// @param neutralElement  value for empty list
-	/// @return a DoubleExpression containing the combined result
+	/// @return a DoubleBinding containing the combined result
 	///
-	public static <T> DoubleExpression chainedObservableDoubleValues(
-		ObservableList<T> observableList,
-		Function<T, ReadOnlyDoubleProperty> selector,
-		BiFunction<ObservableNumberValue, ObservableNumberValue, NumberBinding> operator,
-		double neutralElement)
+	public static <T> DoubleBinding cumulatedOperations(ObservableList<T> observableList,
+		Function<T, ReadOnlyDoubleProperty> selector, DoubleBinaryOperator operator, double neutralElement)
 	{
-		final var chainedValues = new ChainedObservableDoubleValues<>(
-			observableList, selector, operator, neutralElement);
-		return chainedValues.finalResult.getReadOnlyProperty();
+		return CumulatedOperations.<T>newInstance(observableList, selector, operator, neutralElement);
 	}
 }

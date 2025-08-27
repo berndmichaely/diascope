@@ -19,12 +19,11 @@ package de.bernd_michaely.diascope.app.image;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
 import java.lang.System.Logger;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.collections.ObservableList;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.chainedObservableDoubleValues;
+import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.cumulatedOperations;
 import static java.lang.System.Logger.Level.*;
 import static javafx.collections.FXCollections.unmodifiableObservableList;
 
@@ -48,10 +47,10 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 		this.unmodifiableLayers = unmodifiableObservableList(layers);
 		this.layerSelectionModel = new LayerSelectionModel(layers);
 		// viewport.layersMax[Width|Height]Property bindings:
-		layersMaxWidth.bind(chainedObservableDoubleValues(unmodifiableLayers,
-			ImageLayer::layerWidthProperty, Bindings::max, 0.0));
-		layersMaxHeight.bind(chainedObservableDoubleValues(unmodifiableLayers,
-			ImageLayer::layerHeightProperty, Bindings::max, 0.0));
+		layersMaxWidth.bind(cumulatedOperations(unmodifiableLayers,
+			ImageLayer::layerWidthProperty, Math::max, 0.0));
+		layersMaxHeight.bind(cumulatedOperations(unmodifiableLayers,
+			ImageLayer::layerHeightProperty, Math::max, 0.0));
 		layersMaxWidth.addListener(onChange(newValue ->
 			logger.log(TRACE, () -> "→ %s → maxWidth = %.1f".formatted(
 				getClass().getSimpleName(), newValue.doubleValue()))));

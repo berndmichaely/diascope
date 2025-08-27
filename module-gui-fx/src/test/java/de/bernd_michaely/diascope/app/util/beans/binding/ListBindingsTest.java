@@ -16,10 +16,8 @@
  */
 package de.bernd_michaely.diascope.app.util.beans.binding;
 
-import de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.ChainedObservableDoubleValues;
 import java.util.ArrayList;
 import java.util.List;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
@@ -102,7 +100,8 @@ public class ListBindingsTest
 	{
 		System.out.println("test_identity_selector");
 		final ObservableList<DoubleProperty> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Bindings::add, 0);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, (a, b) -> a + b, 0));
 		check(0, result.get());
 		list.add(new SimpleDoubleProperty(1));
 		check(1, result.get());
@@ -119,7 +118,8 @@ public class ListBindingsTest
 	{
 		System.out.println("test_1_operand");
 		final ObservableList<Item> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, 0);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0));
 		check(0, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
@@ -136,7 +136,8 @@ public class ListBindingsTest
 	{
 		System.out.println("test_2_operands");
 		final ObservableList<Item> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, 0.0);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, 0.0));
 		check(0, result.get());
 		//init:
 		list.add(new Item(2));
@@ -175,7 +176,8 @@ public class ListBindingsTest
 	{
 		System.out.println("test_3_operands_add");
 		final ObservableList<Item> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
 		check(-1, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
@@ -202,7 +204,8 @@ public class ListBindingsTest
 	{
 		System.out.println("test_3_operands_max");
 		final ObservableList<Item> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::max, -1);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, Math::max, -1));
 		check(-1, result.get());
 		list.add(new Item(1));
 		check(1, result.get());
@@ -243,7 +246,8 @@ public class ListBindingsTest
 			expected += value;
 		}
 		printList(list);
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
 		check(expected, result.get());
 		for (int i = 15; i >= 0; i -= 2)
 		{
@@ -262,7 +266,8 @@ public class ListBindingsTest
 	{
 		System.out.println("testChainedObservableDoubleValues_add_remove_empty");
 		final ObservableList<Item> list = observableArrayList();
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
 		check(-1, result.get());
 		double expected = 0;
 		for (int i = 0; i < 16; i++)
@@ -298,7 +303,8 @@ public class ListBindingsTest
 			expected += value;
 		}
 		printList(list);
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
 		check(expected, result.get());
 		list.getFirst().valueProperty().set(5.7);
 		expected += 4.7;
@@ -318,7 +324,8 @@ public class ListBindingsTest
 			expected += value;
 		}
 		printList(list);
-		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		final DoubleProperty result = new SimpleDoubleProperty();
+		result.bind(cumulatedOperations(list, Item::valueProperty, (a, b) -> a + b, -1));
 		check(expected, result.get());
 		// permutate:
 		list.subList(1, 12).sort(null);
@@ -340,68 +347,5 @@ public class ListBindingsTest
 			expected -= 0.5;
 			check(expected, result.get());
 		}
-	}
-
-	@Test
-	public void test_prefix_sum()
-	{
-		System.out.println("test_prefix_sum");
-		final ObservableList<DoubleProperty> list = observableArrayList();
-		final var result = new ChainedObservableDoubleValues<DoubleProperty>(list, p -> p, Bindings::add, 0.0);
-		final int num = 100;
-		// add 0..99
-		for (int i = 0; i < num; i++)
-		{
-			list.add(new SimpleDoubleProperty(i));
-			result.getIntermediateResult(i);
-		}
-		double sum = 0.0;
-		for (int i = 0; i < num; i++, sum += i)
-		{
-			System.out.print("· %2d : ".formatted(i));
-			check(sum, result.getIntermediateResult(i));
-		}
-		sum = result.getfinalResult();
-		check((num - 1) * num / 2, sum);
-		// add 99..0
-		double sum_imr = 0.0;
-		for (int i = 0; i < num; i++)
-		{
-			final var property = list.get(i);
-			sum_imr += num;
-			double delta = num - i;
-			sum += delta;
-			property.set(property.get() + delta);
-			System.out.print("· %2d : ".formatted(i));
-			check(sum_imr, result.getIntermediateResult(i));
-			System.out.print("→ %2d : ".formatted(i));
-			check(sum, result.getfinalResult());
-		}
-		check(num * num, sum);
-		// sub 0..99
-		sum_imr = 0.0;
-		for (int i = 0; i < num; i++)
-		{
-			final var property = list.get(i);
-			property.set(property.get() - i);
-			sum_imr += num - i;
-			sum -= i;
-			System.out.print("· %2d : ".formatted(i));
-			check(sum_imr, result.getIntermediateResult(i));
-			System.out.print("→ %2d : ".formatted(i));
-			check(sum, result.getfinalResult());
-		}
-		check(num * (num + 1) / 2, sum);
-		// remove 0..99
-		for (int i = 0; i < num; i++)
-		{
-			final int delta = num - i;
-			sum -= delta;
-			System.out.print("· %2d : ".formatted(i));
-			check(delta, list.removeFirst().get());
-			System.out.print("→ %2d : ".formatted(i));
-			check(sum, result.getfinalResult());
-		}
-		check(0.0, result.getfinalResult());
 	}
 }
