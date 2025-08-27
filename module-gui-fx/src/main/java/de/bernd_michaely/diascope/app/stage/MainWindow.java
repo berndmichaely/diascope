@@ -136,7 +136,6 @@ public class MainWindow
 		// Icons:
 		final Image iconFstv = Icons.ShowSidePane.getIconImage();
 		final Image iconFileOpen = Icons.FileOpen.getIconImage();
-		final Image iconViewFullscreen = Icons.ViewFullscreen.getIconImage();
 		final Image iconViewShowFirst = Icons.ViewShowFirst.getIconImage();
 		final Image iconViewShowPrev = Icons.ViewShowPrev.getIconImage();
 		final Image iconViewShowNext = Icons.ViewShowNext.getIconImage();
