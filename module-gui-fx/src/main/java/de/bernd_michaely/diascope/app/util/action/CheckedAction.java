@@ -18,25 +18,26 @@ package de.bernd_michaely.diascope.app.util.action;
 
 import java.lang.System.Logger;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static java.lang.System.Logger.Level.*;
 
 /// Checked Action to handle selected and disabled properties of toggles.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class CheckedAction extends Action
+public class CheckedAction extends ActionBase
 {
 	private static final Logger logger = System.getLogger(CheckedAction.class.getName());
 	private final ActionItemDescriptor actionItemDescriptor;
 	private final Set<Toggle> setToggles;
+	private final Set<CheckMenuItem> menuItems;
 	private final BooleanProperty selectedProperty = new SimpleBooleanProperty();
 	private boolean changing;
 
@@ -48,6 +49,7 @@ public class CheckedAction extends Action
 	public CheckedAction(ActionItemDescriptor actionItemDescriptor)
 	{
 		this.actionItemDescriptor = actionItemDescriptor;
+		this.menuItems = new HashSet<>();
 		this.setToggles = new HashSet<>();
 		selectedProperty.addListener(onChange(selected ->
 		{
@@ -57,6 +59,7 @@ public class CheckedAction extends Action
 				try
 				{
 					setToggles.forEach(t -> t.setSelected(selected));
+					menuItems.forEach(t -> t.setSelected(selected));
 				}
 				finally
 				{
@@ -66,54 +69,79 @@ public class CheckedAction extends Action
 		}));
 	}
 
-	/// Add toggles.
-	///
-	/// @param toggles the toggles to add
-	///
-	/// @throws IllegalArgumentException if trying to add the same toggle twice
-	///
-	public void addToggles(Toggle... toggles)
+	void addMenuItem(CheckMenuItem checkMenuItem)
 	{
-		for (var toggle : toggles)
+		if (!menuItems.add(checkMenuItem))
 		{
-			if (!setToggles.add(toggle))
-			{
-				throw new IllegalArgumentException("Same toggle added twice: »%s«".formatted(toggle));
-			}
-			toggle.selectedProperty().addListener(onChange(selected ->
-			{
-				if (!changing)
-				{
-					changing = true;
-					try
-					{
-						setToggles.stream().filter(t -> t != toggle).forEach(t -> t.setSelected(selected));
-						selectedProperty.set(selected);
-					}
-					finally
-					{
-						changing = false;
-					}
-				}
-			}));
-			switch (toggle)
-			{
-				case MenuItem menuItem ->
-				{
-					menuItem.disableProperty().bind(this.disableProperty());
-					initActionItem(actionItemDescriptor, menuItem);
-				}
-				case ToggleButton button ->
-				{
-					button.disableProperty().bind(this.disableProperty());
-					initActionItem(actionItemDescriptor, button);
-				}
-				default ->
-				{
-					logger.log(WARNING, () -> "Unknown type of toggle: " + toggle);
-				}
-			}
+			throw new IllegalArgumentException("Same menu item added twice: »%s«".formatted(checkMenuItem));
 		}
+		checkMenuItem.setSelected(isSelected());
+		checkMenuItem.selectedProperty().addListener(onChange(selected ->
+		{
+			if (!changing)
+			{
+				changing = true;
+				try
+				{
+					menuItems.stream().filter(m -> m != checkMenuItem).forEach(m -> m.setSelected(selected));
+					setToggles.stream().forEach(t -> t.setSelected(selected));
+					selectedProperty.set(selected);
+				}
+				finally
+				{
+					changing = false;
+				}
+			}
+		}));
+		checkMenuItem.disableProperty().bind(this.disableProperty());
+		initActionItem(actionItemDescriptor, checkMenuItem);
+	}
+
+	void addToggle(Toggle toggle)
+	{
+		if (!setToggles.add(toggle))
+		{
+			throw new IllegalArgumentException("Same toggle added twice: »%s«".formatted(toggle));
+		}
+		toggle.setSelected(isSelected());
+		toggle.selectedProperty().addListener(onChange(selected ->
+		{
+			if (!changing)
+			{
+				changing = true;
+				try
+				{
+					setToggles.stream().filter(t -> t != toggle).forEach(t -> t.setSelected(selected));
+					menuItems.stream().forEach(m -> m.setSelected(selected));
+					selectedProperty.set(selected);
+				}
+				finally
+				{
+					changing = false;
+				}
+			}
+		}));
+		if (toggle instanceof ToggleButton button)
+		{
+			button.disableProperty().bind(this.disableProperty());
+			initActionItem(actionItemDescriptor, button);
+		}
+	}
+
+	@Override
+	public List<CheckMenuItem> createMenuItems()
+	{
+		final var menuItem = new CheckMenuItem();
+		addMenuItem(menuItem);
+		return List.of(menuItem);
+	}
+
+	@Override
+	public List<ToggleButton> createToolBarButtons()
+	{
+		final var button = new ToggleButton();
+		addToggle(button);
+		return List.of(button);
 	}
 
 	public BooleanProperty selectedProperty()

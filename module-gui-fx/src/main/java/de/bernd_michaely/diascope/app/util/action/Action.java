@@ -16,75 +16,43 @@
  */
 package de.bernd_michaely.diascope.app.util.action;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.scene.control.ButtonBase;
+import java.util.List;
+import javafx.scene.control.Control;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.Tooltip;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.Separator;
+import javafx.scene.control.SeparatorMenuItem;
 
-/// Base class for Actions.
+/// Base interface for Actions.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public abstract class Action
+public interface Action
 {
-	private final BooleanProperty disableProperty = new SimpleBooleanProperty();
-
-	public BooleanProperty disableProperty()
+	/// A singleton action to indicate separators.
+	Action SEPARATOR = new Action()
 	{
-		return disableProperty;
-	}
+		@Override
+		public List<SeparatorMenuItem> createMenuItems()
+		{
+			return List.of(new SeparatorMenuItem());
+		}
 
-	public boolean isDisable()
-	{
-		return disableProperty.get();
-	}
+		@Override
+		public List<Separator> createToolBarButtons()
+		{
+			return List.of(new Separator());
+		}
+	};
 
-	public void setDisable(boolean disabled)
-	{
-		disableProperty.set(disabled);
-	}
+	/// Creates toolbar buttons corresponding to the action.
+	///
+	/// @return a list of toolbar buttons
+	///
+	List<? extends Control> createToolBarButtons();
 
-	void initActionItem(ActionItemDescriptor actionItemDescriptor, ButtonBase button)
-	{
-		final var icon = actionItemDescriptor.icon();
-		final String buttonTitle = actionItemDescriptor.buttonTitle();
-		if (icon != null)
-		{
-			final Image iconImage = icon.getIconImage();
-			if (iconImage != null)
-			{
-				button.setGraphic(new ImageView(iconImage));
-			}
-		}
-		else if (buttonTitle != null)
-		{
-			button.setText(buttonTitle);
-		}
-		final String tooltipText = actionItemDescriptor.tooltipText();
-		if (tooltipText != null)
-		{
-			button.setTooltip(new Tooltip(tooltipText));
-		}
-	}
-
-	void initActionItem(ActionItemDescriptor actionItemDescriptor, MenuItem menuItem)
-	{
-		final String menuTitle = actionItemDescriptor.menuTitle();
-		if (menuTitle != null)
-		{
-			menuItem.setText(menuTitle);
-		}
-		final var icon = actionItemDescriptor.icon();
-		if (icon != null)
-		{
-			final Image iconImage = icon.getIconImage();
-			if (iconImage != null)
-			{
-				menuItem.setGraphic(new ImageView(iconImage));
-			}
-		}
-	}
+	/// Creates contextmenu items corresponding to the action.
+	///
+	/// @return a list of contextmenu items
+	///
+	List<? extends MenuItem> createMenuItems();
 }

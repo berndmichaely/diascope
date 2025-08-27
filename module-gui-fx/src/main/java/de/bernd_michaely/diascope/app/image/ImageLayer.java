@@ -73,6 +73,7 @@ class ImageLayer
 	private final ReadOnlyBooleanWrapper imageIsNull;
 	private final BooleanProperty zoomModeIsFit;
 	private final BooleanProperty zoomModeIsFill;
+	private final BooleanProperty zoomModeIsOriginal;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final Divider divider;
 	private final Scale scale;
@@ -131,6 +132,8 @@ class ImageLayer
 		zoomModeIsFit.bind(imageTransforms.zoomModeProperty().isEqualTo(FIT));
 		this.zoomModeIsFill = new SimpleBooleanProperty();
 		zoomModeIsFill.bind(imageTransforms.zoomModeProperty().isEqualTo(FILL));
+		this.zoomModeIsOriginal = new SimpleBooleanProperty();
+		zoomModeIsOriginal.bind(imageTransforms.zoomModeProperty().isEqualTo(ORIGINAL));
 		imageRotated.boundsInParentProperty().addListener(onChange(bounds ->
 		{
 			imageWidthRotated.set(bounds.getWidth());
@@ -145,7 +148,8 @@ class ImageLayer
 			when(imageIsNull).then(0.0)
 				.otherwise(when(zoomModeIsFit).then(zoomFit)
 					.otherwise(when(zoomModeIsFill).then(zoomFill)
-						.otherwise(imageTransforms.zoomFixedProperty()))));
+						.otherwise(when(zoomModeIsOriginal).then(1.0)
+							.otherwise(imageTransforms.zoomFixedProperty())))));
 		imageRotated.rotateProperty().bind(imageTransforms.rotateProperty());
 		this.scale = new Scale();
 		scale.xProperty().bind(imageTransforms.zoomFactorProperty());

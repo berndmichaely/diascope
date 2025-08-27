@@ -17,8 +17,8 @@
 package de.bernd_michaely.diascope.app.stage;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ObservableBooleanValue;
 
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
@@ -97,7 +97,7 @@ class MainContentProperties
 		this.scrollBarsVisible.unbindBidirectional(other.scrollBarsVisible);
 	}
 
-	static MainContentProperties newPersistedProperties(ReadOnlyBooleanProperty fullScreenEnabled)
+	static MainContentProperties newPersistedProperties(ObservableBooleanValue fullScreenEnabled)
 	{
 		final var persistedProperties = new MainContentProperties()
 		{

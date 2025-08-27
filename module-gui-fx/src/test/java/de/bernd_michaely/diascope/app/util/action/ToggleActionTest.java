@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.util.action;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ public class ToggleActionTest
 	@BeforeEach
 	public void setUp()
 	{
-		toggleAction = new ToggleAction<>(NONE);
+		toggleAction = new ToggleAction<>(NONE, Map.of());
 		assertEquals(NONE, toggleAction.selectedIdProperty().get());
 		toggleButtons = List.of(new ToggleStub("A"), new ToggleStub("B"), new ToggleStub("C"));
 		radioMenuItems = List.of(new ToggleStub("a"), new ToggleStub("b"), new ToggleStub("c"));
@@ -108,6 +109,40 @@ public class ToggleActionTest
 			assertFalse(toggle.isSelected());
 		}
 		_check(NONE, toggleAction);
+	}
+
+	@Test
+	public void test_ToggleAction_initial_not_unselectedId()
+	{
+		System.out.println("test_ToggleAction_initial_not_unselectedId");
+		toggleAction = new ToggleAction<>(NONE, Map.of());
+		assertEquals(NONE, toggleAction.selectedIdProperty().get());
+		final ToggleIds preselectedId = TWO;
+		// change selected id before adding toggles:
+		toggleAction.setSelectedId(preselectedId);
+		assertEquals(preselectedId, toggleAction.selectedIdProperty().get());
+		toggleButtons = List.of(new ToggleStub("A"), new ToggleStub("B"), new ToggleStub("C"));
+		radioMenuItems = List.of(new ToggleStub("a"), new ToggleStub("b"), new ToggleStub("c"));
+		final int n = ToggleIds.values().length - 1;
+		int indexPreselectedId = -1;
+		for (int i = 0; i < n; i++)
+		{
+			final var id = ToggleIds.values()[i + 1];
+			if (id == preselectedId)
+			{
+				indexPreselectedId = i;
+			}
+			final ToggleStub toggle1 = toggleButtons.get(i);
+			System.out.println("· %s ← %s".formatted(toggle1, id));
+			final ToggleStub toggle2 = radioMenuItems.get(i);
+			System.out.println("· %s ← %s".formatted(toggle2, id));
+			toggleAction.addToggles(id, toggle1, toggle2);
+		}
+		for (int i = 0; i < n; i++)
+		{
+			assertEquals(i == indexPreselectedId, toggleButtons.get(i).isSelected());
+			assertEquals(i == indexPreselectedId, radioMenuItems.get(i).isSelected());
+		}
 	}
 
 	@Test

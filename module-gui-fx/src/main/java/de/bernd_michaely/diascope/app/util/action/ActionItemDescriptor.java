@@ -31,4 +31,9 @@ public record ActionItemDescriptor(
 {
 	public static final ActionItemDescriptor EMPTY =
 		new ActionItemDescriptor(null, null, null, null);
+
+	public ActionItemDescriptor(String menuTitle)
+	{
+		this(null, null, menuTitle, null);
+	}
 }

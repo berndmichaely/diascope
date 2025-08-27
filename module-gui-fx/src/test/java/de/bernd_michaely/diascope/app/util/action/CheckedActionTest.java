@@ -57,15 +57,41 @@ public class CheckedActionTest
 	}
 
 	@Test
-	public void test_CheckedAction()
+	public void test_CheckedAction_initial_false()
 	{
-		System.out.println("test_CheckedAction");
+		System.out.println("test_CheckedAction_initial_false");
 		assertFalse(checkedAction.isSelected());
-		checkedAction.addToggles(button, menuItem);
+		checkedAction.addToggle(button);
+		checkedAction.addToggle(menuItem);
 		_check(false);
 		System.out.println("→ test checkedAction");
 		checkedAction.setSelected(true);
 		_check(true);
+		checkedAction.setSelected(false);
+		_check(false);
+		System.out.println("→ test button");
+		button.setSelected(true);
+		_check(true);
+		button.setSelected(false);
+		_check(false);
+		System.out.println("→ test menuItem");
+		menuItem.setSelected(true);
+		_check(true);
+		menuItem.setSelected(false);
+		_check(false);
+	}
+
+	@Test
+	public void test_CheckedAction_initial_true()
+	{
+		System.out.println("test_CheckedAction_initial_true");
+		assertFalse(checkedAction.isSelected());
+		checkedAction.setSelected(true);
+		assertTrue(checkedAction.isSelected());
+		checkedAction.addToggle(button);
+		checkedAction.addToggle(menuItem);
+		_check(true);
+		System.out.println("→ test checkedAction");
 		checkedAction.setSelected(false);
 		_check(false);
 		System.out.println("→ test button");

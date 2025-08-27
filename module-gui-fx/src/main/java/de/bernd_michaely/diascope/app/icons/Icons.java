@@ -45,29 +45,48 @@ public enum Icons
 	// Navigation
 	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast,
 	// Layer
-	LayerAdd, LayerRemove, ShowDividers;
+	LayerAdd, LayerRemove, ShowDividers,
+	// Multi image modes
+	ModeSplit, ModeSpot;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());
 
 	public @Nullable
 	Image getIconImage()
 	{
+		return getIconImage(0);
+	}
+
+	/// Get an Image object from resources.
+	///
+	/// @param size request specified size (assuming square aspect ratio)
+	///
+	public @Nullable
+	Image getIconImage(double size)
+	{
 		final String resourceName = "action" + name() + ".png";
 		try (final InputStream resourceStream = getClass().getResourceAsStream(resourceName))
 		{
 			if (resourceStream != null)
 			{
-				return new Image(resourceStream);
+				if (size > 0)
+				{
+					return new Image(resourceStream, size, size, true, true);
+				}
+				else
+				{
+					return new Image(resourceStream);
+				}
 			}
 			else
 			{
-				logger.log(WARNING, "Resource not found: " + resourceName);
+				logger.log(TRACE, () -> "Resource not found: " + resourceName);
 				return null;
 			}
 		}
 		catch (IOException ex)
 		{
-			logger.log(WARNING, "" + ex);
+			logger.log(WARNING, () -> "Resource not found: " + resourceName, ex);
 			return null;
 		}
 	}

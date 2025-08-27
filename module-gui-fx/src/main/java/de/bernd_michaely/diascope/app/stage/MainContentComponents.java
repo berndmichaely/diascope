@@ -17,19 +17,15 @@
 package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
+import java.util.List;
 import java.util.function.Consumer;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
-import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.RadioMenuItem;
-import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Border;
@@ -41,15 +37,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_SPLIT_POS_IMAGE;
+import static de.bernd_michaely.diascope.app.util.action.Action.SEPARATOR;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
-import static javafx.beans.binding.Bindings.not;
-import static javafx.beans.binding.Bindings.when;
-import static javafx.scene.input.KeyCode.ESCAPE;
-import static javafx.scene.input.KeyCode.F11;
-import static javafx.scene.input.KeyCode.L;
-import static javafx.scene.input.KeyCode.S;
-import static javafx.scene.input.KeyCode.T;
 
 /// Class to handle the conditionally displayed parts of the main content.
 ///
@@ -68,8 +58,8 @@ class MainContentComponents
 	private final FullScreen fullScreen;
 	private final MainContentProperties properties;
 	private final MainContentProperties persistedProperties;
-	private final ContextMenu contextMenu;
 	private final EventHandler<KeyEvent> keyEventHandler;
+	private final ImageControlProperties imageControlProperties;
 
 	MainContentComponents(MultiImageView multiImageView, ListView<ImageGroupDescriptor> listView)
 	{
@@ -87,8 +77,10 @@ class MainContentComponents
 			return paneContent;
 		}, () -> paneOuter.setCenter(paneContent));
 		this.properties = new MainContentProperties();
-		this.toolBarImage = new ToolBarImage(multiImageView);
-		this.contextMenu = createContextMenu(properties, fullScreen, multiImageView, toolBarImage);
+		this.imageControlProperties = new ImageControlProperties(multiImageView, fullScreen, properties);
+		final var actions = new ImageControlActions(multiImageView, imageControlProperties);
+		this.toolBarImage = new ToolBarImage(actions, multiImageView);
+		final var contextMenu = createContextMenu(actions);
 		paneContent.setOnContextMenuRequested(contextMenuEvent ->
 		{
 			if (contextMenu.isShowing())
@@ -109,22 +101,24 @@ class MainContentComponents
 			};
 			switch (event.getCode())
 			{
-				case L -> propertyToggle.accept(properties.thumbnailsVisibleProperty());
-				case S -> propertyToggle.accept(properties.scrollBarsVisibleProperty());
-				case T -> propertyToggle.accept(properties.toolBarVisibleProperty());
-				case F11 -> propertyToggle.accept(fullScreen.enabledProperty());
+				case L -> propertyToggle.accept(actions.actionThumbnails.selectedProperty());
+				case S -> propertyToggle.accept(actions.actionScrollbars.selectedProperty());
+				case T -> propertyToggle.accept(actions.actionToolbar.selectedProperty());
+				case F11 -> propertyToggle.accept(actions.actionFullScreen.selectedProperty());
 				case ESCAPE ->
 				{
 					fullScreen.enabledProperty().set(false);
 					event.consume();
 				}
-				case DIGIT1 -> toolBarImage.setZoomMode(ORIGINAL);
-				case DIGIT2 -> toolBarImage.setZoomMode(FIT);
-				case DIGIT3 -> toolBarImage.setZoomMode(FILL);
+				case DIGIT1 -> actions.actionZoom.setSelectedId(ORIGINAL);
+				case DIGIT2 -> actions.actionZoom.setSelectedId(FIT);
+				case DIGIT3 -> actions.actionZoom.setSelectedId(FILL);
 			}
 		};
+		paneOuter.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
 		paneListView.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
 		paneToolBar.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
+		multiImageView.getRegion().addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
 
 		// window and fullscreen modes properties bindings:
 		properties.toolBarVisibleProperty().addListener(onChange(visible ->
@@ -171,6 +165,35 @@ class MainContentComponents
 		this.properties.bindBidirectional(this.persistedProperties);
 	}
 
+	private static ContextMenu createContextMenu(ImageControlActions actions)
+	{
+		final var contextMenu = new ContextMenu();
+		List.of(
+			actions.actionLayerAdd,
+			actions.actionLayerRemove,
+			SEPARATOR,
+			actions.actionMode,
+			SEPARATOR,
+			actions.actionShowDividers,
+			actions.actionToolbar,
+			actions.actionThumbnails,
+			actions.actionScrollbars,
+			SEPARATOR,
+			actions.actionZoom,
+			SEPARATOR,
+			actions.actionSelectAll,
+			actions.actionSelectNone,
+			actions.actionSelectToggle,
+			SEPARATOR,
+			actions.actionMirrorX,
+			actions.actionMirrorY,
+			SEPARATOR,
+			actions.actionResetAngles,
+			actions.actionFullScreen
+		).forEach(action -> contextMenu.getItems().addAll(action.createMenuItems()));
+		return contextMenu;
+	}
+
 	private static Node createFullScreenDummy()
 	{
 		final var label = new Label("FullScreen");
@@ -178,84 +201,6 @@ class MainContentComponents
 		label.setFont(Font.font(unit * 5));
 		label.setBorder(Border.stroke(Color.FLORALWHITE));
 		return label;
-	}
-
-	private static ContextMenu createContextMenu(MainContentProperties properties,
-		FullScreen fullScreen, MultiImageView multiImageView, ToolBarImage toolBarImage)
-	{
-		final BooleanBinding notMultiLayerMode = not(multiImageView.multiLayerModeProperty());
-		final var selectionModel = multiImageView.getLayerSelectionModel();
-		// ---
-		final var menuItemToolbar = new CheckMenuItem("Show/Hide Toolbar");
-		menuItemToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
-		final var menuItemThumbnails = new CheckMenuItem("Show/Hide Thumbnails");
-		menuItemThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
-		// ---
-		final var menuItemZoom100 = new RadioMenuItem("Zoom to 100%");
-		menuItemZoom100.selectedProperty().bindBidirectional(toolBarImage.getZoom100SelectedProperty());
-		final var menuItemFit = new RadioMenuItem("Zoom to fit window");
-		menuItemFit.selectedProperty().bindBidirectional(toolBarImage.getZoomFitWindowSelectedProperty());
-		final var menuItemFill = new RadioMenuItem("Zoom to fill window");
-		menuItemFill.selectedProperty().bindBidirectional(toolBarImage.getZoomFillWindowSelectedProperty());
-		toolBarImage.setZoomMode(multiImageView.getImageTransforms().zoomModeProperty().get());
-		// ---
-		final var menuItemLayerAdd = new MenuItem("Add Layer");
-		menuItemLayerAdd.onActionProperty().bind(toolBarImage.getButtonLayerAdd().onActionProperty());
-		menuItemLayerAdd.disableProperty().bind(toolBarImage.getButtonLayerAdd().disableProperty());
-		final var menuItemLayerRemove = new MenuItem("Remove Layer");
-		menuItemLayerRemove.onActionProperty().bind(toolBarImage.getButtonLayerRemove().onActionProperty());
-		menuItemLayerRemove.disableProperty().bind(toolBarImage.getButtonLayerRemove().disableProperty());
-		// ---
-		final var menuItemModeSplit = new RadioMenuItem("Split Mode");
-		menuItemModeSplit.selectedProperty().bindBidirectional(toolBarImage.getModeSplitSelectedProperty());
-		final var menuItemModeSpot = new RadioMenuItem("Spot Mode");
-		menuItemModeSpot.selectedProperty().bindBidirectional(toolBarImage.getModeSpotSelectedProperty());
-		menuItemModeSpot.disableProperty().bind(not(multiImageView.spotModeAvailableProperty()));
-		// ---
-		final var menuItemDivider = new CheckMenuItem("Show/Hide Dividers");
-		menuItemDivider.selectedProperty().bindBidirectional(properties.dividersVisibleProperty());
-		menuItemDivider.disableProperty().bind(notMultiLayerMode);
-		final var menuItemScrollbars = new CheckMenuItem("Show/Hide Scrollbars");
-		menuItemScrollbars.selectedProperty().bindBidirectional(properties.scrollBarsVisibleProperty());
-		// ---
-		final var menuItemSelectAll = new MenuItem("Select all layers");
-		menuItemSelectAll.disableProperty().bind(notMultiLayerMode.or(selectionModel.allSelectedProperty()));
-		menuItemSelectAll.setOnAction(_ -> selectionModel.selectAll());
-		final var menuItemSelectNone = new MenuItem("Unselect all layers");
-		menuItemSelectNone.disableProperty().bind(notMultiLayerMode.or(selectionModel.noneSelectedProperty()));
-		menuItemSelectNone.setOnAction(_ -> selectionModel.selectNone());
-		final var menuItemToggleLayerSelection = new MenuItem("Toggle layers selection");
-		menuItemToggleLayerSelection.disableProperty().bind(notMultiLayerMode);
-		menuItemToggleLayerSelection.setOnAction(_ -> selectionModel.invertSelection());
-		final var menuItemResetAngles = new MenuItem("Reset dividers");
-		menuItemResetAngles.disableProperty().bind(notMultiLayerMode);
-		menuItemResetAngles.setOnAction(_ -> multiImageView.resetDividers());
-		// ---
-		final var menuItemFullScreen = new MenuItem();
-		menuItemFullScreen.textProperty().bind(when(fullScreen.enabledProperty())
-			.then("Exit Fullscreen").otherwise("Enter Fullscreen"));
-		menuItemFullScreen.setOnAction(_ -> fullScreen.toggle());
-		// ->
-		return new ContextMenu(
-			menuItemToolbar, menuItemThumbnails,
-			new SeparatorMenuItem(),
-			menuItemZoom100, menuItemFit, menuItemFill,
-			new SeparatorMenuItem(),
-			menuItemLayerAdd, menuItemLayerRemove,
-			new SeparatorMenuItem(),
-			menuItemModeSplit, menuItemModeSpot,
-			new SeparatorMenuItem(),
-			menuItemDivider, menuItemScrollbars,
-			new SeparatorMenuItem(),
-			menuItemToggleLayerSelection, menuItemSelectAll, menuItemSelectNone,
-			menuItemResetAngles,
-			new SeparatorMenuItem(),
-			menuItemFullScreen);
-	}
-
-	private void addKeyEventFilter(Node node)
-	{
-		node.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
 	}
 
 	BooleanProperty fullScreenProperty()

@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.util.action;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -29,7 +30,7 @@ import javafx.scene.control.MenuItem;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class TriggerAction extends Action
+public class TriggerAction extends ActionBase
 {
 	private final ActionItemDescriptor actionItemDescriptor;
 	private final Set<Button> buttons;
@@ -49,6 +50,22 @@ public class TriggerAction extends Action
 		this.onActionProperty = new SimpleObjectProperty<>(_ -> action.run());
 	}
 
+	@Override
+	public List<MenuItem> createMenuItems()
+	{
+		final var menuItem = new MenuItem();
+		addMenuItem(menuItem);
+		return List.of(menuItem);
+	}
+
+	@Override
+	public List<Button> createToolBarButtons()
+	{
+		final var button = new Button();
+		addButton(button);
+		return List.of(button);
+	}
+
 	public ObjectProperty<EventHandler<ActionEvent>> onActionProperty()
 	{
 		return onActionProperty;
@@ -64,7 +81,7 @@ public class TriggerAction extends Action
 		onActionProperty.set(eventHandler);
 	}
 
-	public void addButton(Button button)
+	void addButton(Button button)
 	{
 		if (!buttons.add(button))
 		{
@@ -75,7 +92,7 @@ public class TriggerAction extends Action
 		initActionItem(actionItemDescriptor, button);
 	}
 
-	public void addMenuItem(MenuItem menuItem)
+	void addMenuItem(MenuItem menuItem)
 	{
 		if (!menuItems.add(menuItem))
 		{

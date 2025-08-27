@@ -24,7 +24,6 @@ import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.layout.Region;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -56,12 +55,14 @@ public class MultiImageView
 	///
 	public enum Mode
 	{
-		SPLIT, SPOT;
+		SINGLE, SPLIT, SPOT;
 
-		/// Returns the default multi image mode.
-		///
-		/// @return currently returns the SPLIT mode.
-		public static Mode getDefaultMode()
+		public static Mode getInitialMode()
+		{
+			return SINGLE;
+		}
+
+		public static Mode getDefaultMultiImageMode()
 		{
 			return SPLIT;
 		}
@@ -85,7 +86,7 @@ public class MultiImageView
 			.then(imageLayersSpot.layersMaxHeight).otherwise(imageLayersSplit.layersMaxHeight));
 		viewport.modeProperty().addListener(onChange(mode ->
 		{
-			if (mode == null)
+			if (mode == null || mode == SINGLE)
 			{
 				imageLayersSplit.removeAllLayersButOne();
 				imageLayersSplit.layers.setSelected(0, true);
@@ -105,7 +106,7 @@ public class MultiImageView
 	///
 	public Region getRegion()
 	{
-		return viewport.getPaneViewport();
+		return viewport.getRegion();
 	}
 
 	public ImageTransforms getImageTransforms()
@@ -129,9 +130,13 @@ public class MultiImageView
 	/// Adds a new layer.
 	public void addLayer()
 	{
+		final var layers = imageLayersSplit.layers;
+		if (layers.size() == 1 && getMode() == getInitialMode())
+		{
+			setMode(getDefaultMultiImageMode());
+		}
 		final Optional<ImageLayer> singleSelectedLayer =
 			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get();
-		final var layers = imageLayersSplit.layers;
 		imageLayersSplit.createImageLayer(singleSelectedLayer.isPresent() ?
 			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
 	}
@@ -193,7 +198,7 @@ public class MultiImageView
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
-		if (viewport.modeOrDefaultProperty().get() == SPLIT)
+		if (viewport.modeProperty().get() != SPOT)
 		{
 			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(imageLayer ->
 				imageLayer.setImageDescriptor(imageDescriptor));
@@ -224,34 +229,25 @@ public class MultiImageView
 	///
 	/// @return property to indicate the multi image mode
 	///
-	public ObjectProperty<@Nullable Mode> modeProperty()
+	public ObjectProperty<Mode> modeProperty()
 	{
 		return viewport.modeProperty();
 	}
 
-	/// Property to indicate the multi image mode.
-	///
-	/// @return property to indicate the multi image mode
-	///
-	public ReadOnlyObjectProperty<Mode> modeOrDefaultProperty()
-	{
-		return viewport.modeOrDefaultProperty();
-	}
-
-	/// Returns the multi image mode or the default mode, if null.
+	/// Returns the multi image mode.
 	///
 	/// @return the multi image mode
 	///
-	public Mode getModeOrDefault()
+	public Mode getMode()
 	{
-		return modeOrDefaultProperty().get();
+		return modeProperty().get();
 	}
 
 	/// Sets the multi image mode.
 	///
 	/// @param mode the given mode
 	///
-	public void setMode(@Nullable Mode mode)
+	public void setMode(Mode mode)
 	{
 		modeProperty().set(mode);
 	}

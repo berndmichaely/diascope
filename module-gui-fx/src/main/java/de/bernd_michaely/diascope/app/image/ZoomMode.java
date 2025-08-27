@@ -22,16 +22,16 @@ package de.bernd_michaely.diascope.app.image;
 ///
 public enum ZoomMode
 {
+	/// The image will be shown in original size.
+	ORIGINAL,
 	/// The image will be zoomed to fit into the viewport.
 	FIT,
 	/// The image will be zoomed to fill the viewport.
 	FILL,
-	/// The image will be shown in original size.
-	ORIGINAL,
 	/// The image will be zoomed according to a given zoom factor.
 	FIXED;
 
-	static ZoomMode getDefault()
+	public static ZoomMode getDefault()
 	{
 		return FIT;
 	}

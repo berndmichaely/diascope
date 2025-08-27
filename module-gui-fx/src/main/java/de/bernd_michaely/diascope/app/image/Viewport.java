@@ -23,8 +23,8 @@ import javafx.beans.property.*;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -33,8 +33,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Math.clamp;
-import static javafx.beans.binding.Bindings.isNotNull;
-import static javafx.beans.binding.Bindings.when;
 
 /// Class to describe the viewport of a MultiImageView containing all images.
 ///
@@ -48,10 +46,8 @@ class Viewport
 	private final Pane paneTopLayer = new Pane();
 	private final StackPane stackPane = new StackPane(
 		paneImageLayers, paneDividerLines, paneTopLayer);
-	private final BorderPane paneViewport = new BorderPane(stackPane);
 	private final ReadOnlyIntegerProperty numLayersProperty;
-	private final ObjectProperty<@Nullable Mode> modeProperty;
-	private final ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty;
+	private final ObjectProperty<Mode> modeProperty;
 	private final ReadOnlyBooleanWrapper spotProperty;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
@@ -73,11 +69,9 @@ class Viewport
 	Viewport(ReadOnlyIntegerProperty numLayersProperty)
 	{
 		this.numLayersProperty = numLayersProperty;
-		this.modeProperty = new SimpleObjectProperty<>();
-		this.modeOrDefaultProperty = new ReadOnlyObjectWrapper<>();
+		this.modeProperty = new SimpleObjectProperty<>(Mode.getInitialMode());
 		this.spotProperty = new ReadOnlyBooleanWrapper();
-		_initmodeProperties(modeOrDefaultProperty, modeProperty);
-		spotProperty.bind(modeOrDefaultProperty.isEqualTo(SPOT));
+		spotProperty.bind(modeProperty.isEqualTo(SPOT));
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
 		multiLayerMode.bind(numLayersProperty.greaterThanOrEqualTo(2));
 		this.dividersVisible = new SimpleBooleanProperty();
@@ -92,8 +86,8 @@ class Viewport
 		this.scrollRangeMaxHeight = new ReadOnlyDoubleWrapper();
 		this.scrollPosX = new ReadOnlyDoubleWrapper();
 		this.scrollPosY = new ReadOnlyDoubleWrapper();
-		this.scrollBars = new ScrollBars(paneViewport.widthProperty(), paneViewport.heightProperty());
-		this.splitCenter = new SplitCenter(paneViewport.widthProperty(), paneViewport.heightProperty());
+		this.scrollBars = new ScrollBars(stackPane.widthProperty(), stackPane.heightProperty());
+		this.splitCenter = new SplitCenter(stackPane.widthProperty(), stackPane.heightProperty());
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
 		paneTopLayer.setBackground(Background.EMPTY);
 		paneDividerLines.setBackground(Background.EMPTY);
@@ -164,21 +158,21 @@ class Viewport
 		}));
 		paneTopLayer.getChildren().addAll(scrollBars.getControls());
 		paneTopLayer.getChildren().add(splitCenter.getShape());
-		paneViewport.setBackground(Background.fill(Color.BLACK));
-		paneViewport.setMinSize(0, 0);
-		paneViewport.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		stackPane.setBackground(Background.fill(Color.BLACK));
+		stackPane.setMinSize(0, 0);
+		stackPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 		this.scrollBarEnabledHorizontal = new ReadOnlyBooleanWrapper();
 		scrollBarEnabledHorizontal.bind(
-			layersMaxWidth.greaterThan(paneViewport.widthProperty()));
+			layersMaxWidth.greaterThan(stackPane.widthProperty()));
 		scrollBars.horizontalVisibleProperty().bind(
 			scrollBars.enabledProperty().and(scrollBarEnabledHorizontal));
 		this.scrollBarEnabledVertical = new ReadOnlyBooleanWrapper();
 		scrollBarEnabledVertical.bind(
-			layersMaxHeight.greaterThan(paneViewport.heightProperty()));
+			layersMaxHeight.greaterThan(stackPane.heightProperty()));
 		scrollBars.verticalVisibleProperty().bind(
 			scrollBars.enabledProperty().and(scrollBarEnabledVertical));
-		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(paneViewport.widthProperty()));
-		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(paneViewport.heightProperty()));
+		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(stackPane.widthProperty()));
+		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(stackPane.heightProperty()));
 		scrollPosX.bind(scrollBars.valueHProperty().multiply(scrollRangeMaxWidth));
 		scrollPosY.bind(scrollBars.valueVProperty().multiply(scrollRangeMaxHeight));
 		this.cornerAngles = new CornerAngles(
@@ -208,14 +202,6 @@ class Viewport
 				scrollBars.valueVProperty().setValue(y);
 			}
 		});
-	}
-
-	@SuppressWarnings("argument")
-	private static void _initmodeProperties(ReadOnlyObjectWrapper<Mode> modeOrDefaultProperty,
-		ObjectProperty<@Nullable Mode> modeProperty)
-	{
-		modeOrDefaultProperty.bind(
-			when(isNotNull(modeProperty)).then(modeProperty).otherwise(getDefaultMode()));
 	}
 
 	void setLayerSelectionModel(LayerSelectionModel layerSelectionModel)
@@ -289,14 +275,9 @@ class Viewport
 		return splitCenter;
 	}
 
-	ObjectProperty<@Nullable Mode> modeProperty()
+	ObjectProperty<Mode> modeProperty()
 	{
 		return modeProperty;
-	}
-
-	ReadOnlyObjectProperty<Mode> modeOrDefaultProperty()
-	{
-		return modeOrDefaultProperty.getReadOnlyProperty();
 	}
 
 	ReadOnlyBooleanProperty multiLayerModeProperty()
@@ -331,12 +312,12 @@ class Viewport
 
 	ReadOnlyDoubleProperty widthProperty()
 	{
-		return getPaneViewport().widthProperty();
+		return getRegion().widthProperty();
 	}
 
 	ReadOnlyDoubleProperty heightProperty()
 	{
-		return getPaneViewport().heightProperty();
+		return getRegion().heightProperty();
 	}
 
 	/// The maximum of widths of all layers.
@@ -392,8 +373,8 @@ class Viewport
 		return dividersVisible;
 	}
 
-	Pane getPaneViewport()
+	Region getRegion()
 	{
-		return paneViewport;
+		return stackPane;
 	}
 }
