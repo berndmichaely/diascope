@@ -50,9 +50,13 @@ public class ApplicationConfiguration
 		NORMAL, DEVELOPMENT, UNIT_TEST
 	}
 
-	public record State(Optional<SemanticVersion> version, LaunchType launchType,
-		List<String> commandLineArguments, BooleanProperty developmentModeProperty)
-		{
+	public record State(
+		Optional<SemanticVersion> version,
+		LaunchType launchType,
+		List<String> commandLineArguments,
+		Optional<String> initialPath,
+		BooleanProperty developmentModeProperty)
+	{
 		public boolean isStartedInDevelopmentMode()
 		{
 			return launchType() == LaunchType.DEVELOPMENT;
@@ -83,13 +87,17 @@ public class ApplicationConfiguration
 		}
 	}
 
-	public static void initInstance(List<String> commandLineArguments, boolean developmentMode)
+	public static void initInstance(List<String> commandLineArguments,
+		boolean developmentMode, Optional<String> initialPath)
 	{
 		if (instance == null)
 		{
-			instance = new ApplicationConfiguration(new State(ApplicationVersion.getInstance(),
-				developmentMode ? DEVELOPMENT : NORMAL, commandLineArguments,
-				new SimpleBooleanProperty(developmentMode)));
+			instance = new ApplicationConfiguration(
+				new State(ApplicationVersion.getInstance(),
+					developmentMode ? DEVELOPMENT : NORMAL,
+					commandLineArguments,
+					initialPath,
+					new SimpleBooleanProperty(developmentMode)));
 		}
 		else
 		{
@@ -107,9 +115,12 @@ public class ApplicationConfiguration
 	{
 		if (instance == null)
 		{
-			instance = new ApplicationConfiguration(new State(ApplicationVersion.getInstance(), UNIT_TEST,
-				commandLineArguments != null ? commandLineArguments : List.of(),
-				new SimpleBooleanProperty()));
+			instance = new ApplicationConfiguration(
+				new State(ApplicationVersion.getInstance(),
+					UNIT_TEST,
+					commandLineArguments != null ? commandLineArguments : List.of(),
+					Optional.empty(),
+					new SimpleBooleanProperty()));
 		}
 		else
 		{

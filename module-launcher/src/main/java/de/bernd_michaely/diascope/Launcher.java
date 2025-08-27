@@ -25,6 +25,7 @@ import de.bernd_michaely.diascope.app.PreferencesUtil;
 import java.io.PrintStream;
 import java.lang.System.Logger;
 import java.util.List;
+import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.lang.System.Logger.Level.*;
@@ -41,7 +42,9 @@ public class Launcher
 	private static final String OPT_DEVELOPMENT = "development";
 	private static final String OPT_EXPORT_PREFERENCES = "show-preferences";
 	private static final String OPT_CLEAR_PREFERENCES = "clear-preferences";
+	private static final String OPT_INITIAL_PATH = "open";
 	private static boolean helpMode, developmentMode, exportPrefsMode, clearPrefsMode;
+	private static @Nullable String initialPath;
 
 	public static void main(String... args)
 	{
@@ -53,6 +56,7 @@ public class Launcher
 				case OPT_DEVELOPMENT -> developmentMode = true;
 				case OPT_EXPORT_PREFERENCES -> exportPrefsMode = true;
 				case OPT_CLEAR_PREFERENCES -> clearPrefsMode = true;
+				case OPT_INITIAL_PATH -> initialPath = param;
 				default -> throw new AssertionError(
 						"Invalid CommandLineArguments long option »%s«".formatted(longOption));
 			}
@@ -63,7 +67,8 @@ public class Launcher
 				.addFlagOption(OPT_HELP, 'h', "print this help to stdout")
 				.addFlagOption(OPT_DEVELOPMENT, 'd', "start application in development mode")
 				.addFlagOption(OPT_EXPORT_PREFERENCES, 'p', "export preferences to stdout")
-				.addFlagOption(OPT_CLEAR_PREFERENCES, 'c', "clear all preferences of this application");
+				.addFlagOption(OPT_CLEAR_PREFERENCES, 'c', "clear all preferences of this application")
+				.addParameterOption(OPT_INITIAL_PATH, 'o', true, "path to open initially");
 		}
 		catch (OptionDefinitionException ex)
 		{
@@ -79,7 +84,7 @@ public class Launcher
 			commandLineArguments.printFormattedDescription(System.err, true);
 			System.exit(1);
 		}
-		ApplicationConfiguration.initInstance(pathNames, developmentMode);
+		ApplicationConfiguration.initInstance(pathNames, developmentMode, Optional.ofNullable(initialPath));
 		if (helpMode)
 		{
 			final PrintStream ps = System.out;

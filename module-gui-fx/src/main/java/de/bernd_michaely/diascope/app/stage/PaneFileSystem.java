@@ -97,12 +97,20 @@ public class PaneFileSystem
 		showingHiddenDirsProperty.addListener(onChange(fileSystemTreeView::updateTree));
 		this.selectedPathPersistedProperty = newPersistedObjectProperty(
 			PREF_KEY_SELECTED_PATH, getClass(), PATH_USER_HOME.toString(), Paths::get);
-		final var path = ApplicationConfiguration.getState().commandLineArguments()
-			.stream().map(Path::of).filter(Files::isDirectory)
-			.findFirst().orElse(selectedPathPersistedProperty.get());
-		logger.log(INFO, () -> "Path to open at launch: »%s«"
-			.formatted(path != null ? path.toString() : ""));
-		fileSystemTreeView.expandPath(path, true, true);
+		ApplicationConfiguration.getState().initialPath().ifPresentOrElse(str ->
+		{
+			if (!str.isBlank())
+			{
+				final Path dir = Path.of(str);
+				final Path path = Files.isDirectory(dir) ? dir : PATH_USER_HOME;
+				logger.log(INFO, () -> "Path to open at launch: »%s«"
+					.formatted(path != null ? path.toString() : ""));
+				fileSystemTreeView.expandPath(path, true, true);
+			}
+		}, () ->
+		{
+			fileSystemTreeView.expandPath(selectedPathPersistedProperty.get(), true, true);
+		});
 		selectedPathPersistedProperty.bind(fileSystemTreeView.selectedPathProperty());
 	}
 
