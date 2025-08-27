@@ -147,7 +147,7 @@ logger.lifecycle " -> Using »JUnit vintage ${versionJUnitVintage}«"
 logger.lifecycle " -> Using »JaCoCo ${jacoco.toolVersion}«"
 logger.lifecycle " -> Using »Checker Framework        ${versionCheckerFramework}«"
 logger.lifecycle " -> Using »Checker Framework Plugin ${versionCheckerFrameworkPlugin}«"
-logger.lifecycle " -> Included child projects : »${childProjects.keySet()}«"
+logger.lifecycle " -> Included child projects : »${childProjects.keySet().stream().sorted().toList()}«"
 logger.lifecycle " -> Maven coordinates »${group}:${name}:${version}«"
 
 subprojects {
