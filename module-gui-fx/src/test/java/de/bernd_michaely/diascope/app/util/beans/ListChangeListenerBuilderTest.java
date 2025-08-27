@@ -71,8 +71,10 @@ public class ListChangeListenerBuilderTest
 		}
 	}
 
-	private void _test_replaceAsUpdate(boolean replaceAsUpdate)
+	@Test
+	public void test()
 	{
+		System.out.println("test");
 		final var listenerTest = new ListenerTest<String>();
 		final ObservableList<String> list = observableArrayList();
 		final var listener = new ListChangeListenerBuilder<String>()
@@ -80,7 +82,6 @@ public class ListChangeListenerBuilderTest
 			.onRemove(listenerTest::onRemove)
 			.onUpdate(listenerTest::onUpdate)
 			.onPermutate(listenerTest::onPermutate)
-			.replaceAsUpdate(replaceAsUpdate)
 			.build();
 		list.addListener(listener);
 		listenerTest.checkCounters(0, 0, 0, 0);
@@ -94,29 +95,8 @@ public class ListChangeListenerBuilderTest
 		list.remove("b");
 		listenerTest.checkCounters(0, 2, 0, 0);
 		list.set(0, "a");
-		if (replaceAsUpdate)
-		{
-			listenerTest.checkCounters(0, 0, 1, 0);
-		}
-		else
-		{
-			listenerTest.checkCounters(1, 1, 0, 0);
-		}
+		listenerTest.checkCounters(1, 1, 0, 0);
 		list.sort(null);
 		listenerTest.checkCounters(0, 0, 0, 1);
-	}
-
-	@Test
-	public void test_no_replaceAsUpdate()
-	{
-		System.out.println("test_no_replaceAsUpdate");
-		_test_replaceAsUpdate(false);
-	}
-
-	@Test
-	public void test_replaceAsUpdate()
-	{
-		System.out.println("test_replaceAsUpdate");
-		_test_replaceAsUpdate(true);
 	}
 }

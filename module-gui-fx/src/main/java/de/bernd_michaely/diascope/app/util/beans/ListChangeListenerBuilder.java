@@ -31,7 +31,6 @@ public class ListChangeListenerBuilder<T>
 	private @Nullable Consumer<Change<? extends T>> onRemove;
 	private @Nullable Consumer<Change<? extends T>> onUpdate;
 	private @Nullable Consumer<Change<? extends T>> onPermutate;
-	private boolean replaceAsUpdate;
 
 	public ListChangeListenerBuilder<T> onAdd(@Nullable Consumer<Change<? extends T>> onAdd)
 	{
@@ -57,12 +56,6 @@ public class ListChangeListenerBuilder<T>
 		return this;
 	}
 
-	public ListChangeListenerBuilder<T> replaceAsUpdate(boolean replaceAsUpdate)
-	{
-		this.replaceAsUpdate = replaceAsUpdate;
-		return this;
-	}
-
 	public ListChangeListener<T> build()
 	{
 		return change ->
@@ -79,25 +72,15 @@ public class ListChangeListenerBuilder<T>
 				}
 				else
 				{
-					if (change.wasRemoved() && !(change.wasReplaced() && replaceAsUpdate) && onRemove != null)
+					if (change.wasRemoved() && onRemove != null)
 					{
 						onRemove.accept(change);
 					}
 					if (change.wasAdded())
 					{
-						if (change.wasReplaced() && replaceAsUpdate)
+						if (onAdd != null)
 						{
-							if (onUpdate != null)
-							{
-								onUpdate.accept(change);
-							}
-						}
-						else
-						{
-							if (onAdd != null)
-							{
-								onAdd.accept(change);
-							}
+							onAdd.accept(change);
 						}
 					}
 				}

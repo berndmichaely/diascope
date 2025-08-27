@@ -97,41 +97,23 @@ public class ListBindings
 			list.addListener(new ListChangeListenerBuilder<T>()
 				.onAdd(change ->
 				{
-					final int n = list.size();
-					final int from = change.getFrom();
-					final int to = change.getTo();
-					for (int i = from; i < to; i++)
+					if (change.wasReplaced())
 					{
-						intermediateResults.add(i, new ReadOnlyDoubleWrapper());
-						bindItems.accept(i);
-					}
-					if (to < n)
-					{
-						bindItems.accept(to);
+						recreateBindings.accept(change);
 					}
 					else
 					{
-						finalResult.bind(intermediateResults.getLast());
-					}
-				})
-				.onRemove(change ->
-				{
-					final int n = list.size();
-					final int removedSize = change.getRemovedSize();
-					final int from = change.getFrom();
-					final var subList = intermediateResults.subList(from, from + removedSize);
-					subList.forEach(DoubleProperty::unbind);
-					subList.clear();
-					if (list.isEmpty())
-					{
-						finalResult.unbind();
-						finalResult.set(neutralElement);
-					}
-					else
-					{
-						if (from < n)
+						final int n = list.size();
+						final int from = change.getFrom();
+						final int to = change.getTo();
+						for (int i = from; i < to; i++)
 						{
-							bindItems.accept(from);
+							intermediateResults.add(i, new ReadOnlyDoubleWrapper());
+							bindItems.accept(i);
+						}
+						if (to < n)
+						{
+							bindItems.accept(to);
 						}
 						else
 						{
@@ -139,9 +121,36 @@ public class ListBindings
 						}
 					}
 				})
+				.onRemove(change ->
+				{
+					if (!change.wasReplaced())
+					{
+						final int n = list.size();
+						final int removedSize = change.getRemovedSize();
+						final int from = change.getFrom();
+						final var subList = intermediateResults.subList(from, from + removedSize);
+						subList.forEach(DoubleProperty::unbind);
+						subList.clear();
+						if (list.isEmpty())
+						{
+							finalResult.unbind();
+							finalResult.set(neutralElement);
+						}
+						else
+						{
+							if (from < n)
+							{
+								bindItems.accept(from);
+							}
+							else
+							{
+								finalResult.bind(intermediateResults.getLast());
+							}
+						}
+					}
+				})
 				.onPermutate(recreateBindings)
 				.onUpdate(recreateBindings)
-				.replaceAsUpdate(true)
 				.build());
 		}
 
