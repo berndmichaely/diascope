@@ -16,15 +16,18 @@
  */
 package de.bernd_michaely.diascope.app.util.beans.binding;
 
+import de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.ChainedObservableDoubleValues;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.junit.jupiter.api.Test;
 
-import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.chainedObservableDoubleValues;
-import static java.util.stream.Collectors.joining;
+import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.*;
+import static java.util.Comparator.comparing;
+import static javafx.collections.FXCollections.observableArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -36,59 +39,159 @@ public class ListBindingsTest
 {
 	private static class Item
 	{
-		private final DoubleProperty value;
-		private final DoubleProperty result;
+		private final DoubleProperty property;
 
 		private Item(double value)
 		{
-			this.value = new SimpleDoubleProperty(value);
-			this.result = new SimpleDoubleProperty();
+			this.property = new SimpleDoubleProperty(value);
 		}
 
-		private DoubleProperty getValue()
+		private DoubleProperty valueProperty()
 		{
-			return value;
+			return property;
 		}
 
-		private DoubleProperty getResult()
+		private double getValue()
 		{
-			return result;
+			return property.doubleValue();
 		}
 
 		@Override
 		public String toString()
 		{
-			return "[%.1f ~ (%.1f)]".formatted(value.get(), result.get());
+			return "%.1f".formatted(getValue());
 		}
 	}
 
-	private void printList(ObservableList<Item> list, boolean verbose)
+	private void printList(ObservableList<Item> list)
 	{
-		if (verbose)
-		{
-			System.out.println("· input list: [\n%s]".formatted(list.stream()
-				.map(Item::toString).collect(joining(",\n"))));
-		}
-		else
-		{
-			System.out.println("· input list: [%s]".formatted(list.stream()
-				.map(Item::getValue).map(DoubleProperty::get)
-				.map(d -> "%.1f".formatted(d))
-				.collect(joining(", "))));
-		}
+		System.out.println("· input list: %s".formatted(list));
 	}
 
 	private void check(double expected, double actual)
 	{
-		System.out.println("expected: %.1f → actual: %.1f".formatted(expected, actual));
+		System.out.println("  → expected: %.1f → actual: %.1f".formatted(expected, actual));
 		assertEquals(expected, actual);
 	}
 
 	@Test
-	public void testChainedObservableDoubleValues_non_empty()
+	public void test_identity_selector()
 	{
-		System.out.println("testChainedObservableDoubleValues_non_empty");
-		final ObservableList<Item> list = FXCollections.observableArrayList();
+		System.out.println("test_identity_selector");
+		final ObservableList<DoubleProperty> list = observableArrayList();
+		final var result = chainedObservableDoubleValues(list, Bindings::add, 0);
+		check(0, result.get());
+		list.add(new SimpleDoubleProperty(1));
+		check(1, result.get());
+		list.removeFirst();
+		check(0, result.get());
+		list.add(new SimpleDoubleProperty(2));
+		check(2, result.get());
+		list.clear();
+		check(0, result.get());
+	}
+
+	@Test
+	public void test_1_operand()
+	{
+		System.out.println("test_1_operand");
+		final ObservableList<Item> list = observableArrayList();
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, 0);
+		check(0, result.get());
+		list.add(new Item(1));
+		check(1, result.get());
+		list.removeFirst();
+		check(0, result.get());
+		list.add(new Item(2));
+		check(2, result.get());
+		list.clear();
+		check(0, result.get());
+	}
+
+	@Test
+	public void test_2_operands()
+	{
+		System.out.println("test_2_operands");
+		final ObservableList<Item> list = observableArrayList();
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		check(-1, result.get());
+		list.add(new Item(1));
+		check(1, result.get());
+		list.add(new Item(2));
+		check(3, result.get());
+		list.set(0, new Item(3));
+		check(5, result.get());
+		list.set(1, new Item(4));
+		check(7, result.get());
+		list.remove(0);
+		check(4, result.get());
+		list.remove(0);
+		check(-1, result.get());
+	}
+
+	@Test
+	public void test_3_operands_add()
+	{
+		System.out.println("test_3_operands_add");
+		final ObservableList<Item> list = observableArrayList();
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		check(-1, result.get());
+		list.add(new Item(1));
+		check(1, result.get());
+		list.add(new Item(2));
+		check(3, result.get());
+		list.add(new Item(3));
+		check(6, result.get());
+		list.set(0, new Item(4));
+		check(9, result.get());
+		list.set(1, new Item(5));
+		check(12, result.get());
+		list.set(2, new Item(6));
+		check(15, result.get());
+		list.remove(0);
+		check(11, result.get());
+		list.remove(0);
+		check(6, result.get());
+		list.remove(0);
+		check(-1, result.get());
+	}
+
+	@Test
+	public void test_3_operands_max()
+	{
+		System.out.println("test_3_operands_max");
+		final ObservableList<Item> list = observableArrayList();
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::max, -1);
+		check(-1, result.get());
+		list.add(new Item(1));
+		check(1, result.get());
+		list.add(new Item(2));
+		check(2, result.get());
+		list.add(new Item(3));
+		check(3, result.get());
+		list.set(0, new Item(4));
+		check(4, result.get());
+		list.set(1, new Item(3));
+		check(4, result.get());
+		list.set(2, new Item(5));
+		check(5, result.get());
+		list.remove(2);
+		check(4, result.get());
+		list.add(new Item(6));
+		check(6, result.get());
+		list.remove(1);
+		check(6, result.get());
+		list.remove(1);
+		check(4, result.get());
+		list.remove(0);
+		check(-1, result.get());
+	}
+
+	@Test
+	public void testChainedObservableDoubleValues_add_remove_non_empty()
+	{
+		System.out.println("testChainedObservableDoubleValues_add_remove_non_empty");
+		final ObservableList<Item> list = observableArrayList();
 		double expected = 0;
 		for (int i = 0; i < 16; i++)
 		{
@@ -96,9 +199,8 @@ public class ListBindingsTest
 			list.add(new Item(value));
 			expected += value;
 		}
-		printList(list, false);
-		final var result = chainedObservableDoubleValues(
-			list, Item::getValue, Item::getResult, Bindings::add, -1);
+		printList(list);
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
 		check(expected, result.get());
 		for (int i = 15; i >= 0; i -= 2)
 		{
@@ -106,19 +208,18 @@ public class ListBindingsTest
 			list.remove(i);
 			expected -= value;
 		}
-		printList(list, true);
+		printList(list);
 		list.clear();
 		check(-1, result.get());
-		printList(list, true);
+		printList(list);
 	}
 
 	@Test
-	public void testChainedObservableDoubleValues_empty()
+	public void testChainedObservableDoubleValues_add_remove_empty()
 	{
-		System.out.println("testChainedObservableDoubleValues_empty");
-		final ObservableList<Item> list = FXCollections.observableArrayList();
-		final var result = chainedObservableDoubleValues(
-			list, Item::getValue, Item::getResult, Bindings::add, -1);
+		System.out.println("testChainedObservableDoubleValues_add_remove_empty");
+		final ObservableList<Item> list = observableArrayList();
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
 		check(-1, result.get());
 		double expected = 0;
 		for (int i = 0; i < 16; i++)
@@ -127,7 +228,7 @@ public class ListBindingsTest
 			list.add(new Item(value));
 			expected += value;
 		}
-		printList(list, true);
+		printList(list);
 		check(expected, result.get());
 		for (int i = 14; i >= 0; i -= 2)
 		{
@@ -135,9 +236,124 @@ public class ListBindingsTest
 			list.remove(i);
 			expected -= value;
 		}
-		printList(list, true);
+		printList(list);
 		list.clear();
 		check(-1, result.get());
-		printList(list, true);
+		printList(list);
+	}
+
+	@Test
+	public void testChainedObservableDoubleValues_set()
+	{
+		System.out.println("testChainedObservableDoubleValues_set");
+		final ObservableList<Item> list = observableArrayList();
+		double expected = 0;
+		for (int i = 0; i < 16; i++)
+		{
+			final double value = 1 << i;
+			list.add(new Item(value));
+			expected += value;
+		}
+		printList(list);
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		check(expected, result.get());
+		list.getFirst().valueProperty().set(5.7);
+		expected += 4.7;
+		check(expected, result.get());
+	}
+
+	@Test
+	public void testChainedObservableDoubleValues_permutate()
+	{
+		System.out.println("testChainedObservableDoubleValues_permutate");
+		final ObservableList<Item> list = observableArrayList();
+		double expected = 0;
+		for (int i = 15; i >= 0; i--)
+		{
+			final int value = 1 << i;
+			list.add(new Item(value));
+			expected += value;
+		}
+		printList(list);
+		final var result = chainedObservableDoubleValues(list, Item::valueProperty, Bindings::add, -1);
+		check(expected, result.get());
+		// permutate:
+		list.subList(1, 12).sort(comparing(Item::getValue));
+		printList(list);
+		// some changes after permutate:
+		final List<Item> list2 = new ArrayList<>();
+		for (int i = 0; i < list.size(); i++)
+		{
+			list2.add(new Item(list.get(i).getValue() - 0.5));
+		}
+		for (int i = 0; i < 16; i++)
+		{
+			final double oldValue = list.remove(i).getValue();
+			final Item newValue = list2.get(i);
+			System.out.println("→ update item [%d] after permutation from %.1f to %.1f:"
+				.formatted(i, oldValue, newValue.getValue()));
+			list.add(i, newValue);
+			printList(list);
+			expected -= 0.5;
+			check(expected, result.get());
+		}
+	}
+
+	@Test
+	public void test_prefix_sum()
+	{
+		System.out.println("test_prefix_sum");
+		final ObservableList<DoubleProperty> list = observableArrayList();
+		final var result = new ChainedObservableDoubleValues<DoubleProperty>(list, p -> p, Bindings::add, 0.0);
+		final int num = 100;
+		// add 0..99
+		for (int i = 0; i < num; i++)
+		{
+			list.add(new SimpleDoubleProperty(i));
+			result.getIntermediateResult(i);
+		}
+		double sum = 0.0;
+		for (int i = 0; i < num; i++, sum += i)
+		{
+			System.out.print("· %2d : ".formatted(i));
+			check(sum, result.getIntermediateResult(i));
+		}
+		sum = result.getfinalResult();
+		check((num - 1) * num / 2, sum);
+		// add 99..0
+		double sum_imr = 0.0;
+		for (int i = 0; i < num; i++)
+		{
+			final var property = list.get(i);
+			sum_imr += num;
+			double delta = num - i;
+			sum += delta;
+			property.set(property.get() + delta);
+			System.out.print("· %2d : ".formatted(i));
+			check(sum_imr, result.getIntermediateResult(i));
+			System.out.print("→ %2d : ".formatted(i));
+			check(sum, result.getfinalResult());
+		}
+		check(num * num, sum);
+		// sub 0..99
+		sum_imr = 0.0;
+		for (int i = 0; i < num; i++)
+		{
+			final var property = list.get(i);
+			property.set(property.get() - i);
+			sum_imr += num - i;
+			sum -= i;
+			System.out.print("· %2d : ".formatted(i));
+			check(sum_imr, result.getIntermediateResult(i));
+			System.out.print("→ %2d : ".formatted(i));
+			check(sum, result.getfinalResult());
+		}
+		check(num * (num + 1) / 2, sum);
+		// remove 0..99
+		for (int i = 0; i < num; i++)
+		{
+			check(num - i, list.removeFirst().get());
+		}
+		check(0.0, result.getfinalResult());
 	}
 }
