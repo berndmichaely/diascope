@@ -73,7 +73,8 @@ public class MultiImageView
 		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
 		this.imageTransforms = new ImageTransforms();
 		this.imageLayersSplit = new ImageLayers(viewport, imageTransforms);
-		viewport.setLayerSelectionModel(imageLayersSplit.layerSelectionModel);
+		final var layerSelectionModel = imageLayersSplit.layerSelectionModel;
+		viewport.setLayerSelectionModel(layerSelectionModel);
 		this.imageLayersSpot = new ImageLayersSpot(viewport, imageTransforms);
 		imageLayersSpot.layerSelectionModel.setSelected(1, true);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
@@ -90,13 +91,12 @@ public class MultiImageView
 				imageLayersSplit.layers.setSelected(0, true);
 			}
 		}));
-		numLayers.bind(imageLayersSplit.layerSelectionModel.sizeProperty());
+		numLayers.bind(layerSelectionModel.sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
 		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
-		spotModeAvailable.bind(imageLayersSplit.layerSelectionModel.dualLayerSelected().or(
-			imageLayersSplit.layerSelectionModel.sizeProperty().isEqualTo(2)));
+		spotModeAvailable.bind(layerSelectionModel.dualLayerSelected());
 	}
 
 	/// Returns the main component to be included in surrounding environment.
