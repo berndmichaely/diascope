@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.lang.System.Logger.Level.*;
+import static java.util.Objects.requireNonNullElse;
 
 /**
  * Main launcher of the Diascope application.
@@ -56,7 +57,7 @@ public class Launcher
 				case OPT_DEVELOPMENT -> developmentMode = true;
 				case OPT_EXPORT_PREFERENCES -> exportPrefsMode = true;
 				case OPT_CLEAR_PREFERENCES -> clearPrefsMode = true;
-				case OPT_INITIAL_PATH -> initialPath = param;
+				case OPT_INITIAL_PATH -> initialPath = requireNonNullElse(param, "");
 				default -> throw new AssertionError(
 						"Invalid CommandLineArguments long option »%s«".formatted(longOption));
 			}
@@ -68,7 +69,7 @@ public class Launcher
 				.addFlagOption(OPT_DEVELOPMENT, 'd', "start application in development mode")
 				.addFlagOption(OPT_EXPORT_PREFERENCES, 'p', "export preferences to stdout")
 				.addFlagOption(OPT_CLEAR_PREFERENCES, 'c', "clear all preferences of this application")
-				.addParameterOption(OPT_INITIAL_PATH, 'o', true, "path to open initially");
+				.addParameterOption(OPT_INITIAL_PATH, 'o', false, "path to open initially (no path parameter to open nothing)");
 		}
 		catch (OptionDefinitionException ex)
 		{

@@ -101,7 +101,7 @@ public class PaneFileSystem
 		{
 			if (!str.isBlank())
 			{
-				final Path dir = Path.of(str);
+				final Path dir = Path.of(str).toAbsolutePath();
 				final Path path = Files.isDirectory(dir) ? dir : PATH_USER_HOME;
 				logger.log(INFO, () -> "Path to open at launch: »%s«"
 					.formatted(path != null ? path.toString() : ""));
