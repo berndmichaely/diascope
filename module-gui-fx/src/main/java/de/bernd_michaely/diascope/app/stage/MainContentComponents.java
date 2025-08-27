@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
+import de.bernd_michaely.diascope.app.util.action.CheckedAction;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -57,6 +58,7 @@ class MainContentComponents
 	private final MainContentProperties properties;
 	private final MainContentProperties persistedProperties;
 	private final ImageControlProperties imageControlProperties;
+	private final ImageControlActions actions;
 
 	MainContentComponents(MultiImageView multiImageView, ListView<ImageGroupDescriptor> listView)
 	{
@@ -75,7 +77,7 @@ class MainContentComponents
 		}, () -> paneOuter.setCenter(paneContent));
 		this.properties = new MainContentProperties();
 		this.imageControlProperties = new ImageControlProperties(multiImageView, fullScreen, properties);
-		final var actions = new ImageControlActions(multiImageView, imageControlProperties);
+		this.actions = new ImageControlActions(multiImageView, imageControlProperties);
 		this.toolBarImage = new ToolBarImage(actions, multiImageView);
 		final var contextMenu = toolBarImage.getContextMenu();
 		paneContent.setOnContextMenuRequested(contextMenuEvent ->
@@ -186,9 +188,9 @@ class MainContentComponents
 		return label;
 	}
 
-	BooleanProperty fullScreenProperty()
+	CheckedAction getActionFullScreen()
 	{
-		return fullScreen.enabledProperty();
+		return actions.actionFullScreen;
 	}
 
 	Region getRegion()

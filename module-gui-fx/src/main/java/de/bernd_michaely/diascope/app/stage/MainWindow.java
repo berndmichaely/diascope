@@ -23,6 +23,8 @@ import de.bernd_michaely.diascope.app.dialog.PaneInfoAbout;
 import de.bernd_michaely.diascope.app.dialog.PaneInfoSysEnv;
 import de.bernd_michaely.diascope.app.dialog.ResizableDialog;
 import de.bernd_michaely.diascope.app.icons.Icons;
+import de.bernd_michaely.diascope.app.util.action.Action;
+import de.bernd_michaely.diascope.app.util.action.CheckedAction;
 import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -160,24 +162,12 @@ public class MainWindow
 			menuItemShowSidePane.setGraphic(new ImageView(iconFstv));
 		}
 		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
-		final var menuItemFullscreen = new CheckMenuItem("Fullscreen");
-		menuItemFullscreen.selectedProperty().bindBidirectional(mainContent.fullScreenProperty());
-		menuItemFullscreen.disableProperty().bind(mainContent.getListViewProperty().emptyProperty());
-		menuItemFullscreen.setAccelerator(new KeyCodeCombination(KeyCode.F11));
-		final var buttonViewFullscreen = new ToggleButton();
-		if (iconViewFullscreen != null)
-		{
-			menuItemFullscreen.setGraphic(new ImageView(iconViewFullscreen));
-			buttonViewFullscreen.setGraphic(new ImageView(iconViewFullscreen));
-		}
-		else
-		{
-			buttonViewFullscreen.setText("FullScreen");
-		}
-		buttonViewFullscreen.disableProperty().bind(menuItemFullscreen.disableProperty());
-		buttonViewFullscreen.selectedProperty().bindBidirectional(mainContent.fullScreenProperty());
-		buttonViewFullscreen.setTooltip(new Tooltip("Show image in fullscreen mode"));
-		menuView.getItems().addAll(menuItemFullscreen, menuItemShowSidePane);
+		final CheckedAction actionFullScreen = mainContent.getActionFullScreen();
+		final var menuItemFullscreen = actionFullScreen.createMenuItems();
+		menuItemFullscreen.getFirst().setAccelerator(new KeyCodeCombination(KeyCode.F11));
+		final var buttonViewFullscreen = actionFullScreen.createToolBarButtons();
+		menuView.getItems().addAll(menuItemFullscreen);
+		menuView.getItems().addAll(menuItemShowSidePane);
 		// Menu("Navigation")
 		final var menuNavigation = new Menu("Navigation");
 		final var menuItemShowFirst = new MenuItem("Select First");
@@ -249,12 +239,12 @@ public class MainWindow
 		toggleButtonSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
 		// Menu and ToolBar:
 		final var menuBar = new MenuBar(menuFile, menuView, menuNavigation, menuOptions, menuHelp);
-		final var toolBar = new ToolBar(toggleButtonSidePane, buttonDirOpen,
-			new Separator(),
-			buttonViewFullscreen,
-			new Separator(),
-			buttonItemShowFirst, buttonItemShowPrev, buttonItemShowNext, buttonItemShowLast
-		);
+		final var toolBar = new ToolBar();
+		toolBar.getItems().addAll(toggleButtonSidePane, buttonDirOpen);
+		toolBar.getItems().add(Action.createToolBarSeparator());
+		toolBar.getItems().addAll(buttonViewFullscreen);
+		toolBar.getItems().add(Action.createToolBarSeparator());
+		toolBar.getItems().addAll(buttonItemShowFirst, buttonItemShowPrev, buttonItemShowNext, buttonItemShowLast);
 		final var buttonExit = new Button("Exit");
 		final var buttonExitSeparator = new Separator();
 		buttonExit.prefHeightProperty().bind(toggleButtonSidePane.heightProperty());

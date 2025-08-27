@@ -21,6 +21,7 @@ import de.bernd_michaely.diascope.app.image.ImageDescriptor;
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader;
 import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameters;
+import de.bernd_michaely.diascope.app.util.action.CheckedAction;
 import java.lang.System.Logger;
 import java.nio.file.Path;
 import javafx.application.Platform;
@@ -313,7 +314,7 @@ class MainContent
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2 &&
 				(!multiImageView.isMultiLayerMode() || event.isShiftDown()))
 			{
-				fullScreenProperty().set(!fullScreenProperty().get());
+				getActionFullScreen().toggle();
 				event.consume();
 			}
 		});
@@ -337,8 +338,8 @@ class MainContent
 		return outerPane;
 	}
 
-	BooleanProperty fullScreenProperty()
+	CheckedAction getActionFullScreen()
 	{
-		return components.fullScreenProperty();
+		return components.getActionFullScreen();
 	}
 }

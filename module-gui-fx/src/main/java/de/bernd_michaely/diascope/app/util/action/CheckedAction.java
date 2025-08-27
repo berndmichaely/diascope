@@ -158,4 +158,9 @@ public class CheckedAction extends ActionBase
 	{
 		selectedProperty.set(selected);
 	}
+
+	public void toggle()
+	{
+		setSelected(!isSelected());
+	}
 }
