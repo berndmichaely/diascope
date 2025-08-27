@@ -228,6 +228,7 @@ application {
 	
 	if (javaLangVersion == JavaLanguageVersion.of(24) && javafx.version ==~ /24(\.\d+(\.\d+)?)?/) {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
+		applicationDefaultJvmArgs += '--sun-misc-unsafe-memory-access=allow'
 	}
 	logger.lifecycle "==> applicationDefaultJvmArgs -> " + applicationDefaultJvmArgs
 }
