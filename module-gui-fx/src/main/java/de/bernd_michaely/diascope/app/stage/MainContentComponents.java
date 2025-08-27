@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
+import de.bernd_michaely.diascope.app.image.ZoomMode;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
@@ -99,6 +100,11 @@ class MainContentComponents
 				prop.set(!prop.get());
 				event.consume();
 			};
+			final Consumer<ZoomMode> zoomModeToggle = zoomMode ->
+			{
+				final var actionZoom = actions.actionZoom;
+				actionZoom.setSelectedId(actionZoom.getSelectedId() == zoomMode ? FIXED : zoomMode);
+			};
 			switch (event.getCode())
 			{
 				case L -> propertyToggle.accept(actions.actionThumbnails.selectedProperty());
@@ -110,9 +116,9 @@ class MainContentComponents
 					fullScreen.enabledProperty().set(false);
 					event.consume();
 				}
-				case DIGIT1 -> actions.actionZoom.setSelectedId(ORIGINAL);
-				case DIGIT2 -> actions.actionZoom.setSelectedId(FIT);
-				case DIGIT3 -> actions.actionZoom.setSelectedId(FILL);
+				case DIGIT1 -> zoomModeToggle.accept(ORIGINAL);
+				case DIGIT2 -> zoomModeToggle.accept(FIT);
+				case DIGIT3 -> zoomModeToggle.accept(FILL);
 			}
 		};
 		paneOuter.addEventFilter(KeyEvent.KEY_PRESSED, keyEventHandler);
