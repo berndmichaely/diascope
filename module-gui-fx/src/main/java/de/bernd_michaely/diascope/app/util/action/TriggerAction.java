@@ -31,12 +31,19 @@ import javafx.scene.control.MenuItem;
 ///
 public class TriggerAction extends Action
 {
+	private final ActionItemDescriptor actionItemDescriptor;
 	private final Set<Button> buttons;
 	private final Set<MenuItem> menuItems;
 	private final ObjectProperty<EventHandler<ActionEvent>> onActionProperty;
 
 	public TriggerAction(Runnable action)
 	{
+		this(action, ActionItemDescriptor.EMPTY);
+	}
+
+	public TriggerAction(Runnable action, ActionItemDescriptor actionItemDescriptor)
+	{
+		this.actionItemDescriptor = actionItemDescriptor;
 		this.buttons = new HashSet<>();
 		this.menuItems = new HashSet<>();
 		this.onActionProperty = new SimpleObjectProperty<>(_ -> action.run());
@@ -63,8 +70,9 @@ public class TriggerAction extends Action
 		{
 			throw new IllegalArgumentException("Same button added twice: »%s«".formatted(button));
 		}
-		button.disableProperty().bind(this.disabledProperty());
+		button.disableProperty().bind(this.disableProperty());
 		button.onActionProperty().bind(this.onActionProperty());
+		initActionItem(actionItemDescriptor, button);
 	}
 
 	public void addMenuItem(MenuItem menuItem)
@@ -73,7 +81,8 @@ public class TriggerAction extends Action
 		{
 			throw new IllegalArgumentException("Same menu item added twice: »%s«".formatted(menuItem));
 		}
-		menuItem.disableProperty().bind(this.disabledProperty());
+		menuItem.disableProperty().bind(this.disableProperty());
 		menuItem.onActionProperty().bind(this.onActionProperty());
+		initActionItem(actionItemDescriptor, menuItem);
 	}
 }

@@ -18,6 +18,11 @@ package de.bernd_michaely.diascope.app.util.action;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.scene.control.ButtonBase;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 /// Base class for Actions.
 ///
@@ -25,20 +30,61 @@ import javafx.beans.property.SimpleBooleanProperty;
 ///
 public abstract class Action
 {
-	private final BooleanProperty disabledProperty = new SimpleBooleanProperty();
+	private final BooleanProperty disableProperty = new SimpleBooleanProperty();
 
-	public BooleanProperty disabledProperty()
+	public BooleanProperty disableProperty()
 	{
-		return disabledProperty;
+		return disableProperty;
 	}
 
-	public boolean isDisabled()
+	public boolean isDisable()
 	{
-		return disabledProperty.get();
+		return disableProperty.get();
 	}
 
-	public void setDisabled(boolean disabled)
+	public void setDisable(boolean disabled)
 	{
-		disabledProperty.set(disabled);
+		disableProperty.set(disabled);
+	}
+
+	void initActionItem(ActionItemDescriptor actionItemDescriptor, ButtonBase button)
+	{
+		final var icon = actionItemDescriptor.icon();
+		final String buttonTitle = actionItemDescriptor.buttonTitle();
+		if (icon != null)
+		{
+			final Image iconImage = icon.getIconImage();
+			if (iconImage != null)
+			{
+				button.setGraphic(new ImageView(iconImage));
+			}
+		}
+		else if (buttonTitle != null)
+		{
+			button.setText(buttonTitle);
+		}
+		final String tooltipText = actionItemDescriptor.tooltipText();
+		if (tooltipText != null)
+		{
+			button.setTooltip(new Tooltip(tooltipText));
+		}
+	}
+
+	void initActionItem(ActionItemDescriptor actionItemDescriptor, MenuItem menuItem)
+	{
+		final String menuTitle = actionItemDescriptor.menuTitle();
+		if (menuTitle != null)
+		{
+			menuItem.setText(menuTitle);
+		}
+		final var icon = actionItemDescriptor.icon();
+		if (icon != null)
+		{
+			final Image iconImage = icon.getIconImage();
+			if (iconImage != null)
+			{
+				menuItem.setGraphic(new ImageView(iconImage));
+			}
+		}
 	}
 }

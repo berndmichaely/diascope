@@ -16,14 +16,17 @@
  */
 package de.bernd_michaely.diascope.app.util.action;
 
+import java.lang.System.Logger;
 import java.util.HashSet;
 import java.util.Set;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.scene.Node;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.lang.System.Logger.Level.*;
 
 /// Checked Action to handle selected and disabled properties of toggles.
 ///
@@ -31,12 +34,20 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 public class CheckedAction extends Action
 {
+	private static final Logger logger = System.getLogger(CheckedAction.class.getName());
+	private final ActionItemDescriptor actionItemDescriptor;
 	private final Set<Toggle> setToggles;
 	private final BooleanProperty selectedProperty = new SimpleBooleanProperty();
 	private boolean changing;
 
 	public CheckedAction()
 	{
+		this(ActionItemDescriptor.EMPTY);
+	}
+
+	public CheckedAction(ActionItemDescriptor actionItemDescriptor)
+	{
+		this.actionItemDescriptor = actionItemDescriptor;
 		this.setToggles = new HashSet<>();
 		selectedProperty.addListener(onChange(selected ->
 		{
@@ -85,9 +96,22 @@ public class CheckedAction extends Action
 					}
 				}
 			}));
-			if (toggle instanceof Node node)
+			switch (toggle)
 			{
-				node.disableProperty().bind(super.disabledProperty());
+				case MenuItem menuItem ->
+				{
+					menuItem.disableProperty().bind(this.disableProperty());
+					initActionItem(actionItemDescriptor, menuItem);
+				}
+				case ToggleButton button ->
+				{
+					button.disableProperty().bind(this.disableProperty());
+					initActionItem(actionItemDescriptor, button);
+				}
+				default ->
+				{
+					logger.log(WARNING, () -> "Unknown type of toggle: " + toggle);
+				}
 			}
 		}
 	}

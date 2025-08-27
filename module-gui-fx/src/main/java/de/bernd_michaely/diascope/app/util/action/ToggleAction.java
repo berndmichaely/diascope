@@ -16,18 +16,25 @@
  */
 package de.bernd_michaely.diascope.app.util.action;
 
+import java.lang.System.Logger;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.lang.System.Logger.Level.*;
 
 /// Toggle Action to handle selected and disabled properties of toggles.
+/// Each toggle item has its own disableProperty.
+/// An individual toggle is disabled, if it is disabled via its own
+/// disableProperty *or* the whole ToggleAction is disabled.
 ///
 /// @param <E> the toggle key type
 ///
@@ -35,8 +42,10 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 public class ToggleAction<E extends Enum<E>> extends Action
 {
+	private static final Logger logger = System.getLogger(ToggleAction.class.getName());
 	private final E unselectedId;
 	private final Map<Toggle, E> toggleIds;
+	private final Map<E, BooleanProperty> disableProperties;
 	private final ObjectProperty<E> selectedId;
 	private boolean changing;
 
@@ -48,6 +57,7 @@ public class ToggleAction<E extends Enum<E>> extends Action
 	{
 		this.unselectedId = unselectedId;
 		this.toggleIds = new HashMap<>();
+		this.disableProperties = new EnumMap<>(unselectedId.getDeclaringClass());
 		this.selectedId = new SimpleObjectProperty<>(unselectedId);
 		selectedId.addListener(onChange(id ->
 		{
@@ -77,6 +87,22 @@ public class ToggleAction<E extends Enum<E>> extends Action
 	///   * trying to associate a toggle with the unselected ID
 	///
 	public void addToggles(E id, Toggle... toggles)
+	{
+		addToggles(id, ActionItemDescriptor.EMPTY, toggles);
+	}
+
+	/// Add toggles.
+	///
+	/// @param id										the associated identifier
+	/// @param toggles							the toggles to add
+	/// @param actionItemDescriptor the descriptor related to this id
+	///
+	/// @throws IllegalArgumentException if
+	///
+	///   * trying to add the same toggle twice or
+	///   * trying to associate a toggle with the unselected ID
+	///
+	public void addToggles(E id, ActionItemDescriptor actionItemDescriptor, Toggle... toggles)
 	{
 		if (id == unselectedId)
 		{
@@ -108,17 +134,22 @@ public class ToggleAction<E extends Enum<E>> extends Action
 					}
 				}
 			}));
-			if (toggle instanceof RadioButton item)
+			switch (toggle)
 			{
-				item.disableProperty().bind(this.disabledProperty());
-			}
-			else if (toggle instanceof RadioMenuItem item)
-			{
-				item.disableProperty().bind(this.disabledProperty());
-			}
-			else if (toggle instanceof ToggleButton item)
-			{
-				item.disableProperty().bind(this.disabledProperty());
+				case MenuItem menuItem ->
+				{
+					menuItem.disableProperty().bind(getDisableProperty(id).or(disableProperty()));
+					initActionItem(actionItemDescriptor, menuItem);
+				}
+				case ToggleButton button ->
+				{
+					button.disableProperty().bind(getDisableProperty(id).or(disableProperty()));
+					initActionItem(actionItemDescriptor, button);
+				}
+				default ->
+				{
+					logger.log(WARNING, () -> "Unknown type of toggle: " + toggle);
+				}
 			}
 		}
 	}
@@ -136,5 +167,10 @@ public class ToggleAction<E extends Enum<E>> extends Action
 	public void setSelectedId(E id)
 	{
 		selectedIdProperty().set(id);
+	}
+
+	public BooleanProperty getDisableProperty(E id)
+	{
+		return disableProperties.computeIfAbsent(id, _ -> new SimpleBooleanProperty());
 	}
 }
