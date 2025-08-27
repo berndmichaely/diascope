@@ -108,7 +108,16 @@ class ListDualSelection<T>
 			}
 		};
 		list.addListener(new ListChangeListenerBuilder<>()
-			.onAdd(_ -> checkDualSelection.run())
+			.onAdd(_ ->
+			{
+				checkDualSelection.run();
+				if (list.size() > 2 && list.getNumSelected() != 2)
+				{
+					dualItemsSelected.set(false);
+					dualSelectionFirstItem.set(Optional.empty());
+					dualSelectionSecondItem.set(Optional.empty());
+				}
+			})
 			.onRemove(change ->
 			{
 				checkSingleSelection.run();
