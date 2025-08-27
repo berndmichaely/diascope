@@ -18,9 +18,11 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
+import java.util.List;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
@@ -30,6 +32,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.StackPane;
 
+import static de.bernd_michaely.diascope.app.util.action.Action.SEPARATOR;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static javafx.geometry.Pos.CENTER_RIGHT;
 
@@ -39,7 +42,8 @@ import static javafx.geometry.Pos.CENTER_RIGHT;
 ///
 class ToolBarImage
 {
-	private final ToolBar toolBar;
+	private final ToolBar toolBar = new ToolBar();
+	private final ContextMenu contextMenu = new ContextMenu();
 
 	ToolBarImage(ImageControlActions actions, MultiImageView multiImageView)
 	{
@@ -115,25 +119,68 @@ class ToolBarImage
 		stackPaneRotation.setAlignment(CENTER_RIGHT);
 //		stackPaneRotation.setBackground(Background.fill(Color.DARKKHAKI));
 		multiImageView.getImageTransforms().rotateProperty().bind(sliderRotation.valueProperty());
-		this.toolBar = new ToolBar();
+		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+		// create ToolBar:
+		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+		toolBar.getItems().addAll(actions.actionThumbnails.createToolBarButtons());
+		toolBar.getItems().add(new Separator());
 		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
 		if (isShapeClipSupported)
 		{
 			toolBar.getItems().addAll(actions.actionLayerAdd.createToolBarButtons());
 			toolBar.getItems().addAll(actions.actionLayerRemove.createToolBarButtons());
+			toolBar.getItems().addAll(actions.actionShowDividers.createToolBarButtons());
+			// TODO : icons
+//			toolBar.getItems().add(new Separator());
+//			toolBar.getItems().addAll(actions.actionSelectAll.createToolBarButtons());
+//			toolBar.getItems().addAll(actions.actionSelectNone.createToolBarButtons());
+//			toolBar.getItems().addAll(actions.actionSelectToggle.createToolBarButtons());
 			toolBar.getItems().add(new Separator());
 			toolBar.getItems().addAll(actions.actionMode.createToolBarButtons());
 			toolBar.getItems().add(new Separator());
-			toolBar.getItems().addAll(actions.actionShowDividers.createToolBarButtons());
 		}
 		toolBar.getItems().addAll(actions.actionZoom.createToolBarButtons());
-		toolBar.getItems().addAll(stackPaneZoom, sliderZoom, sliderRotation, stackPaneRotation);
+		toolBar.getItems().addAll(stackPaneZoom, sliderZoom);
+		toolBar.getItems().add(new Separator());
+		toolBar.getItems().addAll(sliderRotation, stackPaneRotation);
+		toolBar.getItems().add(new Separator());
 		toolBar.getItems().addAll(actions.actionMirrorX.createToolBarButtons());
 		toolBar.getItems().addAll(actions.actionMirrorY.createToolBarButtons());
+		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+		// create ContextMenu:
+		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+		List.of(
+			actions.actionToolbar,
+			actions.actionThumbnails,
+			actions.actionScrollbars,
+			SEPARATOR,
+			actions.actionLayerAdd,
+			actions.actionLayerRemove,
+			actions.actionShowDividers,
+			SEPARATOR,
+			actions.actionMode,
+			SEPARATOR,
+			actions.actionZoom,
+			SEPARATOR,
+			actions.actionSelectAll,
+			actions.actionSelectNone,
+			actions.actionSelectToggle,
+			SEPARATOR,
+			actions.actionMirrorX,
+			actions.actionMirrorY,
+			SEPARATOR,
+			actions.actionResetAngles,
+			actions.actionFullScreen
+		).forEach(action -> contextMenu.getItems().addAll(action.createMenuItems()));
 	}
 
 	ToolBar getToolBar()
 	{
 		return toolBar;
+	}
+
+	ContextMenu getContextMenu()
+	{
+		return contextMenu;
 	}
 }

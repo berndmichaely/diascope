@@ -18,13 +18,11 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
-import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.event.EventHandler;
 import javafx.scene.Node;
-import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
@@ -38,7 +36,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.PREF_KEY_SPLIT_POS_IMAGE;
-import static de.bernd_michaely.diascope.app.util.action.Action.SEPARATOR;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
 
@@ -80,7 +77,7 @@ class MainContentComponents
 		this.imageControlProperties = new ImageControlProperties(multiImageView, fullScreen, properties);
 		final var actions = new ImageControlActions(multiImageView, imageControlProperties);
 		this.toolBarImage = new ToolBarImage(actions, multiImageView);
-		final var contextMenu = createContextMenu(actions);
+		final var contextMenu = toolBarImage.getContextMenu();
 		paneContent.setOnContextMenuRequested(contextMenuEvent ->
 		{
 			if (contextMenu.isShowing())
@@ -111,6 +108,8 @@ class MainContentComponents
 				case L -> propertyToggle.accept(actions.actionThumbnails.selectedProperty());
 				case S -> propertyToggle.accept(actions.actionScrollbars.selectedProperty());
 				case T -> propertyToggle.accept(actions.actionToolbar.selectedProperty());
+				case H -> propertyToggle.accept(actions.actionMirrorX.selectedProperty());
+				case V -> propertyToggle.accept(actions.actionMirrorY.selectedProperty());
 				case F11 -> propertyToggle.accept(actions.actionFullScreen.selectedProperty());
 				case ESCAPE ->
 				{
@@ -176,35 +175,6 @@ class MainContentComponents
 		properties.scrollBarsVisibleProperty().bindBidirectional(multiImageView.scrollBarsEnabledProperty());
 		this.persistedProperties = MainContentProperties.newPersistedProperties(fullScreen.enabledProperty());
 		this.properties.bindBidirectional(this.persistedProperties);
-	}
-
-	private static ContextMenu createContextMenu(ImageControlActions actions)
-	{
-		final var contextMenu = new ContextMenu();
-		List.of(
-			actions.actionLayerAdd,
-			actions.actionLayerRemove,
-			SEPARATOR,
-			actions.actionMode,
-			SEPARATOR,
-			actions.actionShowDividers,
-			actions.actionToolbar,
-			actions.actionThumbnails,
-			actions.actionScrollbars,
-			SEPARATOR,
-			actions.actionZoom,
-			SEPARATOR,
-			actions.actionSelectAll,
-			actions.actionSelectNone,
-			actions.actionSelectToggle,
-			SEPARATOR,
-			actions.actionMirrorX,
-			actions.actionMirrorY,
-			SEPARATOR,
-			actions.actionResetAngles,
-			actions.actionFullScreen
-		).forEach(action -> contextMenu.getItems().addAll(action.createMenuItems()));
-		return contextMenu;
 	}
 
 	private static Node createFullScreenDummy()

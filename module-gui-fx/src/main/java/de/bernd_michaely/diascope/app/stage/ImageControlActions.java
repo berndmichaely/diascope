@@ -109,19 +109,20 @@ class ImageControlActions
 		// ContextMenu specific
 		this.actionToolbar = new CheckedAction(new ActionItemDescriptor("Show/Hide Toolbar"));
 		actionToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
-		this.actionThumbnails = new CheckedAction(new ActionItemDescriptor("Show/Hide Thumbnails"));
+		this.actionThumbnails = new CheckedAction(new ActionItemDescriptor(
+			Icons.ShowThumbs, "Thumbs", "Show/Hide Thumbnails", "Show/Hide Thumbnails"));
 		actionThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
 		this.actionScrollbars = new CheckedAction(new ActionItemDescriptor("Show/Hide Scrollbars"));
 		actionScrollbars.selectedProperty().bindBidirectional(properties.scrollBarsVisibleProperty());
 		// Layer Selection
-		this.actionSelectAll = new TriggerAction(selectionModel::selectAll,
-			new ActionItemDescriptor("Select all layers"));
+		this.actionSelectAll = new TriggerAction(selectionModel::selectAll, new ActionItemDescriptor(
+			Icons.SelectAll, "+++", "Select all layers", "Select all layers"));
 		actionSelectAll.disableProperty().bind(notMultiLayerMode.or(selectionModel.allSelectedProperty()));
-		this.actionSelectNone = new TriggerAction(selectionModel::selectNone,
-			new ActionItemDescriptor("Unselect all layers"));
+		this.actionSelectNone = new TriggerAction(selectionModel::selectNone, new ActionItemDescriptor(
+			Icons.SelectNone, "---", "Unselect all layers", "Unselect all layers"));
 		actionSelectNone.disableProperty().bind(notMultiLayerMode.or(selectionModel.noneSelectedProperty()));
-		this.actionSelectToggle = new TriggerAction(selectionModel::invertSelection,
-			new ActionItemDescriptor("Toggle layers selection"));
+		this.actionSelectToggle = new TriggerAction(selectionModel::invertSelection, new ActionItemDescriptor(
+			Icons.SelectInvert, "+/-", "Toggle layers selection", "Toggle layers selection"));
 		actionSelectToggle.disableProperty().bind(notMultiLayerMode);
 		// misc
 		this.actionResetAngles = new TriggerAction(multiImageView::resetDividers,
