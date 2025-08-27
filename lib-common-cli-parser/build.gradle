@@ -11,10 +11,6 @@ logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEA
 dependencies {
 	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
 	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
-
-	testCompileOnly "junit:junit:${versionJUnitVintage}"
-	testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${versionJUnit}"
-	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 checkerFramework {
@@ -26,7 +22,13 @@ checkerFramework {
 testing {
 	suites {
 		test {
-			useJUnitJupiter(versionJUnit)
+			if (project.ext.has('versionJUnitVintage')) {
+				logger.lifecycle "=> Using JUnitVintage version: ${versionJUnitVintage}"
+				useJUnit(versionJUnitVintage)
+			} else {
+				logger.lifecycle "=> Using default JUnitVintage version"
+				useJUnit()
+			}
 		}
 	}
 }
