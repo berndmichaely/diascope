@@ -2,37 +2,73 @@
 
 ![version](doc/shields/version.svg "version")
 
-Diascope is a Java/JavaFX based desktop application. It is basically an image viewer and contains multi layer image modes for enhanced multi image comparison (and hopefully more in the future…).
+Diascope is an image viewer application for desktop. *Unique features* include:
+
+  * a multi layer image mode to overlay two or more images for comparison – split dividers can be freely moved and rotated
+  * a multi layer image mode to overlay a second image over a base image in a spot – the spot is freely movable and resizable.
+
+Diascope is written based on Java/JavaFX and so should run on any platform providing Java and JavaFX support. (It is currently being developed and tested on Linux.)
+
+### Screenshots
+
+![Screenshot 1](doc/screenshots/Screenshot_01.png "Screenshot 1")
+
+![Screenshot 2](doc/screenshots/Screenshot_02.png "Screenshot 2")
 
 ## Building the application
 
 Have a recent JDK installed, get the sources and run from the root directory:
 
-`> ./gradlew run`
+    ./gradlew run
 
 to run the application immediately or
 
-`> ./gradlew installDist`
+    ./gradlew installDist
 
-to build the application into the `./build/install/Diascope` directory (it is tested with Eclipse Adoptium JDK 24).
+to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 23 (it is tested with Eclipse Adoptium JDK on Linux). When running on Java24, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
-### Trial hints
-
-Select the test image directory `./doc/test-images/png` and add alternately a layer (using the **+** button in the toolbar) and select another test image (a section must be selected to change the image). Then try the functionality available in the toolbar:
-
-![Screenshot 2](doc/screenshots/Screenshot_01.png "Screenshot 1")
-
-Try to compare e.g. different post processed versions of a RAW image, exposure bracketing series…
-
-![Screenshot 2](doc/screenshots/Screenshot_02.png "Screenshot 2")
+    export JAVA_OPTS='--enable-native-access=javafx.graphics --sun-misc-unsafe-memory-access=allow'
 
 ### Full Screen Mode
 
-In single image layer mode, you can use a double click on the image area to enter full screen mode. In multi layer mode, you can use Shift+DoubleClick. (In both cases, you can also use the menu, toolbar button or image area context menu.)
+  * In *single image layer mode*, you can use a *Double-Click* on the image area to enter full screen mode.
+  * In *multi layer mode*, you can use *Shift+Double-Click*.
+
+(In both cases, you can also use the menu, toolbar button or image area context menu.)
 
 Configuration like showing/hiding toolbar/thumbnail/dividers is kept and remembered for window and full screen modes separately.
 
-## Multi Layer Modes
+#### Hotkeys
+
+In addition to the toolbar and context menu, you can use the following hotkeys in the image area:
+
+| Key | Function                   |
+| --- | -------------------------- |
+| F11 | Enter/Exit full screen mode|
+| ESC | Exit full screen mode      |
+| 1   | Zoom to 100%               |
+| 2   | Zoom to fit window         |
+| 3   | Zoom to fill window        |
+| t   | Show/Hide toolbar          |
+| l   | Show/Hide thumbnail list   |
+| s   | Show/Hide scrollbars       |
+| h   | Mirror horizontally        |
+| v   | Mirror vertically          |
+
+## Features
+
+### Multi Layer Modes
+
+#### Hints for basic usage
+
+Select the test image directory
+
+    ./doc/test-images/png
+
+and add alternately a layer (using the **+** button in the toolbar) and select another test image (a section must be selected to change the image). Then try the functionality available in the toolbar:
+
+Try to compare e.g. different post processed versions of a RAW image, exposure bracketing series…
+
 
 ### Split Mode
 
