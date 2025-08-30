@@ -61,11 +61,7 @@ In addition to the toolbar and context menu, you can use the following hotkeys i
 
 #### Hints for basic usage
 
-Select the test image directory
-
-    ./doc/test-images/png
-
-and add alternately a layer (using the **+** button in the toolbar) and select another test image (a section must be selected to change the image). Then try the functionality available in the toolbar:
+Select the test image directory `./doc/test-images/png` and add alternately a layer (using the **+** button in the toolbar) and select another test image (a section must be selected to change the image). Then try the functionality available in the toolbar:
 
 Try to compare e.g. different post processed versions of a RAW image, exposure bracketing series…
 
