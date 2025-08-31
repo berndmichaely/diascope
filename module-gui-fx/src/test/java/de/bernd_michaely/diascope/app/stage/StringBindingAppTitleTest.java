@@ -18,6 +18,8 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import javafx.beans.binding.StringBinding;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -50,7 +52,7 @@ public class StringBindingAppTitleTest
 		return isDevelopmentMode ? value + POSTFIX_DEVELOPMENT_MODE : value;
 	}
 
-	private void testCalculatedValue(boolean devMode)
+	private void testCalculatedValue(boolean devMode) throws URISyntaxException
 	{
 		final String title = ApplicationConfiguration.getApplicationName();
 		final String titlePrefix = title + " - ";
@@ -68,7 +70,7 @@ public class StringBindingAppTitleTest
 		pathProperty.set(Path.of(PATH_USER_HOME.toString(), "subdir"));
 		assertEquals(mode(titlePrefix + "~" + File.separator + "subdir", devMode), stringBinding.get());
 		System.out.println(mode("Test path outside home dir", devMode));
-		pathProperty.set(Path.of(File.separator, "tmp"));
+		pathProperty.set(Path.of(new URI("file:///tmp")));
 		assertEquals(mode(titlePrefix + File.separator + "tmp", devMode), stringBinding.get());
 	}
 
@@ -76,7 +78,7 @@ public class StringBindingAppTitleTest
 	 * Test of computed value of StringBinding.
 	 */
 	@Test
-	public void testComputeValue()
+	public void testComputeValue() throws URISyntaxException
 	{
 		testCalculatedValue(false);
 	}
@@ -85,7 +87,7 @@ public class StringBindingAppTitleTest
 	 * Test of computed value of StringBinding.
 	 */
 	@Test
-	public void testComputeValueDevelopmentMode()
+	public void testComputeValueDevelopmentMode() throws URISyntaxException
 	{
 		testCalculatedValue(true);
 	}
