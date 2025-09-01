@@ -2,8 +2,9 @@ plugins {
 	id 'java'
 	id 'java-library'
 	id 'jacoco'
-	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}"
 }
+
+apply plugin: 'org.checkerframework'
 
 final boolean deactivateCheckerFramework = false
 final def fstv_version = '0.9.4'
@@ -20,9 +21,6 @@ dependencies {
 	//implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"
 	implementation project (':lib-filesystem-view-base')
 	implementation project (':lib-filesystem-view-fx')
-	
-	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
-	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
 }
 	
 checkerFramework {

@@ -1,17 +1,13 @@
 plugins {
 	id 'java'
 	id 'java-library'
-	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}"
 }
+
+apply plugin: 'org.checkerframework'
 
 final boolean deactivateCheckerFramework = false
 
 logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
-
-dependencies {
-	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
-	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
-}
 
 checkerFramework {
 	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'

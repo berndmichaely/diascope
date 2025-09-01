@@ -1,8 +1,9 @@
 plugins {
 	id 'java'
 	id 'java-library'
-	id 'org.checkerframework' version "${versionCheckerFrameworkPlugin}"
 }
+
+apply plugin: 'org.checkerframework'
 
 final boolean deactivateCheckerFramework = false
 
@@ -12,9 +13,6 @@ dependencies {
 	implementation project (':lib-common-cli-parser')
 	implementation project (':lib-common-semver')
 	implementation project (':module-gui-fx')
-	
-	checkerFramework "org.checkerframework:checker:$versionCheckerFramework"
-	implementation "org.checkerframework:checker-qual:$versionCheckerFramework"
 }
 
 checkerFramework {
