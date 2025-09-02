@@ -18,12 +18,12 @@ package de.bernd_michaely.diascope.app.application;
 
 import de.bernd_michaely.diascope.app.stage.MainWindow;
 import de.bernd_michaely.diascope.app.stage.PaneFileSystem;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import static java.util.concurrent.ForkJoinPool.commonPool;
 
 /// Main application object of the Diascope application.
 ///
@@ -32,6 +32,7 @@ import static java.util.concurrent.ForkJoinPool.commonPool;
 public class DiascopeApplication extends Application
 {
 	private final boolean optimizeMainWindowInit = true;
+	private @Nullable ExecutorService executorService;
 	private @Nullable Future<MainWindow> futureMainWindow;
 	private @Nullable Future<PaneFileSystem> futurePaneFileSystem;
 
@@ -41,8 +42,10 @@ public class DiascopeApplication extends Application
 		super.init();
 		if (optimizeMainWindowInit)
 		{
-			futureMainWindow = commonPool().submit(MainWindow::new);
-			futurePaneFileSystem = commonPool().submit(PaneFileSystem::new);
+			final ExecutorService es = Executors.newVirtualThreadPerTaskExecutor();
+			this.executorService = es;
+			futureMainWindow = es.submit(MainWindow::new);
+			futurePaneFileSystem = es.submit(PaneFileSystem::new);
 		}
 	}
 
@@ -71,5 +74,10 @@ public class DiascopeApplication extends Application
 			paneFileSystem = new PaneFileSystem();
 		}
 		mainWindow.setFileSystemView(paneFileSystem);
+		if (executorService != null)
+		{
+			executorService.shutdown();
+			executorService = null;
+		}
 	}
 }
