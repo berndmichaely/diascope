@@ -113,7 +113,7 @@ class Divider
 		lineEvent.startYProperty().bind(lineShape.startYProperty());
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
-		lineEvent.setCursor(Cursor.MOVE);
+		lineEvent.setCursor(Cursor.HAND);
 		lineEvent.setOnMouseEntered(_ -> lineShape.setStroke(COLOR_HOVER));
 		lineEvent.setOnMouseExited(_ -> lineShape.setStroke(COLOR_DEFAULT));
 		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
