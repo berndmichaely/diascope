@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.application;
 
+import de.bernd_michaely.diascope.app.stage.MainContent;
 import de.bernd_michaely.diascope.app.stage.MainWindow;
 import de.bernd_michaely.diascope.app.stage.PaneFileSystem;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +35,7 @@ public class DiascopeApplication extends Application
 	private final boolean optimizeMainWindowInit = true;
 	private @Nullable ExecutorService executorService;
 	private @Nullable Future<MainWindow> futureMainWindow;
+	private @Nullable Future<MainContent> futureMainContent;
 	private @Nullable Future<PaneFileSystem> futurePaneFileSystem;
 
 	@Override
@@ -45,6 +47,7 @@ public class DiascopeApplication extends Application
 			final ExecutorService es = Executors.newVirtualThreadPerTaskExecutor();
 			this.executorService = es;
 			futureMainWindow = es.submit(MainWindow::new);
+			futureMainContent = es.submit(MainContent::new);
 			futurePaneFileSystem = es.submit(PaneFileSystem::new);
 		}
 	}
@@ -62,6 +65,17 @@ public class DiascopeApplication extends Application
 		{
 			mainWindow = new MainWindow();
 		}
+		final MainContent mainContent;
+		if (futureMainContent != null)
+		{
+			mainContent = futureMainContent.get();
+			futureMainContent = null;
+		}
+		else
+		{
+			mainContent = new MainContent();
+		}
+		mainWindow.setMainContent(mainContent);
 		mainWindow._start(stage);
 		final PaneFileSystem paneFileSystem;
 		if (futurePaneFileSystem != null)

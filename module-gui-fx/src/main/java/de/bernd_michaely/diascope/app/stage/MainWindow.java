@@ -54,7 +54,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -98,7 +97,22 @@ public class MainWindow
 	private final SplitPane splitPane;
 	private final BorderPane borderPane;
 	private final TabPane tabPane;
-	private final MainContent mainContent;
+	private final Menu menuFile;
+	private final Button buttonDirOpen;
+	private final CheckMenuItem menuItemShowSidePane;
+	private final Menu menuView;
+	private final Menu menuNavigation;
+	private final Button buttonItemShowFirst = new Button();
+	private final Button buttonItemShowPrev = new Button();
+	private final Button buttonItemShowNext = new Button();
+	private final Button buttonItemShowLast = new Button();
+	private final @Nullable Image iconViewShowFirst;
+	private final @Nullable Image iconViewShowPrev;
+	private final @Nullable Image iconViewShowNext;
+	private final @Nullable Image iconViewShowLast;
+	private final Menu menuHelp;
+	private final ToggleButton toggleButtonSidePane;
+	private @MonotonicNonNull MainContent mainContent;
 
 	public MainWindow()
 	{
@@ -111,7 +125,6 @@ public class MainWindow
 		this.showStatusLinePersistedProperty = newPersistedBooleanProperty(
 			PREF_KEY_SHOW_STATUS_LINE, getClass(), true);
 		this.menuItemShowStatusLine.selectedProperty().bindBidirectional(showStatusLinePersistedProperty);
-		this.mainContent = new MainContent(this.menuItemShowStatusLine.selectedProperty());
 		final var state = ApplicationConfiguration.getState();
 		final BooleanProperty developmentModeProperty = state.developmentModeProperty();
 		final var launchType = state.launchType();
@@ -131,19 +144,19 @@ public class MainWindow
 		{
 			menuItemDevelopmentMode = null;
 		}
-		this.splitPane = new SplitPane(mainContent.getRegion());
+		this.splitPane = new SplitPane();
 		this.borderPane = new BorderPane(splitPane);
 		// Icons:
 		final Image iconFstv = Icons.ShowSidePane.getIconImage();
 		final Image iconFileOpen = Icons.FileOpen.getIconImage();
-		final Image iconViewShowFirst = Icons.ViewShowFirst.getIconImage();
-		final Image iconViewShowPrev = Icons.ViewShowPrev.getIconImage();
-		final Image iconViewShowNext = Icons.ViewShowNext.getIconImage();
-		final Image iconViewShowLast = Icons.ViewShowLast.getIconImage();
+		this.iconViewShowFirst = Icons.ViewShowFirst.getIconImage();
+		this.iconViewShowPrev = Icons.ViewShowPrev.getIconImage();
+		this.iconViewShowNext = Icons.ViewShowNext.getIconImage();
+		this.iconViewShowLast = Icons.ViewShowLast.getIconImage();
 		// Menu("File")
-		final var menuFile = new Menu("File");
+		this.menuFile = new Menu("File");
 		menuItemDirOpen.setAccelerator(new KeyCharacterCombination("o", KeyCombination.CONTROL_DOWN));
-		final var buttonDirOpen = new Button();
+		this.buttonDirOpen = new Button();
 		adaptActionState(menuItemDirOpen, buttonDirOpen, menuItemDirOpen.getText());
 		if (iconFileOpen != null)
 		{
@@ -151,81 +164,23 @@ public class MainWindow
 		}
 		this.menuItemClose = new MenuItem("Close directory");
 		this.menuItemExit = new MenuItem("Exit");
-		menuFile.getItems().addAll(
-			menuItemDirOpen, menuItemClose, new SeparatorMenuItem(), menuItemExit);
+		menuFile.getItems().addAll(menuItemDirOpen, menuItemClose, new SeparatorMenuItem(), menuItemExit);
 		// Menu("View")
-		final var menuView = new Menu("View");
-		final var menuItemShowSidePane = new CheckMenuItem("Show side pane");
+		this.menuView = new Menu("View");
+		this.menuItemShowSidePane = new CheckMenuItem("Show side pane");
 		if (iconFstv != null)
 		{
 			menuItemShowSidePane.setGraphic(new ImageView(iconFstv));
 		}
 		menuItemShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
-		final CheckedAction actionFullScreen = mainContent.getActionFullScreen();
-		final var menuItemFullscreen = actionFullScreen.createMenuItems();
-		menuItemFullscreen.getFirst().setAccelerator(new KeyCodeCombination(KeyCode.F11));
-		final var buttonViewFullscreen = actionFullScreen.createToolBarButtons();
-		menuView.getItems().addAll(menuItemFullscreen);
-		menuView.getItems().addAll(menuItemShowSidePane);
 		// Menu("Navigation")
-		final var menuNavigation = new Menu("Navigation");
-		final var menuItemShowFirst = new MenuItem("Select First");
-		menuItemShowFirst.setOnAction(_ -> mainContent.selectFirst());
-		menuItemShowFirst.disableProperty().bind(
-			mainContent.selectedIndexProperty().isEqualTo(0).or(
-				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
-		final var menuItemShowPrev = new MenuItem("Select Previous");
-		menuItemShowPrev.setOnAction(_ -> mainContent.selectPrevious());
-		menuItemShowPrev.disableProperty().bind(
-			mainContent.selectedIndexProperty().isEqualTo(0).or(
-				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
-		final var menuItemShowNext = new MenuItem("Select Next");
-		menuItemShowNext.setOnAction(_ -> mainContent.selectselectNext());
-		menuItemShowNext.disableProperty().bind(
-			mainContent.selectedIndexProperty().isEqualTo(
-				mainContent.getListViewProperty().sizeProperty().subtract(1)).or(
-				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
-		final var menuItemShowLast = new MenuItem("Select Last");
-		menuItemShowLast.setOnAction(_ -> mainContent.selectselectLast());
-		menuItemShowLast.disableProperty().bind(
-			mainContent.selectedIndexProperty().isEqualTo(
-				mainContent.getListViewProperty().sizeProperty().subtract(1)).or(
-				mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
-		final var buttonItemShowFirst = new Button();
-		final var buttonItemShowPrev = new Button();
-		final var buttonItemShowNext = new Button();
-		final var buttonItemShowLast = new Button();
-		if (iconViewShowFirst != null && iconViewShowPrev != null &&
-			iconViewShowNext != null && iconViewShowLast != null)
-		{
-			menuItemShowFirst.setGraphic(new ImageView(iconViewShowFirst));
-			menuItemShowPrev.setGraphic(new ImageView(iconViewShowPrev));
-			menuItemShowNext.setGraphic(new ImageView(iconViewShowNext));
-			menuItemShowLast.setGraphic(new ImageView(iconViewShowLast));
-			buttonItemShowFirst.setGraphic(new ImageView(iconViewShowFirst));
-			buttonItemShowPrev.setGraphic(new ImageView(iconViewShowPrev));
-			buttonItemShowNext.setGraphic(new ImageView(iconViewShowNext));
-			buttonItemShowLast.setGraphic(new ImageView(iconViewShowLast));
-		}
-		else
-		{
-			buttonItemShowFirst.setText(menuItemShowFirst.getText());
-			buttonItemShowPrev.setText(menuItemShowPrev.getText());
-			buttonItemShowNext.setText(menuItemShowNext.getText());
-			buttonItemShowLast.setText(menuItemShowLast.getText());
-		}
-		adaptActionState(menuItemShowFirst, buttonItemShowFirst);
-		adaptActionState(menuItemShowPrev, buttonItemShowPrev);
-		adaptActionState(menuItemShowNext, buttonItemShowNext);
-		adaptActionState(menuItemShowLast, buttonItemShowLast);
-		menuNavigation.getItems().addAll(
-			menuItemShowFirst, menuItemShowPrev, menuItemShowNext, menuItemShowLast);
+		this.menuNavigation = new Menu("Navigation");
 		// Menu("Options")
 		menuOptions.getItems().add(this.menuItemShowStatusLine);
-		final var menuHelp = new Menu("Help");
+		this.menuHelp = new Menu("Help");
 		menuHelp.getItems().addAll(menuItemSysEnv, menuItemInfoAbout);
 		// ToolBar items:
-		final var toggleButtonSidePane = new ToggleButton();
+		this.toggleButtonSidePane = new ToggleButton();
 		if (iconFstv != null)
 		{
 			toggleButtonSidePane.setGraphic(new ImageView(iconFstv));
@@ -236,30 +191,6 @@ public class MainWindow
 		}
 		toggleButtonSidePane.setTooltip(new Tooltip("Show/Hide side pane"));
 		toggleButtonSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
-		// Menu and ToolBar:
-		final var menuBar = new MenuBar(menuFile, menuView, menuNavigation, menuOptions, menuHelp);
-		final var toolBar = new ToolBar();
-		toolBar.getItems().addAll(toggleButtonSidePane, buttonDirOpen);
-		toolBar.getItems().add(Action.createToolBarSeparator());
-		toolBar.getItems().addAll(buttonViewFullscreen);
-		toolBar.getItems().add(Action.createToolBarSeparator());
-		toolBar.getItems().addAll(buttonItemShowFirst, buttonItemShowPrev, buttonItemShowNext, buttonItemShowLast);
-		final var buttonExit = new Button("Exit");
-		final var buttonExitSeparator = new Separator();
-		buttonExit.prefHeightProperty().bind(toggleButtonSidePane.heightProperty());
-		adaptActionState(menuItemExit, buttonExit, "Exit application");
-		developmentModeProperty.addListener(onChange(isDevel ->
-		{
-			if (isDevel)
-			{
-				toolBar.getItems().addAll(buttonExitSeparator, buttonExit);
-			}
-			else
-			{
-				toolBar.getItems().removeAll(buttonExitSeparator, buttonExit);
-			}
-		}));
-		borderPane.setTop(new VBox(menuBar, toolBar));
 		dialogSystemEnvironment.setTitle("System Environment");
 		dialogInfoAbout.setTitle("Info About");
 		this.tabPane = new TabPane();
@@ -283,6 +214,93 @@ public class MainWindow
 		this.iconStage = _iconStage;
 	}
 
+	public void setMainContent(MainContent mainContent)
+	{
+		if (this.mainContent == null && mainContent != null)
+		{
+			this.mainContent = mainContent;
+			mainContent.bindShowStatusLineProperty(this.menuItemShowStatusLine.selectedProperty());
+			this.splitPane.getItems().add(mainContent.getRegion());
+			final CheckedAction actionFullScreen = mainContent.getActionFullScreen();
+			final var menuItemFullscreen = actionFullScreen.createMenuItems();
+			menuItemFullscreen.getFirst().setAccelerator(new KeyCodeCombination(KeyCode.F11));
+			final var buttonViewFullscreen = actionFullScreen.createToolBarButtons();
+			menuView.getItems().addAll(menuItemFullscreen);
+			menuView.getItems().addAll(menuItemShowSidePane);
+			final var menuItemShowFirst = new MenuItem("Select First");
+			menuItemShowFirst.setOnAction(_ -> mainContent.selectFirst());
+			menuItemShowFirst.disableProperty().bind(
+				mainContent.selectedIndexProperty().isEqualTo(0).or(
+					mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			final var menuItemShowPrev = new MenuItem("Select Previous");
+			menuItemShowPrev.setOnAction(_ -> mainContent.selectPrevious());
+			menuItemShowPrev.disableProperty().bind(
+				mainContent.selectedIndexProperty().isEqualTo(0).or(
+					mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			final var menuItemShowNext = new MenuItem("Select Next");
+			menuItemShowNext.setOnAction(_ -> mainContent.selectselectNext());
+			menuItemShowNext.disableProperty().bind(
+				mainContent.selectedIndexProperty().isEqualTo(
+					mainContent.getListViewProperty().sizeProperty().subtract(1)).or(
+					mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			final var menuItemShowLast = new MenuItem("Select Last");
+			menuItemShowLast.setOnAction(_ -> mainContent.selectselectLast());
+			menuItemShowLast.disableProperty().bind(
+				mainContent.selectedIndexProperty().isEqualTo(
+					mainContent.getListViewProperty().sizeProperty().subtract(1)).or(
+					mainContent.getListViewProperty().sizeProperty().lessThanOrEqualTo(1)));
+			if (iconViewShowFirst != null && iconViewShowPrev != null &&
+				iconViewShowNext != null && iconViewShowLast != null)
+			{
+				menuItemShowFirst.setGraphic(new ImageView(iconViewShowFirst));
+				menuItemShowPrev.setGraphic(new ImageView(iconViewShowPrev));
+				menuItemShowNext.setGraphic(new ImageView(iconViewShowNext));
+				menuItemShowLast.setGraphic(new ImageView(iconViewShowLast));
+				buttonItemShowFirst.setGraphic(new ImageView(iconViewShowFirst));
+				buttonItemShowPrev.setGraphic(new ImageView(iconViewShowPrev));
+				buttonItemShowNext.setGraphic(new ImageView(iconViewShowNext));
+				buttonItemShowLast.setGraphic(new ImageView(iconViewShowLast));
+			}
+			else
+			{
+				buttonItemShowFirst.setText(menuItemShowFirst.getText());
+				buttonItemShowPrev.setText(menuItemShowPrev.getText());
+				buttonItemShowNext.setText(menuItemShowNext.getText());
+				buttonItemShowLast.setText(menuItemShowLast.getText());
+			}
+			adaptActionState(menuItemShowFirst, buttonItemShowFirst);
+			adaptActionState(menuItemShowPrev, buttonItemShowPrev);
+			adaptActionState(menuItemShowNext, buttonItemShowNext);
+			adaptActionState(menuItemShowLast, buttonItemShowLast);
+			menuNavigation.getItems().addAll(
+				menuItemShowFirst, menuItemShowPrev, menuItemShowNext, menuItemShowLast);
+			// Menu and ToolBar:
+			final var menuBar = new MenuBar(menuFile, menuView, menuNavigation, menuOptions, menuHelp);
+			final var toolBar = new ToolBar();
+			toolBar.getItems().addAll(toggleButtonSidePane, buttonDirOpen);
+			toolBar.getItems().add(Action.createToolBarSeparator());
+			toolBar.getItems().addAll(buttonViewFullscreen);
+			toolBar.getItems().add(Action.createToolBarSeparator());
+			toolBar.getItems().addAll(buttonItemShowFirst, buttonItemShowPrev, buttonItemShowNext, buttonItemShowLast);
+			final var buttonExit = new Button("Exit");
+			final var buttonExitSeparator = new Separator();
+			buttonExit.prefHeightProperty().bind(toggleButtonSidePane.heightProperty());
+			adaptActionState(menuItemExit, buttonExit, "Exit application");
+			ApplicationConfiguration.getState().developmentModeProperty().addListener(onChange(isDevel ->
+			{
+				if (isDevel)
+				{
+					toolBar.getItems().addAll(buttonExitSeparator, buttonExit);
+				}
+				else
+				{
+					toolBar.getItems().removeAll(buttonExitSeparator, buttonExit);
+				}
+			}));
+			borderPane.setTop(new VBox(menuBar, toolBar));
+		}
+	}
+
 	public void setFileSystemView(PaneFileSystem paneFileSystem)
 	{
 		if (this.paneFileSystem == null)
@@ -291,7 +309,7 @@ public class MainWindow
 			final var fstv = paneFileSystem.getFileSystemTreeView();
 			menuItemClose.setOnAction(e -> fstv.clearSelection());
 			menuItemClose.disableProperty().bind(not(fstv.pathSelectedProperty()));
-			mainContent.setSelectedPathProperty(fstv.selectedPathProperty());
+			getMainContent().setSelectedPathProperty(fstv.selectedPathProperty());
 			titleProperty.bind(StringBindingAppTitle.create(fstv.selectedPathProperty(),
 				ApplicationConfiguration.getState().developmentModeProperty()));
 			tabPane.getTabs().add(paneFileSystem.getTabFstv());
@@ -299,6 +317,18 @@ public class MainWindow
 		else
 		{
 			throw new IllegalStateException("PaneFileSystem initialized twice");
+		}
+	}
+
+	private MainContent getMainContent()
+	{
+		if (mainContent != null)
+		{
+			return mainContent;
+		}
+		else
+		{
+			throw new IllegalStateException("MainContent not initialized!");
 		}
 	}
 
@@ -443,18 +473,16 @@ public class MainWindow
 			{
 				menuItemDevelopmentMode.selectedProperty().set(true);
 			}
-			this.mainContent.postVisibleInit();
+			getMainContent().postVisibleInit();
 		}
 	}
 
-	private void adaptActionState(@UnderInitialization MainWindow this,
-		MenuItem from, Button to)
+	private static void adaptActionState(MenuItem from, Button to)
 	{
 		adaptActionState(from, to, from.getText());
 	}
 
-	private void adaptActionState(@UnderInitialization MainWindow this,
-		MenuItem from, Button to, String textTooltip)
+	private static void adaptActionState(MenuItem from, Button to, String textTooltip)
 	{
 		to.onActionProperty().bindBidirectional(from.onActionProperty());
 		to.disableProperty().bind(from.disableProperty());
@@ -468,7 +496,7 @@ public class MainWindow
 		{
 			paneFileSystem.selectedPathPersistedProperty().unbind();
 		}
-		mainContent.onApplicationClose();
+		getMainContent().onApplicationClose();
 		try
 		{
 			final var fileSystemTreeView = getFileSystemTreeView();

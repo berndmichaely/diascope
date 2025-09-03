@@ -56,7 +56,7 @@ import static javafx.geometry.Pos.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class MainContent
+public class MainContent
 {
 	private static final Logger logger = System.getLogger(MainContent.class.getName());
 	private static final int INDEX_NO_SELECTION = -1;
@@ -80,7 +80,7 @@ class MainContent
 	private final BooleanProperty showStatusLineProperty;
 	private final MainContentComponents components;
 
-	MainContent(ReadOnlyBooleanProperty showStatusLinePersistedProperty)
+	public MainContent()
 	{
 		this.listView = new ListView<>();
 		this.listViewProperty = new ReadOnlyListWrapper<>(listView.getItems());
@@ -155,8 +155,12 @@ class MainContent
 				statusLines.getChildren().remove(statusLine);
 			}
 		}));
-		this.showStatusLineProperty.bind(showStatusLinePersistedProperty);
 		cursorDefault = outerPane.getCursor();
+	}
+
+	void bindShowStatusLineProperty(ReadOnlyBooleanProperty showStatusLinePersistedProperty)
+	{
+		this.showStatusLineProperty.bind(showStatusLinePersistedProperty);
 	}
 
 	void setSelectedPathProperty(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty)
