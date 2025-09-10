@@ -185,10 +185,11 @@ automaticModule('batik-all-1.17.jar', 'batik')
  */
 
 dependencies {
-	checkerFramework "org.checkerframework:checker:${versionCheckerFramework}"
+	implementation project (':lib-common-cli-parser')
+	implementation project (':lib-common-semver')
+	implementation project (':module-gui-fx')
 	implementation "org.checkerframework:checker-qual:${versionCheckerFramework}"
-	implementation project (':module-launcher')
-	//	implementation 'com.github.weisj:jsvg:1.5.0'
+	//implementation 'com.github.weisj:jsvg:1.5.0'
 	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
 	//implementation 'xml-apis:xml-apis:1.4.01'
 	//implementation 'xml-apis:xml-apis-ext:1.3.04'

@@ -31,11 +31,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static java.lang.System.Logger.Level.*;
 import static java.util.Objects.requireNonNullElse;
 
-/**
- * Main launcher of the Diascope application.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Main launcher of the Diascope application.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class Launcher
 {
 	private static final Logger logger = System.getLogger(Launcher.class.getName());

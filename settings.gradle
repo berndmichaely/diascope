@@ -4,4 +4,4 @@ plugins {
 
 rootProject.name = 'Diascope'
 
-file '.' eachDirMatch (~/((module)|(lib))-.*/, { include it.name })
+file '.' eachDirMatch ~/((module)|(lib))-.*/, { include it.name }
