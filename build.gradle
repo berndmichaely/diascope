@@ -210,20 +210,17 @@ task writeSemVer {
 }
 processResources.dependsOn writeSemVer
 
-def String toShieldParam(String text) {
-	text.replaceAll("-", "--").replaceAll("_", "__").replaceAll("\\s", "_")
-}
-
 task getVersionShield {
 	description = "Generate a version shield by accessing shields.io and write it to file »${fileVersionShield}«"
 	group = javadoc.group
+	final def toShieldParam = { it replaceAll "-", "--" replaceAll "_", "__" replaceAll "\\s", "_"  }
 	doLast {
-		final String label = toShieldParam(project.name)
-		//final String message = toShieldParam(project.version - ~'\\+.*$' - ~'-snapshot$')
-		final String message = toShieldParam(project.version - ~'\\+.*$')
-		final URL url = new URI("https://img.shields.io/badge/${label}-${message}-blue").toURL()
+		final String label = toShieldParam rootProject.name
+		final String message = toShieldParam (semVer - ~/\+.*$/)
+		final String color = 'blue'
+		final def url = new URI("https://img.shields.io/badge/${label}-${message}-${color}").toURL()
 		logger.lifecycle "→ getting data from URL »${url}«"
-		fileVersionShield.write(url.getText())
+		fileVersionShield.write url.text
 	}
 }
 
