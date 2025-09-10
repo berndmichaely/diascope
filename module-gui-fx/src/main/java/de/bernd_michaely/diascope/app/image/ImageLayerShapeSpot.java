@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
+import java.util.function.Consumer;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
@@ -48,9 +49,29 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	private final ChangeListener<@Nullable Mode> spotInitListener;
 	private double mx, my, dx, dy;
 
-	private ImageLayerShapeSpot(Viewport viewport)
+	private static class MouseEventAdapter implements Consumer<MouseEvent>
 	{
-		super(true);
+		private @Nullable Consumer<MouseEvent> delegate;
+
+		private MouseEventAdapter()
+		{
+		}
+
+		@Override
+		public void accept(MouseEvent event)
+		{
+			if (delegate != null)
+			{
+				delegate.accept(event);
+			}
+		}
+	}
+
+	private ImageLayerShapeSpot(Viewport viewport,
+		@Nullable Consumer<MouseEvent> onMouseDragInit,
+		@Nullable Consumer<MouseEvent> onMouseDragged)
+	{
+		super(true, onMouseDragInit, onMouseDragged);
 		this.ellipse = new Ellipse(SPOT_RADIUS_MAX, SPOT_RADIUS_DEFAULT);
 		ellipse.centerXProperty().bind(centerX);
 		ellipse.centerYProperty().bind(centerY);
@@ -82,13 +103,17 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 
 	static ImageLayerShapeSpot createInstance(Viewport viewport)
 	{
-		final var imageLayerShapeSpot = new ImageLayerShapeSpot(viewport);
+		final MouseEventAdapter adapterDragInit = new MouseEventAdapter();
+		final MouseEventAdapter adapterDragged = new MouseEventAdapter();
+		final var imageLayerShapeSpot = new ImageLayerShapeSpot(
+			viewport, adapterDragInit, adapterDragged);
+		adapterDragInit.delegate = imageLayerShapeSpot::onMouseDragInit;
+		adapterDragged.delegate = imageLayerShapeSpot::onMouseDragged;
 		imageLayerShapeSpot._postInit();
 		return imageLayerShapeSpot;
 	}
 
-	@Override
-	void onMouseDragInit(MouseEvent event)
+	private void onMouseDragInit(MouseEvent event)
 	{
 		mx = centerX.get();
 		my = centerY.get();
@@ -96,8 +121,7 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 		dy = my - event.getY();
 	}
 
-	@Override
-	void onMouseDragged(MouseEvent event)
+	private void onMouseDragged(MouseEvent event)
 	{
 		try
 		{

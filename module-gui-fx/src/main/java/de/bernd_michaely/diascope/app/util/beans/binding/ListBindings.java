@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.Function;
 import javafx.beans.binding.DoubleBinding;
-import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.value.ObservableDoubleValue;
 import javafx.collections.ObservableList;
 
@@ -34,12 +33,12 @@ public class ListBindings
 	private static class CumulatedOperations<E> extends DoubleBinding
 	{
 		private final ObservableList<E> observableList;
-		private final Function<E, ReadOnlyDoubleProperty> selector;
+		private final Function<E, ObservableDoubleValue> selector;
 		private final DoubleBinaryOperator operator;
 		private final double neutralElement;
 
 		private CumulatedOperations(ObservableList<E> observableList,
-			Function<E, ReadOnlyDoubleProperty> selector, DoubleBinaryOperator operator, double neutralElement)
+			Function<E, ObservableDoubleValue> selector, DoubleBinaryOperator operator, double neutralElement)
 		{
 			this.observableList = observableList;
 			this.selector = selector;
@@ -56,7 +55,7 @@ public class ListBindings
 		}
 
 		private static <B> DoubleBinding newInstance(ObservableList<B> observableList,
-			Function<B, ReadOnlyDoubleProperty> selector, DoubleBinaryOperator operator, double neutralElement)
+			Function<B, ObservableDoubleValue> selector, DoubleBinaryOperator operator, double neutralElement)
 		{
 			final var binding = new CumulatedOperations<>(observableList, selector, operator, neutralElement);
 			final Consumer<B> listenerAdd = item -> binding.bind(selector.apply(item));
@@ -84,7 +83,7 @@ public class ListBindings
 	/// @return a DoubleBinding containing the combined result
 	///
 	public static DoubleBinding cumulatedOperations(
-		ObservableList<? extends ReadOnlyDoubleProperty> observableList,
+		ObservableList<? extends ObservableDoubleValue> observableList,
 		DoubleBinaryOperator operator, double neutralElement)
 	{
 		return cumulatedOperations(observableList, p -> p, operator, neutralElement);
@@ -105,7 +104,7 @@ public class ListBindings
 	/// @return a DoubleBinding containing the combined result
 	///
 	public static <T> DoubleBinding cumulatedOperations(ObservableList<T> observableList,
-		Function<T, ReadOnlyDoubleProperty> selector, DoubleBinaryOperator operator, double neutralElement)
+		Function<T, ObservableDoubleValue> selector, DoubleBinaryOperator operator, double neutralElement)
 	{
 		return CumulatedOperations.<T>newInstance(observableList, selector, operator, neutralElement);
 	}

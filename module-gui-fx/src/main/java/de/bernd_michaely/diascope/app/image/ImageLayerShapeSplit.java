@@ -31,7 +31,7 @@ final class ImageLayerShapeSplit extends ImageLayerShapeBase
 
 	private ImageLayerShapeSplit()
 	{
-		super(false);
+		super(false, null, null);
 	}
 
 	static ImageLayerShapeSplit createInstance()

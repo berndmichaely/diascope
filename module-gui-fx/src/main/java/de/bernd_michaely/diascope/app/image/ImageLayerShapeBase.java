@@ -45,12 +45,18 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 	private final BooleanProperty selected;
 	private final BooleanProperty unselectedVisible;
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
+	private final @Nullable Consumer<MouseEvent> onMouseDragInit;
+	private final @Nullable Consumer<MouseEvent> onMouseDragged;
 	private boolean mouseDragged;
 
-	ImageLayerShapeBase(boolean unselectedVisible)
+	ImageLayerShapeBase(boolean unselectedVisible,
+		@Nullable Consumer<MouseEvent> onMouseDragInit,
+		@Nullable Consumer<MouseEvent> onMouseDragged)
 	{
 		this.selected = new SimpleBooleanProperty();
 		this.unselectedVisible = new SimpleBooleanProperty(unselectedVisible);
+		this.onMouseDragInit = onMouseDragInit;
+		this.onMouseDragged = onMouseDragged;
 	}
 
 	void _postInit()
@@ -69,14 +75,20 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 			{
 				try
 				{
-					onMouseDragInit(event);
+					if (onMouseDragInit != null)
+					{
+						onMouseDragInit.accept(event);
+					}
 				}
 				finally
 				{
 					mouseDragged = true;
 				}
 			}
-			onMouseDragged(event);
+			if (onMouseDragged != null)
+			{
+				onMouseDragged.accept(event);
+			}
 		});
 		getShape().setOnMouseReleased(event ->
 		{
@@ -99,14 +111,6 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 				}
 			}
 		});
-	}
-
-	void onMouseDragInit(MouseEvent event)
-	{
-	}
-
-	void onMouseDragged(MouseEvent event)
-	{
 	}
 
 	void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler)
