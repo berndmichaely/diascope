@@ -39,7 +39,7 @@ import static javafx.beans.binding.Bindings.when;
  */
 class Divider
 {
-	private static final Color COLOR_DEFAULT = ImageLayerShape.COLOR_UNSELECTED;
+	private static final Color COLOR_DEFAULT = ImageLayerShapeSplit.COLOR_UNSELECTED;
 	private static final Color COLOR_HOVER = Color.LIGHTCORAL;
 	private final DoubleProperty angle;
 	private final ReadOnlyDoubleWrapper angleNorm;
@@ -101,7 +101,7 @@ class Divider
 		final double sizeDefault = Font.getDefault().getSize();
 		lineShape = new Line();
 		lineShape.setStroke(COLOR_DEFAULT);
-		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * ImageLayerShape.STROKE_WIDTH_UNSELECTED);
+		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * ImageLayerShapeSplit.STROKE_WIDTH_UNSELECTED);
 		lineShape.startXProperty().bind(splitCenterX);
 		lineShape.startYProperty().bind(splitCenterY);
 		lineShape.endXProperty().bind(borderIntersectionX);

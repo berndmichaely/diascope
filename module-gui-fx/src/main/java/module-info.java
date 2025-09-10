@@ -28,7 +28,6 @@ module de.bernd_michaely.diascope.gui.fx
 	requires de.bernd_michaely.common.selectable.list.fx;
 	requires java.prefs;
 	requires javafx.controls;
-	requires javafx.graphics;
 	requires org.checkerframework.checker.qual;
 
 	exports de.bernd_michaely.diascope.app;

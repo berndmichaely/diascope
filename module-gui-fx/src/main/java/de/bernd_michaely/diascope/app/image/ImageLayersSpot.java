@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.lang.System.Logger;
 import java.util.function.BiConsumer;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
@@ -27,6 +28,7 @@ import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 ///
 final class ImageLayersSpot extends ImageLayersBase
 {
+	private static final Logger logger = System.getLogger(ImageLayersSpot.class.getName());
 	private final BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
 
 	ImageLayersSpot(Viewport viewport, ImageTransforms imageTransforms)
@@ -39,5 +41,10 @@ final class ImageLayersSpot extends ImageLayersBase
 		viewport.addSpotBaseLayer(baseLayer);
 		viewport.addSpotLayer(spotLayer);
 		layers.forEach(l -> l.getImageTransforms().bindProperties(imageTransforms));
+	}
+
+	void center()
+	{
+		logger.log(Logger.Level.WARNING, "TODO : Implement ImageLayersSpot::center");
 	}
 }

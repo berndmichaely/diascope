@@ -66,6 +66,11 @@ public class MultiImageView
 		{
 			return SPLIT;
 		}
+
+		public boolean isSpotMode()
+		{
+			return this == SPOT;
+		}
 	}
 
 	public MultiImageView()
@@ -119,12 +124,30 @@ public class MultiImageView
 		return imageLayersSplit.layerSelectionModel;
 	}
 
-	/// Centers the split center in the viewport and
-	/// re-initializes the divider angles.
-	public void resetDividers()
+	/// Resets the multi image layer controls:
+	///
+	///   * In SPLIT mode, centers the split center in the viewport and re-initializes the divider angles.
+	///   * In SPOT mode, centers the spot in the viewport.
+	///
+	public void resetControls()
 	{
-		viewport.getSplitCenter().center();
-		imageLayersSplit.getDividerRotationControl().initializeDividerAngles();
+		final var mode = getMode();
+		switch (mode)
+		{
+			case SPLIT ->
+			{
+				viewport.getSplitCenter().center();
+				imageLayersSplit.getDividerRotationControl().initializeDividerAngles();
+			}
+			case SPOT ->
+			{
+				imageLayersSpot.center();
+			}
+			case SINGLE ->
+			{
+			}
+			default -> throw new AssertionError("Invalid mode: " + mode);
+		}
 	}
 
 	/// Adds a new layer.
@@ -198,10 +221,10 @@ public class MultiImageView
 	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
-		if (viewport.modeProperty().get() != SPOT)
+		if (!viewport.isSpotMode())
 		{
-			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(imageLayer ->
-				imageLayer.setImageDescriptor(imageDescriptor));
+			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(
+				imageLayer -> imageLayer.setImageDescriptor(imageDescriptor));
 		}
 	}
 

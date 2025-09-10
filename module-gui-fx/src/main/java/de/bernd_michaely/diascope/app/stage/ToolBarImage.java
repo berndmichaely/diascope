@@ -102,7 +102,7 @@ class ToolBarImage
 		sliderRotation.setTooltip(new Tooltip("""
       Set image rotation
 
-      Double-Click to reset to 0"""));
+      Double-Click slider knob to reset to 0"""));
 		sliderRotation.setOnMouseClicked(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2)
@@ -173,7 +173,7 @@ class ToolBarImage
 				actions.actionMirrorX,
 				actions.actionMirrorY,
 				SEPARATOR,
-				actions.actionResetAngles,
+				actions.actionResetControls,
 				actions.actionFullScreen
 			).stream().map(Action::createMenuItems).flatMap(List::stream).toArray(MenuItem[]::new));
 	}

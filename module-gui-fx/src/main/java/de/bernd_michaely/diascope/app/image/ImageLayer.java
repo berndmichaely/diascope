@@ -33,7 +33,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
@@ -62,7 +62,7 @@ class ImageLayer
 	private final Rectangle imageRotated = new Rectangle();
 	private final Shape clippingShape;
 	private final BooleanProperty clippingEnabled = new SimpleBooleanProperty();
-	private final ImageLayerShape imageLayerShape;
+	private final ImageLayerShapeBase imageLayerShape;
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth, imageHeight;
 	private final ReadOnlyDoubleWrapper imageWidthRotated, imageHeightRotated;
@@ -95,20 +95,27 @@ class ImageLayer
 
 	private ImageLayer(Viewport viewport, Type type)
 	{
+		this.imageLayerShape = switch (type)
+		{
+			case SPLIT, BASE ->
+				ImageLayerShapeSplit.createInstance();
+			case SPOT ->
+				ImageLayerShapeSpot.createInstance(viewport);
+		};
 		this.clippingShape = switch (type)
 		{
 			case SPLIT, BASE ->
 				new Polygon();
 			case SPOT ->
-				new Circle();
+				new Ellipse();
 		};
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		this.imageLayerShape = new ImageLayerShape(type, viewport);
-		if (clippingShape instanceof Circle circle)
+		if (imageLayerShape instanceof ImageLayerShapeSpot shapeSpot &&
+			clippingShape instanceof Ellipse ellipse)
 		{
-			imageLayerShape.bindShape(circle);
+			shapeSpot.bindClipToShape(ellipse);
 		}
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.imageWidth = new ReadOnlyDoubleWrapper();
@@ -312,7 +319,7 @@ class ImageLayer
 		return divider;
 	}
 
-	ImageLayerShape getImageLayerShape()
+	ImageLayerShapeBase getImageLayerShape()
 	{
 		return imageLayerShape;
 	}
@@ -322,7 +329,10 @@ class ImageLayer
 		if (clippingShape instanceof Polygon polygon)
 		{
 			polygon.getPoints().clear();
-			getImageLayerShape().clearPoints();
+			if (getImageLayerShape() instanceof ImageLayerShapeSplit shapeSplit)
+			{
+				shapeSplit.clearPoints();
+			}
 		}
 	}
 
@@ -337,7 +347,10 @@ class ImageLayer
 		if (clippingShape instanceof Polygon polygon)
 		{
 			polygon.getPoints().setAll(points);
-			getImageLayerShape().setShapePoints(points);
+			if (getImageLayerShape() instanceof ImageLayerShapeSplit shapeSplit)
+			{
+				shapeSplit.setShapePoints(points);
+			}
 		}
 	}
 

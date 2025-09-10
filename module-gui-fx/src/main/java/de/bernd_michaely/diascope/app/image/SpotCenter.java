@@ -20,31 +20,31 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.scene.Cursor;
-import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Font;
 
+import static de.bernd_michaely.diascope.app.image.SplitCenter.normX;
+import static de.bernd_michaely.diascope.app.image.SplitCenter.normY;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static java.lang.Math.clamp;
 
-/// Class to handle the split center shape.
+/// Class to handle the spot center shape.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class SplitCenter
+class SpotCenter
 {
-	private static final Color COLOR_DEFAULT_SPLIT = Color.WHITESMOKE;
-	private static final Color COLOR_HOVER_SPLIT = Color.MEDIUMSPRINGGREEN;
+	private static final Color COLOR_DEFAULT_SPOT = Color.LIGHTCORAL;
+	private static final Color COLOR_HOVER_SPOT = Color.CORAL;
 	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
 	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
-	private final Circle shapeSplitCenter;
+	private final Circle shapeSpotCenter;
 	private final double diameter, radius;
 	private final Runnable center;
 	private boolean positionInitialized;
 
-	SplitCenter(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
+	SpotCenter(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
 	{
 		this.splitCenterX = new ReadOnlyDoubleWrapper();
 		this.splitCenterY = new ReadOnlyDoubleWrapper();
@@ -54,14 +54,14 @@ class SplitCenter
 		splitCenterDy.bind(viewportHeight.subtract(splitCenterY));
 		this.diameter = Font.getDefault().getSize();
 		this.radius = diameter / 2.0;
-		this.shapeSplitCenter = new Circle(radius);
-		shapeSplitCenter.setFill(COLOR_DEFAULT_SPLIT);
-		shapeSplitCenter.setOpacity(0.8);
-		shapeSplitCenter.setCursor(Cursor.MOVE);
-		shapeSplitCenter.centerXProperty().bind(splitCenterX);
-		shapeSplitCenter.centerYProperty().bind(splitCenterY);
-		shapeSplitCenter.setOnMouseEntered(_ -> shapeSplitCenter.setFill(COLOR_HOVER_SPLIT));
-		shapeSplitCenter.setOnMouseExited(_ -> shapeSplitCenter.setFill(COLOR_DEFAULT_SPLIT));
+		this.shapeSpotCenter = new Circle(radius);
+		shapeSpotCenter.setFill(COLOR_DEFAULT_SPOT);
+		shapeSpotCenter.setOpacity(0.8);
+		shapeSpotCenter.setCursor(Cursor.MOVE);
+		shapeSpotCenter.centerXProperty().bind(splitCenterX);
+		shapeSpotCenter.centerYProperty().bind(splitCenterY);
+		shapeSpotCenter.setOnMouseEntered(_ -> shapeSpotCenter.setFill(COLOR_HOVER_SPOT));
+		shapeSpotCenter.setOnMouseExited(_ -> shapeSpotCenter.setFill(COLOR_DEFAULT_SPOT));
 
 		viewportWidth.addListener(onChange((oldWidth, newWidth) ->
 		{
@@ -77,21 +77,12 @@ class SplitCenter
 			final double y = oh != 0 ? splitCenterY.get() * h / oh : 0;
 			splitCenterY.set(normY(diameter, radius, h, y));
 		}));
-		shapeSplitCenter.setOnMouseDragged(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				splitCenterX.set(normX(diameter, radius, viewportWidth.get(), event.getX()));
-				splitCenterY.set(normY(diameter, radius, viewportHeight.get(), event.getY()));
-				event.consume();
-			}
-		});
 		this.center = () ->
 		{
 			splitCenterX.set(viewportWidth.get() / 2.0);
 			splitCenterY.set(viewportHeight.get() / 2.0);
 		};
-		shapeSplitCenter.visibleProperty().addListener(onChange(visible ->
+		shapeSpotCenter.visibleProperty().addListener(onChange(visible ->
 		{
 			if (!positionInitialized && visible)
 			{
@@ -101,25 +92,9 @@ class SplitCenter
 		}));
 	}
 
-	static double normX(double diameter, double radius, double width, double x)
-	{
-		return width < diameter ? width / 2.0 : clamp(x, radius, width - radius);
-	}
-
-	static double normY(double diameter, double radius, double height, double y)
-	{
-		return height < diameter ? height / 2.0 : clamp(y, radius, height - radius);
-	}
-
-	/// Centers the split center in the viewport.
-	void center()
-	{
-		this.center.run();
-	}
-
 	BooleanProperty enabledProperty()
 	{
-		return shapeSplitCenter.visibleProperty();
+		return shapeSpotCenter.visibleProperty();
 	}
 
 	ReadOnlyDoubleProperty xProperty()
@@ -144,6 +119,6 @@ class SplitCenter
 
 	Shape getShape()
 	{
-		return shapeSplitCenter;
+		return shapeSpotCenter;
 	}
 }

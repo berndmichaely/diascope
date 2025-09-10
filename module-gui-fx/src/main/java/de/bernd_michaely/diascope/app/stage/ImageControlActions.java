@@ -41,7 +41,7 @@ class ImageControlActions
 	final TriggerAction actionSelectAll;
 	final TriggerAction actionSelectNone;
 	final TriggerAction actionSelectToggle;
-	final TriggerAction actionResetAngles;
+	final TriggerAction actionResetControls;
 	final ToggleAction<MultiImageView.Mode> actionMode;
 	final ToggleAction<ZoomMode> actionZoom;
 	final CheckedAction actionMirrorX;
@@ -125,9 +125,9 @@ class ImageControlActions
 			Icons.SelectInvert, "+/-", "Toggle layers selection", "Toggle layers selection"));
 		actionSelectToggle.disableProperty().bind(notMultiLayerMode);
 		// misc
-		this.actionResetAngles = new TriggerAction(multiImageView::resetDividers,
-			new ActionItemDescriptor("Reset dividers"));
-		actionResetAngles.disableProperty().bind(notMultiLayerMode);
+		this.actionResetControls = new TriggerAction(multiImageView::resetControls,
+			new ActionItemDescriptor("Reset controls"));
+		actionResetControls.disableProperty().bind(notMultiLayerMode);
 		this.actionFullScreen = new CheckedAction(new ActionItemDescriptor(
 			Icons.ViewFullscreen, "[←→]", "FullScreen mode", "Enter fullScreen mode"));
 		actionFullScreen.selectedProperty().bindBidirectional(imageControlProperties.getFullScreen().enabledProperty());
