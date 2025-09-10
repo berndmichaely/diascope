@@ -16,18 +16,20 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleWrapper;
-import javafx.scene.Cursor;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.scene.Group;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Shape;
+import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.text.Font;
 
-import static de.bernd_michaely.diascope.app.image.SplitCenter.normX;
-import static de.bernd_michaely.diascope.app.image.SplitCenter.normY;
-import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static javafx.beans.binding.Bindings.when;
 
 /// Class to handle the spot center shape.
 ///
@@ -36,89 +38,61 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 class SpotCenter
 {
 	private static final Color COLOR_DEFAULT_SPOT = Color.LIGHTCORAL;
-	private static final Color COLOR_HOVER_SPOT = Color.CORAL;
-	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
-	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
-	private final Circle shapeSpotCenter;
+	private static final Color COLOR_HOVER_SPOT = Color.RED;
+	private final DoubleProperty spotCenterX = new SimpleDoubleProperty();
+	private final DoubleProperty spotCenterY = new SimpleDoubleProperty();
+	private final BooleanProperty hover = new SimpleBooleanProperty();
+	private final List<? extends Shape> shapes;
+	private final Group group = new Group();
 	private final double diameter, radius;
-	private final Runnable center;
-	private boolean positionInitialized;
 
 	SpotCenter(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
 	{
-		this.splitCenterX = new ReadOnlyDoubleWrapper();
-		this.splitCenterY = new ReadOnlyDoubleWrapper();
-		this.splitCenterDx = new ReadOnlyDoubleWrapper();
-		this.splitCenterDy = new ReadOnlyDoubleWrapper();
-		splitCenterDx.bind(viewportWidth.subtract(splitCenterX));
-		splitCenterDy.bind(viewportHeight.subtract(splitCenterY));
 		this.diameter = Font.getDefault().getSize();
 		this.radius = diameter / 2.0;
-		this.shapeSpotCenter = new Circle(radius);
-		shapeSpotCenter.setFill(COLOR_DEFAULT_SPOT);
-		shapeSpotCenter.setOpacity(0.8);
-		shapeSpotCenter.setCursor(Cursor.MOVE);
-		shapeSpotCenter.centerXProperty().bind(splitCenterX);
-		shapeSpotCenter.centerYProperty().bind(splitCenterY);
-		shapeSpotCenter.setOnMouseEntered(_ -> shapeSpotCenter.setFill(COLOR_HOVER_SPOT));
-		shapeSpotCenter.setOnMouseExited(_ -> shapeSpotCenter.setFill(COLOR_DEFAULT_SPOT));
+		final Line lineCrossLeftAsc = new Line();
+		final Line lineCrossRightAsc = new Line();
+		this.shapes = List.of(lineCrossLeftAsc, lineCrossRightAsc);
+		group.getChildren().addAll(shapes);
+		shapes.forEach(line ->
+		{
+			line.strokeProperty().bind(when(hover).then(COLOR_HOVER_SPOT).otherwise(COLOR_DEFAULT_SPOT));
+			line.setStrokeLineCap(StrokeLineCap.ROUND);
+			line.setStrokeWidth(5);
+			line.setOpacity(0.8);
+		});
+		lineCrossLeftAsc.startXProperty().bind(spotCenterX.subtract(radius));
+		lineCrossLeftAsc.startYProperty().bind(spotCenterY.subtract(radius));
+		lineCrossLeftAsc.endXProperty().bind(spotCenterX.add(radius));
+		lineCrossLeftAsc.endYProperty().bind(spotCenterY.add(radius));
+		lineCrossRightAsc.startXProperty().bind(spotCenterX.add(radius));
+		lineCrossRightAsc.startYProperty().bind(spotCenterY.subtract(radius));
+		lineCrossRightAsc.endXProperty().bind(spotCenterX.subtract(radius));
+		lineCrossRightAsc.endYProperty().bind(spotCenterY.add(radius));
+	}
 
-		viewportWidth.addListener(onChange((oldWidth, newWidth) ->
-		{
-			final double w = newWidth.doubleValue();
-			final double ow = oldWidth.doubleValue();
-			final double x = ow != 0 ? splitCenterX.get() * w / ow : 0;
-			splitCenterX.set(normX(diameter, radius, w, x));
-		}));
-		viewportHeight.addListener(onChange((oldHeight, newHeight) ->
-		{
-			final double h = newHeight.doubleValue();
-			final double oh = oldHeight.doubleValue();
-			final double y = oh != 0 ? splitCenterY.get() * h / oh : 0;
-			splitCenterY.set(normY(diameter, radius, h, y));
-		}));
-		this.center = () ->
-		{
-			splitCenterX.set(viewportWidth.get() / 2.0);
-			splitCenterY.set(viewportHeight.get() / 2.0);
-		};
-		shapeSpotCenter.visibleProperty().addListener(onChange(visible ->
-		{
-			if (!positionInitialized && visible)
-			{
-				center.run();
-				positionInitialized = true;
-			}
-		}));
+	BooleanProperty hoverProperty()
+	{
+		return hover;
 	}
 
 	BooleanProperty enabledProperty()
 	{
-		return shapeSpotCenter.visibleProperty();
+		return group.visibleProperty();
 	}
 
-	ReadOnlyDoubleProperty xProperty()
+	DoubleProperty xProperty()
 	{
-		return splitCenterX;
+		return spotCenterX;
 	}
 
-	ReadOnlyDoubleProperty yProperty()
+	DoubleProperty yProperty()
 	{
-		return splitCenterY;
+		return spotCenterY;
 	}
 
-	ReadOnlyDoubleProperty dxProperty()
+	Group getShape()
 	{
-		return splitCenterDx;
-	}
-
-	ReadOnlyDoubleProperty dyProperty()
-	{
-		return splitCenterDy;
-	}
-
-	Shape getShape()
-	{
-		return shapeSpotCenter;
+		return group;
 	}
 }

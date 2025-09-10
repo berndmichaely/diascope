@@ -19,7 +19,9 @@ package de.bernd_michaely.diascope.app.image;
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import java.util.function.Consumer;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.input.MouseEvent;
@@ -28,7 +30,7 @@ import javafx.scene.text.Font;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
+import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Math.max;
 import static java.lang.Math.sqrt;
@@ -43,10 +45,13 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	private static final double SPOT_RADIUS_DEFAULT = SPOT_RADIUS_MIN * 10;
 	private static final double SPOT_RADIUS_MAX = 1_000_000;
 	private final Ellipse ellipse;
+	private final SpotCenter spotCenter;
 	private final DoubleProperty centerX = new SimpleDoubleProperty();
 	private final DoubleProperty centerY = new SimpleDoubleProperty();
 	private final DoubleProperty radius = new SimpleDoubleProperty(SPOT_RADIUS_DEFAULT);
 	private final ChangeListener<@Nullable Mode> spotInitListener;
+	private final BooleanProperty mouseInShape = new SimpleBooleanProperty();
+	private final BooleanProperty mouseInSpot = new SimpleBooleanProperty();
 	private double mx, my, dx, dy;
 
 	private static class MouseEventAdapter implements Consumer<MouseEvent>
@@ -73,10 +78,20 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	{
 		super(true, onMouseDragInit, onMouseDragged);
 		this.ellipse = new Ellipse(SPOT_RADIUS_MAX, SPOT_RADIUS_DEFAULT);
+		this.spotCenter = new SpotCenter(viewport.widthProperty(), viewport.heightProperty());
+		spotCenter.xProperty().bind(centerX);
+		spotCenter.yProperty().bind(centerY);
+		spotCenter.hoverProperty().bind(mouseInSpot);
 		ellipse.centerXProperty().bind(centerX);
 		ellipse.centerYProperty().bind(centerY);
-//			ellipse.radiusXProperty().bind(radius);
+		ellipse.radiusXProperty().bind(radius.multiply(1.5));
 		ellipse.radiusYProperty().bind(radius);
+		ellipse.setOnMouseEntered(_ -> mouseInShape.set(true));
+		ellipse.setOnMouseExited(_ -> mouseInShape.set(false));
+		spotCenter.getShape().setOnMouseEntered(_ -> mouseInSpot.set(true));
+		spotCenter.getShape().setOnMouseExited(_ -> mouseInSpot.set(false));
+		spotCenter.enabledProperty().bind(mouseInShape.or(mouseInSpot).and(
+			viewport.multiLayerModeProperty()).and(viewport.modeProperty().isEqualTo(SPOT)));
 		this.spotInitListener = onChange(newValue ->
 		{
 			if (newValue == Mode.SPOT)
@@ -160,10 +175,15 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 		clip.radiusYProperty().bind(ellipse.radiusYProperty());
 	}
 
+	SpotCenter getSpotCenter()
+	{
+		return spotCenter;
+	}
+
 	@Override
 	Type getType()
 	{
-		return SPOT;
+		return Type.SPOT;
 	}
 
 	@Override

@@ -51,7 +51,6 @@ class Viewport
 	private final ReadOnlyBooleanWrapper spotProperty;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
-	private final SpotCenter spotCenter;
 	private final CornerAngles cornerAngles;
 	private final ReadOnlyBooleanWrapper multiLayerMode;
 	private final DoubleProperty focusPointX, focusPointY;
@@ -90,8 +89,6 @@ class Viewport
 		this.scrollBars = new ScrollBars(stackPane.widthProperty(), stackPane.heightProperty());
 		this.splitCenter = new SplitCenter(stackPane.widthProperty(), stackPane.heightProperty());
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
-		this.spotCenter = new SpotCenter(stackPane.widthProperty(), stackPane.heightProperty());
-		spotCenter.enabledProperty().bind(multiLayerMode.getReadOnlyProperty().and(modeProperty.isEqualTo(SPOT)));
 		paneTopLayer.setBackground(Background.EMPTY);
 		paneDividerLines.setBackground(Background.EMPTY);
 		paneSpotLayers.setBackground(Background.EMPTY);
@@ -160,7 +157,7 @@ class Viewport
 			}
 		}));
 		paneTopLayer.getChildren().addAll(scrollBars.getControls());
-		paneTopLayer.getChildren().addAll(splitCenter.getShape(), spotCenter.getShape());
+		paneTopLayer.getChildren().addAll(splitCenter.getShape());
 		stackPane.setBackground(Background.fill(Color.BLACK));
 		stackPane.setMinSize(0, 0);
 		stackPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -239,6 +236,14 @@ class Viewport
 	{
 		spotLayer = imageLayer;
 		paneSpotLayers.getChildren().add(imageLayer.getRegion());
+		if (imageLayer.getImageLayerShape() instanceof ImageLayerShapeSpot imageLayerShapeSpot)
+		{
+			paneTopLayer.getChildren().add(imageLayerShapeSpot.getSpotCenter().getShape());
+		}
+		else
+		{
+			throw new IllegalStateException(getClass().getName() + "::addSpotLayer: invalid ImageLayerShape");
+		}
 	}
 
 	void removeLayer(ImageLayer imageLayer)
@@ -276,11 +281,6 @@ class Viewport
 	SplitCenter getSplitCenter()
 	{
 		return splitCenter;
-	}
-
-	SpotCenter getSpotCenter()
-	{
-		return spotCenter;
 	}
 
 	ObjectProperty<Mode> modeProperty()
