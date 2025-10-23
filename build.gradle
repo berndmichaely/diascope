@@ -131,7 +131,7 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = "25"
+			version = '25'
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
@@ -228,9 +228,22 @@ application {
 	mainModule = 'de.bernd_michaely.diascope'
 	mainClass  = 'de.bernd_michaely.diascope.Launcher'
 	
-	if (javafx.version ==~ /24(\.\d+(\.\d+)?)?/ && javaLangVersion == JavaLanguageVersion.of(24)) {
+	int javafxVer
+	final def m = javafx.version =~ /(\d+)(\.\d+(\.\d+)?)?(-.+)?(\+.+)?/
+	if (m) {
+		javafxVer = m.group(1) as int
+		logger.lifecycle " -> JavaFX major version is ${javafxVer}"
+	} else {
+		throw new StopExecutionException("Can't get JavaFX major version.")
+	}
+	final int javaLangVer = javaLangVersion.asInt()
+	
+	if (javafxVer == 24 && javaLangVer >= 24) {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 		applicationDefaultJvmArgs += '--sun-misc-unsafe-memory-access=allow'
+	}
+	if (javafxVer == 25 && javaLangVer >= 24) {
+		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 	}
 	applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
 	applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'

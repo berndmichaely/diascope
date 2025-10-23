@@ -16,14 +16,17 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
+import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
 import java.util.function.Supplier;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -36,6 +39,7 @@ class FullScreen
 {
 	private final BooleanProperty enabledProperty = new SimpleBooleanProperty();
 	private @Nullable Stage stageFullScreen;
+	private @MonotonicNonNull Image iconStage;
 
 	FullScreen(Supplier<Region> contentSupplier, Runnable contentReAttach)
 	{
@@ -46,6 +50,11 @@ class FullScreen
 				if (stageFullScreen == null)
 				{
 					final var stage = new Stage();
+					if (iconStage != null)
+					{
+						stage.getIcons().add(iconStage);
+					}
+					stage.setTitle(ApplicationConfiguration.getApplicationName() + " – FullScreen");
 					stage.setOnCloseRequest(_ -> enabledProperty.set(false));
 					stageFullScreen = stage;
 					final var scene = new Scene(contentSupplier.get());
@@ -72,6 +81,14 @@ class FullScreen
 	BooleanProperty enabledProperty()
 	{
 		return enabledProperty;
+	}
+
+	void setIconStage(Image iconStage)
+	{
+		if (iconStage != null)
+		{
+			this.iconStage = iconStage;
+		}
 	}
 
 	boolean toggle()

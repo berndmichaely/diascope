@@ -79,8 +79,10 @@ public class MainWindow
 {
 	private static final Logger logger = System.getLogger(MainWindow.class.getName());
 	private static final String FILE_RES_ICON_STAGE = "diascope.png";
-	private static final String FILE_RES_ICON_STAGE_2 = "diascope-2.png";
+	private static final String FILE_RES_ICON_STAGE_2 = "diascope_t.png";
+	private static final String FILE_RES_ICON_STAGE_FULLSCREEN = "diascope_fullscreen2.png";
 	private final @MonotonicNonNull Image iconStage;
+	private final @MonotonicNonNull Image iconStageFullScreen;
 	private static final double INITIAL_WINDOW_SIZE = 2.0 / 3.0;
 	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
 	private @MonotonicNonNull PaneFileSystem paneFileSystem;
@@ -130,6 +132,7 @@ public class MainWindow
 		dialogSystemEnvironment.setTitle("System Environment");
 		dialogInfoAbout.setTitle("Info About");
 		this.iconStage = createResourceImage(FILE_RES_ICON_STAGE);
+		this.iconStageFullScreen = createResourceImage(FILE_RES_ICON_STAGE_FULLSCREEN);
 	}
 
 	public void setMainContent(MainContent mainContent)
@@ -173,6 +176,10 @@ public class MainWindow
 				}
 			}));
 			showToolBarProperty.bindBidirectional(showToolBarPersistedProperty);
+			if (iconStageFullScreen != null)
+			{
+				mainContent.setFullScreenIcon(iconStageFullScreen);
+			}
 		}
 	}
 

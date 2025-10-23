@@ -18,12 +18,12 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
+import java.lang.System.Logger;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
@@ -53,6 +53,7 @@ import static java.lang.Math.round;
 import static java.lang.Math.sqrt;
 import static java.lang.Math.toDegrees;
 import static java.lang.Math.toRadians;
+import static java.lang.System.Logger.Level.*;
 import static javafx.beans.binding.Bindings.when;
 
 /// Class to describe an ImageLayer selection shape for SPOT mode.
@@ -61,6 +62,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 final class ImageLayerShapeSpot extends ImageLayerShapeBase
 {
+	private static final Logger logger = System.getLogger(ImageLayerShapeSpot.class.getName());
 	private static final List<Color> COLORS_SELECTED = List.of(
 		Color.CORNFLOWERBLUE, Color.CORAL);
 	private static final LinearGradient STROKE_GRADIENT = new LinearGradient(
@@ -73,10 +75,9 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	private static final double SPOT_RADIUS_MAX = 1e6;
 	private static final double ANGLE_STEP = 45.0 / 3;
 	private static final double DELTA_CIRCLE = 0.25;
-	private static final double SCALE_DOMAIN = 0.4;
-	private final ReadOnlyDoubleProperty viewportWidth, viewportHeight;
 	private final Ellipse ellipse;
 	private final SpotCenter spotCenter;
+	private final Runnable reset;
 	private final DoubleProperty centerX = new SimpleDoubleProperty();
 	private final DoubleProperty centerY = new SimpleDoubleProperty();
 	private final ChangeListener<@Nullable Mode> spotInitListener;
@@ -109,8 +110,6 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 		@Nullable Consumer<MouseEvent> onMouseDragged)
 	{
 		super(true, onMouseDragInit, onMouseDragged);
-		this.viewportWidth = viewport.widthProperty();
-		this.viewportHeight = viewport.heightProperty();
 		strokeSelectedPaint = when(circleMode)
 			.then((Paint) COLORS_SELECTED.getFirst()).otherwise(STROKE_GRADIENT);
 		this.ellipse = new Ellipse(SPOT_RADIUS_DEFAULT, SPOT_RADIUS_DEFAULT);
@@ -124,8 +123,6 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 		ellipse.setOnMouseExited(_ -> mouseInShape.set(false));
 		spotCenter.getShape().setOnMouseEntered(_ -> mouseInSpot.set(true));
 		spotCenter.getShape().setOnMouseExited(_ -> mouseInSpot.set(false));
-		spotCenter.enabledProperty().bind(mouseInShape.or(mouseInSpot).and(
-			viewport.multiLayerModeProperty()).and(viewport.modeProperty().isEqualTo(Mode.SPOT)));
 		this.spotInitListener = onChange(newValue ->
 		{
 			if (newValue == Mode.SPOT)
@@ -148,6 +145,14 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 			final double y = centerY.get() * h / oldHeight.doubleValue();
 			centerY.set(y);
 		}));
+		this.reset = () ->
+		{
+			centerX.set(viewport.widthProperty().get() / 2.0);
+			centerY.set(viewport.heightProperty().get() / 2.0);
+			ellipse.setRadiusX(SPOT_RADIUS_DEFAULT);
+			ellipse.setRadiusY(SPOT_RADIUS_DEFAULT);
+			circleMode.set(true);
+		};
 	}
 
 	static ImageLayerShapeSpot createInstance(Viewport viewport)
@@ -158,6 +163,8 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 			viewport, adapterDragInit, adapterDragged);
 		adapterDragInit.delegate = imageLayerShapeSpot::onMouseDragInit;
 		adapterDragged.delegate = imageLayerShapeSpot::onMouseDragged;
+		imageLayerShapeSpot.spotCenter.enabledProperty().bind(
+			imageLayerShapeSpot.mouseDraggedProperty());
 		imageLayerShapeSpot._postInit();
 		return imageLayerShapeSpot;
 	}
@@ -183,22 +190,39 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 			final boolean isShift = event.isShiftDown();
 			final boolean isControl = event.isControlDown();
 			final boolean isAlt = event.isAltDown();
-			if (!isAlt)
+			final var point = getMousePoint(event);
+			final double x = point.getX() - mx;
+			final double y = point.getY() - my;
+			if (isShift && !isControl && !isAlt) // set width
 			{
-				final var point = getMousePoint(event);
-				final double x = point.getX() - mx;
-				final double y = point.getY() - my;
-				if (isShift) // set thickness
+				if (circleMode.get())
+				{
+					final double r = max(SPOT_RADIUS_MIN, sqrt(x * x + y * y));
+					ellipse.setRadiusX(r);
+					ellipse.setRadiusY(r);
+				}
+				else
+				{
+					final double theta = atan2(y, x);
+					final double alpha = toRadians(ellipse.getRotate());
+					final double p = (sqrt(x * x + y * y) + STROKE_WIDTH_SELECTED);
+					final double r = abs(p * cos(theta - alpha));
+					ellipse.setRadiusX(clamp(r, SPOT_RADIUS_MIN, SPOT_RADIUS_MAX));
+				}
+			}
+			else if (isControl) // set thickness
+			{
+				double theta = toDegrees(atan2(y, x)) + 90.0;
+				if (isAlt)
+				{
+					theta = round(theta / ANGLE_STEP) * ANGLE_STEP;
+				}
+				ellipse.setRotate(theta);
+				if (!isShift && !isAlt)
 				{
 					final double r = max(SPOT_RADIUS_MIN, sqrt(x * x + y * y)) + STROKE_WIDTH_SELECTED;
 					final double rx = ellipse.getRadiusX();
 					final double ry = clamp(r, rx, SPOT_RADIUS_MAX);
-					double theta = toDegrees(atan2(y, x)) + 90.0;
-					if (isControl)
-					{
-						theta = round(theta / ANGLE_STEP) * ANGLE_STEP;
-					}
-					ellipse.setRotate(theta);
 					circleMode.set(abs(ry - rx) < rx * DELTA_CIRCLE);
 					if (circleMode.get())
 					{
@@ -206,38 +230,19 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 					}
 					else
 					{
-//						final double domainRangeMax = min(viewportWidth.get(), viewportHeight.get()) * SCALE_DOMAIN;
 						final double domainRangeMax = 750;
 						final int e = 100_000;
 						final double codomainRangeMax = log(SPOT_RADIUS_MAX) / log(e);
-						// min(ry, domainRangeMax)
 						final double a = pow(e, min(ry, domainRangeMax) / domainRangeMax * codomainRangeMax);
-						System.out.println("· stretch : (%9.1f → %9.1f)".formatted(ry, a));
+						logger.log(TRACE, () -> "· stretch : (%9.1f → %9.1f)".formatted(ry, a));
 						ellipse.setRadiusY(clamp(a + rx, rx, SPOT_RADIUS_MAX));
 					}
 				}
-				else if (!isShift && isControl) // set width
-				{
-					if (circleMode.get())
-					{
-						final double r = max(SPOT_RADIUS_MIN, sqrt(x * x + y * y));
-						ellipse.setRadiusX(r);
-						ellipse.setRadiusY(r);
-					}
-					else
-					{
-						final double theta = atan2(y, x);
-						final double alpha = toRadians(ellipse.getRotate());
-						final double p = (sqrt(x * x + y * y) + STROKE_WIDTH_SELECTED);
-						final double r = abs(p * cos(theta - alpha));
-						ellipse.setRadiusX(clamp(r, SPOT_RADIUS_MIN, SPOT_RADIUS_MAX));
-					}
-				}
-				else // move
-				{
-					centerX.set(dx + point.getX());
-					centerY.set(dy + point.getY());
-				}
+			}
+			else if (!isAlt) // move
+			{
+				centerX.set(dx + point.getX());
+				centerY.set(dy + point.getY());
 			}
 		}
 		finally
@@ -279,6 +284,11 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	double getStrokeWidthSelected()
 	{
 		return STROKE_WIDTH_SELECTED;
+	}
+
+	void reset()
+	{
+		reset.run();
 	}
 
 	@Override

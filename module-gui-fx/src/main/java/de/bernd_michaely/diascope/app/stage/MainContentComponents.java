@@ -27,6 +27,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SplitPane;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
@@ -191,6 +192,11 @@ class MainContentComponents
 	CheckedAction getActionFullScreen()
 	{
 		return actions.actionFullScreen;
+	}
+
+	void setFullScreenIcon(Image iconStage)
+	{
+		fullScreen.setIconStage(iconStage);
 	}
 
 	Region getRegion()

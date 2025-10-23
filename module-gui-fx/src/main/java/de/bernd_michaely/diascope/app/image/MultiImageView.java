@@ -33,6 +33,7 @@ import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
+import static javafx.beans.binding.Bindings.not;
 import static javafx.beans.binding.Bindings.when;
 
 /// Facade of a component to display multiple images.
@@ -49,7 +50,7 @@ public class MultiImageView
 	private final BooleanProperty scrollBarsEnabled;
 	private final ReadOnlyIntegerWrapper numLayers;
 	private final ReadOnlyIntegerWrapper maximumNumberOfLayers;
-	private final ReadOnlyBooleanWrapper spotModeAvailable;
+	private final ReadOnlyBooleanWrapper spotModeDisabled;
 
 	/// Enum to describe the multi image mode.
 	///
@@ -101,8 +102,8 @@ public class MultiImageView
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
 		viewport.getScrollBars().enabledProperty().bind(
 			scrollBarsEnabled.and(imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
-		this.spotModeAvailable = new ReadOnlyBooleanWrapper();
-		spotModeAvailable.bind(layerSelectionModel.dualLayerSelected());
+		this.spotModeDisabled = new ReadOnlyBooleanWrapper();
+		spotModeDisabled.bind(not(layerSelectionModel.dualLayerSelected()));
 	}
 
 	/// Returns the main component to be included in surrounding environment.
@@ -141,7 +142,7 @@ public class MultiImageView
 			}
 			case SPOT ->
 			{
-				imageLayersSpot.center();
+				imageLayersSpot.reset();
 			}
 			case SINGLE ->
 			{
@@ -275,8 +276,8 @@ public class MultiImageView
 		modeProperty().set(mode);
 	}
 
-	public ReadOnlyBooleanProperty spotModeAvailableProperty()
+	public ReadOnlyBooleanProperty spotModeDisabledProperty()
 	{
-		return spotModeAvailable.getReadOnlyProperty();
+		return spotModeDisabled.getReadOnlyProperty();
 	}
 }

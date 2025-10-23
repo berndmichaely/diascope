@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
+import de.bernd_michaely.diascope.app.util.math.Operators;
 import java.lang.System.Logger;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.collections.ObservableList;
@@ -48,9 +49,9 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 		this.layerSelectionModel = new LayerSelectionModel(layers);
 		// viewport.layersMax[Width|Height]Property bindings:
 		layersMaxWidth.bind(cumulatedOperations(unmodifiableLayers,
-			ImageLayer::layerWidthProperty, Math::max, 0.0));
+			ImageLayer::layerWidthProperty, Operators::max_positive, 0.0));
 		layersMaxHeight.bind(cumulatedOperations(unmodifiableLayers,
-			ImageLayer::layerHeightProperty, Math::max, 0.0));
+			ImageLayer::layerHeightProperty, Operators::max_positive, 0.0));
 		layersMaxWidth.addListener(onChange(newValue ->
 			logger.log(TRACE, () -> "→ %s → maxWidth = %.1f".formatted(
 				getClass().getSimpleName(), newValue.doubleValue()))));

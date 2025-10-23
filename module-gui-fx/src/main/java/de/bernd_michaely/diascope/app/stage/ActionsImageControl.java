@@ -85,7 +85,7 @@ class ActionsImageControl
 			SPLIT, new ActionItemDescriptor(Icons.ModeSplit, "Split", "Split Mode", strTooltipModeSplit),
 			SPOT, new ActionItemDescriptor(Icons.ModeSpot, "Spot", "Spot Mode", strTooltipModeSpot)));
 		actionMode.disableProperty().bind(emptyProperty);
-		actionMode.getDisableProperty(SPOT).bind(not(multiImageView.spotModeAvailableProperty()));
+		actionMode.getDisableProperty(SPOT).bind(multiImageView.spotModeDisabledProperty());
 		actionMode.selectedIdProperty().bindBidirectional(multiImageView.modeProperty());
 		// ShowDividers
 		this.actionShowDividers = new CheckedAction(new ActionItemDescriptor(

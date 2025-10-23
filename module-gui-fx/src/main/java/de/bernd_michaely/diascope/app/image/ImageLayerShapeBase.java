@@ -19,6 +19,8 @@ package de.bernd_michaely.diascope.app.image;
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableObjectValue;
 import javafx.scene.input.MouseButton;
@@ -50,7 +52,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
 	private final @Nullable Consumer<MouseEvent> onMouseDragInit;
 	private final @Nullable Consumer<MouseEvent> onMouseDragged;
-	private boolean mouseDragged;
+	private final ReadOnlyBooleanWrapper mouseDragged = new ReadOnlyBooleanWrapper();
 
 	ImageLayerShapeBase(boolean unselectedVisible,
 		@Nullable Consumer<MouseEvent> onMouseDragInit,
@@ -74,7 +76,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 			when(unselectedVisible).then(STROKE_WIDTH_UNSELECTED).otherwise(0.0)));
 		getShape().setOnMouseDragged(event ->
 		{
-			if (!mouseDragged)
+			if (!mouseDragged.get())
 			{
 				try
 				{
@@ -85,7 +87,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 				}
 				finally
 				{
-					mouseDragged = true;
+					mouseDragged.set(true);
 				}
 			}
 			if (onMouseDragged != null)
@@ -97,7 +99,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 		{
 			try
 			{
-				final boolean isSelectClick = !mouseDragged &&
+				final boolean isSelectClick = !mouseDragged.get() &&
 					event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 1 &&
 					!event.isShiftDown() && !event.isAltDown();
 				if (isSelectClick && layerSelectionHandler != null)
@@ -107,7 +109,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 			}
 			finally
 			{
-				mouseDragged = false;
+				mouseDragged.set(false);
 				if (getType() == SPOT)
 				{
 					event.consume();
@@ -124,6 +126,11 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 	BooleanProperty selectedProperty()
 	{
 		return selected;
+	}
+
+	ReadOnlyBooleanProperty mouseDraggedProperty()
+	{
+		return mouseDragged.getReadOnlyProperty();
 	}
 
 	abstract ObservableObjectValue<Paint> getStrokeSelectedPaint();

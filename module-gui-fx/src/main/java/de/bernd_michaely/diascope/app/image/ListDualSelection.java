@@ -18,6 +18,9 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.Optional;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -25,21 +28,21 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener.SelectionChange.SelectionChangeType.*;
+import static java.util.Collections.unmodifiableCollection;
+import static javafx.beans.binding.Bindings.createBooleanBinding;
 
 /// Class to handle a dual selection state of a SelectableList.
-/// Dual selection has a specific meaning in this context:
+/// Dual selection has a specific meaning in this context. It is true, iff:
 ///
-///   * Dual selection becomes true, if:
-///     1. a single element is selected and then
-///     2. a second element becomes selected.
-///   * If the list contains exactly 2 elements, then dual selection is always true.
+///   * exactly 2 elements are selected or
+///   * the list contains exactly 2 elements.
 ///
-/// In the latter case, if exactly one element is selected, then
+/// In the latter case, if exactly one element is selected, then:
 ///
 ///   * the unselected list element is the first selected and
 ///   * the selected list element is the second selected.
 ///
-/// and otherwise
+/// and if none is selected:
 ///
 ///	  * the first list element is the first selected and
 ///   * the second list element is the second selected
@@ -53,6 +56,8 @@ class ListDualSelection<T>
 	private final ReadOnlyObjectWrapper<Optional<T>> singleSelectionItem;
 	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionFirstItem;
 	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionSecondItem;
+	private final Deque<Integer> queueSelected;
+	private final Collection<Integer> selectedIndices;
 
 	ListDualSelection(SelectableList<T> list)
 	{
@@ -61,15 +66,62 @@ class ListDualSelection<T>
 		this.dualItemsSelected = new ReadOnlyBooleanWrapper();
 		this.dualSelectionFirstItem = new ReadOnlyObjectWrapper<>(Optional.empty());
 		this.dualSelectionSecondItem = new ReadOnlyObjectWrapper<>(Optional.empty());
-		final Runnable checkSingleSelection = () ->
-		{
-			final int numSelected = list.getNumSelected();
-			final boolean isSingleSelected = numSelected == 1;
-			singleItemSelected.set(isSingleSelected);
-			if (isSingleSelected)
+		this.queueSelected = new LinkedList<>();
+		this.selectedIndices = unmodifiableCollection(queueSelected);
+		singleItemSelected.bind(singleSelectionItem.map(Optional::isPresent));
+		dualItemsSelected.bind(createBooleanBinding(
+			() -> dualSelectionFirstItem.get().isPresent() && dualSelectionSecondItem.get().isPresent(),
+			dualSelectionFirstItem, dualSelectionSecondItem));
+		list.addListener(new ListChangeListenerBuilder<T>()
+			.onRemove(change ->
 			{
-				final int n = list.size();
-				boolean selected = false;
+				final int from = change.getFrom();
+				final int to = from + change.getRemovedSize();
+				for (int i = from; i < to; i++)
+				{
+					queueSelected.remove(i);
+				}
+			})
+			.build());
+		list.addSelectionListener(change ->
+		{
+			final var selectionChangeType = change.getSelectionChangeType();
+			if (selectionChangeType != null)
+			{
+				switch (selectionChangeType)
+				{
+					case SINGLE_INCREMENT ->
+					{
+						queueSelected.addFirst(change.getFrom());
+					}
+					case SINGLE_DECREMENT ->
+					{
+						queueSelected.remove(change.getFrom());
+					}
+					case COMPLEX_CHANGE ->
+					{
+						for (int i = change.getFrom(); i <= change.getTo(); i++)
+						{
+							if (list.isSelected(i))
+							{
+								queueSelected.addFirst(i);
+							}
+							else
+							{
+								queueSelected.remove(i);
+							}
+						}
+					}
+					default -> throw new AssertionError(getClass().getName() +
+							": Invalid SelectionChangeType!");
+				}
+			}
+			final int n = list.size();
+			final int numSelected = list.getNumSelected();
+			// check single selection:
+			boolean selected = false;
+			if (numSelected == 1)
+			{
 				for (int i = 0; i < n && !selected; i++)
 				{
 					selected = list.isSelected(i);
@@ -79,117 +131,58 @@ class ListDualSelection<T>
 					}
 				}
 			}
-			else
+			if (!selected)
 			{
 				singleSelectionItem.set(Optional.empty());
 			}
-		};
-		final Runnable checkDualSelection = () ->
-		{
-			if (list.size() == 2)
+			// check dual selection:
+			final boolean isNumSelected_2 = numSelected == 2;
+			boolean isDualItemsSelected = isNumSelected_2 || n == 2;
+			if (isDualItemsSelected)
 			{
-				dualItemsSelected.set(true);
-				if (list.getNumSelected() == 1)
+				if (isNumSelected_2)
 				{
-					singleItemSelected.set(true);
-					singleSelectionItem.set(Optional.ofNullable(
-						list.isSelected(0) ? list.getFirst() : list.getLast()));
-					dualSelectionSecondItem.set(singleSelectionItem.get());
-					final var firstItem = singleSelectionItem.get().get();
-					dualSelectionFirstItem.set(list.stream()
-						.filter(item -> item != firstItem)
-						.findAny());
+					final Integer peekFirst = queueSelected.peekFirst();
+					final int indexFirst = peekFirst != null ? peekFirst : -1;
+					final Integer peekLast = queueSelected.peekLast();
+					final int indexLast = peekLast != null ? peekLast : -1;
+					if (indexFirst >= 0 && indexLast >= 0)
+					{
+						dualSelectionFirstItem.set(Optional.ofNullable(list.get(indexLast)));
+						dualSelectionSecondItem.set(Optional.ofNullable(list.get(indexFirst)));
+					}
+					else
+					{
+						isDualItemsSelected = false;
+					}
 				}
-				else
+				else // numSelected < 2
 				{
-					dualSelectionFirstItem.set(Optional.ofNullable(list.getFirst()));
-					dualSelectionSecondItem.set(Optional.ofNullable(list.getLast()));
+					final Integer peekFirst = queueSelected.peekFirst();
+					final int indexFirst = peekFirst != null ? peekFirst : -1;
+					if (indexFirst >= 0 && list.get(indexFirst) == list.getFirst())
+					{
+						dualSelectionFirstItem.set(Optional.ofNullable(list.getLast()));
+						dualSelectionSecondItem.set(Optional.ofNullable(list.getFirst()));
+					}
+					else
+					{
+						dualSelectionFirstItem.set(Optional.ofNullable(list.getFirst()));
+						dualSelectionSecondItem.set(Optional.ofNullable(list.getLast()));
+					}
 				}
 			}
-		};
-		list.addListener(new ListChangeListenerBuilder<>()
-			.onAdd(_ ->
-			{
-				checkDualSelection.run();
-				if (list.size() > 2 && list.getNumSelected() != 2)
-				{
-					dualItemsSelected.set(false);
-					dualSelectionFirstItem.set(Optional.empty());
-					dualSelectionSecondItem.set(Optional.empty());
-				}
-			})
-			.onRemove(change ->
-			{
-				checkSingleSelection.run();
-				final int n = list.size();
-				if (n < 2)
-				{
-					dualItemsSelected.set(false);
-					dualSelectionFirstItem.set(Optional.empty());
-					dualSelectionSecondItem.set(Optional.empty());
-				}
-				if (n == 2)
-				{
-					checkDualSelection.run();
-				}
-				else // n > 2
-				{
-					if (dualItemsSelected.get())
-					{
-						final boolean containsFirst = list.contains(dualSelectionFirstItem.get());
-						final boolean containsSecond = list.contains(dualSelectionSecondItem.get());
-						if (!(containsFirst && containsSecond))
-						{
-							dualItemsSelected.set(false);
-							dualSelectionFirstItem.set(Optional.empty());
-							dualSelectionSecondItem.set(Optional.empty());
-						}
-					}
-				}
-			})
-			.build());
-		list.addSelectionListener(change ->
-		{
-			final boolean wasSingleSelected = singleItemSelected.get();
-			final Optional<T> optionalOldSingleSelectedItem = singleSelectionItem.get();
-			final int n = list.size();
-			checkSingleSelection.run();
-			final boolean isDualSelected = wasSingleSelected && change.getSelectionChangeType() == SINGLE_INCREMENT;
-			final boolean isDualItem = n == 2;
-			final boolean isDualMode = isDualSelected || isDualItem;
-			dualItemsSelected.set(isDualMode);
-			if (isDualMode)
-			{
-				if (isDualSelected)
-				{
-					dualSelectionFirstItem.set(optionalOldSingleSelectedItem);
-					final var firstItem = optionalOldSingleSelectedItem.get();
-					boolean found = false;
-					for (int i = 0; i < n && !found; i++)
-					{
-						final T item = list.get(i);
-						found = list.isSelected(i) && item != firstItem;
-						if (found)
-						{
-							dualSelectionSecondItem.set(Optional.ofNullable(item));
-						}
-					}
-					if (!found)
-					{
-						dualSelectionSecondItem.set(Optional.empty());
-					}
-				}
-				else // n == 2
-				{
-					checkDualSelection.run();
-				}
-			}
-			else
+			if (!isDualItemsSelected)
 			{
 				dualSelectionFirstItem.set(Optional.empty());
 				dualSelectionSecondItem.set(Optional.empty());
 			}
 		});
+	}
+
+	Collection<Integer> getSelectedIndices()
+	{
+		return selectedIndices;
 	}
 
 	ReadOnlyBooleanProperty singleItemSelectedProperty()

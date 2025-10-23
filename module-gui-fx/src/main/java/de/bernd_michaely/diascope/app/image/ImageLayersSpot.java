@@ -43,8 +43,20 @@ final class ImageLayersSpot extends ImageLayersBase
 		layers.forEach(l -> l.getImageTransforms().bindProperties(imageTransforms));
 	}
 
-	void center()
+	private ImageLayer getSpotLayer()
 	{
-		logger.log(Logger.Level.WARNING, "TODO : Implement ImageLayersSpot::center");
+		return layers.getLast();
+	}
+
+	void reset()
+	{
+		if (getSpotLayer().getImageLayerShape() instanceof ImageLayerShapeSpot imageLayerShapeSpot)
+		{
+			imageLayerShapeSpot.reset();
+		}
+		else
+		{
+			throw new IllegalStateException("Invalid ImageLayerShape in reset()");
+		}
 	}
 }

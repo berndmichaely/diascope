@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
+import java.util.Collection;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,8 +45,8 @@ public class ListDualSelectionTest
 	@AfterEach
 	public void tearDown()
 	{
-		list = null;
 		selection = null;
+		list = null;
 	}
 
 	private enum Action
@@ -79,32 +80,33 @@ public class ListDualSelectionTest
 		final String w0 = singleItem != null ? "»%s«".formatted(singleItem) : "–––";
 		final String w1 = first != null ? "»%s«".formatted(first) : "–––";
 		final String w2 = second != null ? "»%s«".formatted(second) : "–––";
+		final Collection<Integer> selectedIndices = selection.getSelectedIndices();
 		if (action != null)
 		{
 			if (action == Action.SEL)
 			{
-				System.out.println("→ %s [%d]%s    → %s → { %s / %s } : %s"
-					.formatted(action, index, (select ? "+" : "-"), w0, w1, w2, list));
+				System.out.println("→ %s [%d]%s    → %s → { %s / %s } : %s → selected: %s"
+					.formatted(action, index, (select ? "+" : "-"), w0, w1, w2, list, selectedIndices));
 			}
 			else
 			{
-				System.out.println("· %s »%s«     → %s → { %s / %s } : %s"
-					.formatted(action, item, w0, w1, w2, list));
+				System.out.println("· %s »%s«     → %s → { %s / %s } : %s → selected: %s"
+					.formatted(action, item, w0, w1, w2, list, selectedIndices));
 			}
 		}
 		else
 		{
-			System.out.println("· %s         → %s → { %s / %s } : %s"
-				.formatted("–––", w0, w1, w2, list));
+			System.out.println("· %s         → %s → { %s / %s } : %s → selected: %s"
+				.formatted("–––", w0, w1, w2, list, selectedIndices));
 		}
+		assertEquals(singleItem, selection.singleSelectionItemProperty().get().orElse(null));
 		assertEquals(singleItemSelected, selection.singleItemSelectedProperty().getValue());
 		assertEquals(singleItemSelected, selection.singleSelectionItemProperty().get().isPresent());
-		assertEquals(singleItem, selection.singleSelectionItemProperty().get().orElse(null));
+		assertEquals(first, selection.dualSelectionFirstItemProperty().get().orElse(null));
+		assertEquals(second, selection.dualSelectionSecondItemProperty().get().orElse(null));
 		assertEquals(dualItemsSelected, selection.dualItemsSelectedProperty().getValue());
 		assertEquals(dualItemsSelected, selection.dualSelectionFirstItemProperty().get().isPresent());
 		assertEquals(dualItemsSelected, selection.dualSelectionSecondItemProperty().get().isPresent());
-		assertEquals(first, selection.dualSelectionFirstItemProperty().get().orElse(null));
-		assertEquals(second, selection.dualSelectionSecondItemProperty().get().orElse(null));
 	}
 
 	@Test

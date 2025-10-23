@@ -22,34 +22,32 @@ import javafx.scene.Scene;
 
 import static java.lang.System.Logger.Level.*;
 
-/**
- * Utility to set a global stylesheet.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Utility to set a global stylesheet.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class SceneStylesheetUtil
 {
 	private static final Logger logger = System.getLogger(SceneStylesheetUtil.class.getName());
 	private static final String STYLE_SHEET = "dark.css";
 
-	/**
-	 * Set global stylesheet for the given scene.
-	 *
-	 * @param scene the given scene
-	 * @return true, iff successful
-	 */
+	/// Set global stylesheet for the given scene.
+	///
+	/// @param scene the given scene
+	/// @return true, iff successful
+	///
 	public static boolean setStylesheet(Scene scene)
 	{
 		final URL resource = SceneStylesheetUtil.class.getResource(STYLE_SHEET);
 		if (resource != null)
 		{
-			logger.log(TRACE, "Add stylesheet resource: »" + resource + "«");
+			logger.log(TRACE, "Add stylesheet resource: »%s«".formatted(resource));
 			scene.getStylesheets().add(resource.toExternalForm());
 			return true;
 		}
 		else
 		{
-			logger.log(WARNING, "Stylesheet resource »" + STYLE_SHEET + "« not found, ignoring…");
+			logger.log(WARNING, "Stylesheet resource »%s« not found, ignoring…".formatted(STYLE_SHEET));
 			return false;
 		}
 	}

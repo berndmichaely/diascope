@@ -37,6 +37,7 @@ import javafx.scene.Cursor;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.image.Image;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
@@ -322,6 +323,11 @@ public class MainContent
 				event.consume();
 			}
 		});
+	}
+
+	void setFullScreenIcon(Image iconStage)
+	{
+		components.setFullScreenIcon(iconStage);
 	}
 
 	void onApplicationClose()

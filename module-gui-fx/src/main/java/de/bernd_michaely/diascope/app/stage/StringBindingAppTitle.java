@@ -27,11 +27,10 @@ import static de.bernd_michaely.diascope.app.ApplicationConfiguration.getApplica
 import static de.bernd_michaely.diascope.app.stage.GlobalConstants.PATH_USER_HOME;
 import static java.util.Objects.requireNonNull;
 
-/**
- * String binding for the main window title.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// String binding for the stage titles.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class StringBindingAppTitle extends StringBinding
 {
 	static final String POSTFIX_DEVELOPMENT_MODE = " (development mode)";
@@ -39,7 +38,8 @@ class StringBindingAppTitle extends StringBinding
 	private final ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty;
 	private final BooleanProperty developmentModeProperty;
 
-	private StringBindingAppTitle(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
+	private StringBindingAppTitle(
+		ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
 		BooleanProperty developmentModeProperty)
 	{
 		this.selectedPathProperty = requireNonNull(
@@ -48,13 +48,8 @@ class StringBindingAppTitle extends StringBinding
 			developmentModeProperty, "developmentModeProperty is null");
 	}
 
-	/**
-	 * Creates a new instance.
-	 *
-	 * @param selectedPathProperty the property to bind to
-	 * @return a new instance
-	 */
-	static StringBinding create(ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
+	static StringBinding create(
+		ReadOnlyObjectProperty<@Nullable Path> selectedPathProperty,
 		BooleanProperty developmentModeProperty)
 	{
 		final var stringBinding = new StringBindingAppTitle(
