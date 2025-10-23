@@ -12,7 +12,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
 record ImageContainer(Path path, RequestType requestType, @Nullable Image image, boolean loaded)
-	{
+{
 	ImageContainer(Path path, RequestType requestType)
 	{
 		this(path, requestType, null, false);

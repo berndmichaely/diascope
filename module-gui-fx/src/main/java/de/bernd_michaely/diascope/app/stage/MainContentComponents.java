@@ -58,7 +58,7 @@ class MainContentComponents
 	private final MainContentProperties properties;
 	private final MainContentProperties persistedProperties;
 	private final ImageControlProperties imageControlProperties;
-	private final ImageControlActions actions;
+	private final ActionsImageControl actions;
 
 	MainContentComponents(MultiImageView multiImageView, ListView<ImageGroupDescriptor> listView)
 	{
@@ -77,7 +77,7 @@ class MainContentComponents
 		}, () -> paneOuter.setCenter(paneContent));
 		this.properties = new MainContentProperties();
 		this.imageControlProperties = new ImageControlProperties(multiImageView, fullScreen, properties);
-		this.actions = new ImageControlActions(multiImageView, imageControlProperties);
+		this.actions = new ActionsImageControl(multiImageView, imageControlProperties);
 		this.toolBarImage = new ToolBarImage(actions, multiImageView);
 		final var contextMenu = toolBarImage.getContextMenu();
 		paneContent.setOnContextMenuRequested(contextMenuEvent ->

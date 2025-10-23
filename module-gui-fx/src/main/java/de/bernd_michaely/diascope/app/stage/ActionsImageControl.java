@@ -34,8 +34,10 @@ import static javafx.beans.binding.Bindings.not;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class ImageControlActions
+class ActionsImageControl
 {
+	static final ActionItemDescriptor ACTION_ITEM_DESCRIPTOR_FULLSCREEN = new ActionItemDescriptor(
+		Icons.ViewFullscreen, "[←→]", "FullScreen mode", "Enter fullScreen mode");
 	final TriggerAction actionLayerAdd;
 	final TriggerAction actionLayerRemove;
 	final TriggerAction actionSelectAll;
@@ -52,7 +54,7 @@ class ImageControlActions
 	final CheckedAction actionScrollbars;
 	final CheckedAction actionFullScreen;
 
-	ImageControlActions(MultiImageView multiImageView, ImageControlProperties imageControlProperties)
+	ActionsImageControl(MultiImageView multiImageView, ImageControlProperties imageControlProperties)
 	{
 		final var properties = imageControlProperties.getMainContentProperties();
 		final var selectionModel = multiImageView.getLayerSelectionModel();
@@ -128,8 +130,7 @@ class ImageControlActions
 		this.actionResetControls = new TriggerAction(multiImageView::resetControls,
 			new ActionItemDescriptor("Reset controls"));
 		actionResetControls.disableProperty().bind(notMultiLayerMode);
-		this.actionFullScreen = new CheckedAction(new ActionItemDescriptor(
-			Icons.ViewFullscreen, "[←→]", "FullScreen mode", "Enter fullScreen mode"));
+		this.actionFullScreen = new CheckedAction(ACTION_ITEM_DESCRIPTOR_FULLSCREEN);
 		actionFullScreen.selectedProperty().bindBidirectional(imageControlProperties.getFullScreen().enabledProperty());
 		actionFullScreen.disableProperty().bind(emptyProperty);
 	}

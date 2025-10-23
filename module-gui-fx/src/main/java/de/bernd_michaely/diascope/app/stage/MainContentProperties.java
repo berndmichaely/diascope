@@ -37,7 +37,7 @@ class MainContentProperties
 	private final BooleanProperty scrollBarsVisible;
 
 	private record PersistanceParams(PreferencesKeys key, boolean defaultValue)
-		{
+	{
 	}
 
 	MainContentProperties()

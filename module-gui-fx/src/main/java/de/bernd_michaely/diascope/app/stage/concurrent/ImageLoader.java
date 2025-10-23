@@ -54,7 +54,7 @@ public class ImageLoader implements Consumer<TaskParameters>, AutoCloseable
 	private final ImageCache imageCache;
 
 	public record TaskParameters(@Nullable Path path, RequestType requestType)
-		{
+	{
 		public TaskParameters()
 		{
 			this(null, IMMEDIATE);
@@ -72,7 +72,7 @@ public class ImageLoader implements Consumer<TaskParameters>, AutoCloseable
 	}
 
 	public record TaskResult(@Nullable Path path, @Nullable Image image, boolean state)
-		{
+	{
 		TaskResult()
 		{
 			this(null, null, true);
@@ -179,7 +179,7 @@ public class ImageLoader implements Consumer<TaskParameters>, AutoCloseable
 	private record CacheRequestInfo(Optional<Path> pathRequested,
 		Optional<ImageContainer> imageContainerCached,
 		boolean requestInCache, boolean requestFulfilled)
-		{
+	{
 	}
 
 	private synchronized CacheRequestInfo getCacheRequestInfo(RequestType requestType)

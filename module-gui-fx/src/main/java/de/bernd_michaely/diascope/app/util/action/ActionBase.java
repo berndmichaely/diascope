@@ -69,9 +69,10 @@ public abstract class ActionBase implements Action
 			button.setText(buttonTitle);
 		}
 		final String tooltipText = actionItemDescriptor.tooltipText();
-		if (tooltipText != null)
+		final String text = tooltipText != null ? tooltipText : actionItemDescriptor.menuTitle();
+		if (text != null && !text.isBlank())
 		{
-			button.setTooltip(new Tooltip(tooltipText));
+			button.setTooltip(new Tooltip(text));
 		}
 	}
 

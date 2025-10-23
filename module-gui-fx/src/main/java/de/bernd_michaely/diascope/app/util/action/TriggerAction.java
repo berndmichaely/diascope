@@ -25,6 +25,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuItem;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Trigger Action to handle Buttons and context menues.
 ///
@@ -42,12 +43,21 @@ public class TriggerAction extends ActionBase
 		this(action, ActionItemDescriptor.EMPTY);
 	}
 
-	public TriggerAction(Runnable action, ActionItemDescriptor actionItemDescriptor)
+	public TriggerAction(ActionItemDescriptor actionItemDescriptor)
+	{
+		this(null, actionItemDescriptor);
+	}
+
+	public TriggerAction(@Nullable Runnable action, ActionItemDescriptor actionItemDescriptor)
 	{
 		this.actionItemDescriptor = actionItemDescriptor;
 		this.buttons = new HashSet<>();
 		this.menuItems = new HashSet<>();
-		this.onActionProperty = new SimpleObjectProperty<>(_ -> action.run());
+		this.onActionProperty = new SimpleObjectProperty<>();
+		if (action != null)
+		{
+			onActionProperty.set(_ -> action.run());
+		}
 	}
 
 	@Override
@@ -79,6 +89,11 @@ public class TriggerAction extends ActionBase
 	public void setOnAction(EventHandler<ActionEvent> eventHandler)
 	{
 		onActionProperty.set(eventHandler);
+	}
+
+	public void setOnAction(Runnable action)
+	{
+		setOnAction(_ -> action.run());
 	}
 
 	void addButton(Button button)

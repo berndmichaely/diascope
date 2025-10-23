@@ -128,11 +128,10 @@ allprojects {
 		//mavenLocal()
 	}
 
-	if (project == rootProject || name.equals("module-launcher") || name.endsWith('-fx')) {
+	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			//version = "21.0.8"
-			version = "24.0.2"
+			version = "25"
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
@@ -229,10 +228,12 @@ application {
 	mainModule = 'de.bernd_michaely.diascope'
 	mainClass  = 'de.bernd_michaely.diascope.Launcher'
 	
-	if (javaLangVersion == JavaLanguageVersion.of(24) && javafx.version ==~ /24(\.\d+(\.\d+)?)?/) {
+	if (javafx.version ==~ /24(\.\d+(\.\d+)?)?/ && javaLangVersion == JavaLanguageVersion.of(24)) {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 		applicationDefaultJvmArgs += '--sun-misc-unsafe-memory-access=allow'
 	}
+	applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
+	applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	logger.lifecycle "==> applicationDefaultJvmArgs -> " + applicationDefaultJvmArgs
 }
 

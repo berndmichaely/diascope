@@ -74,17 +74,17 @@ public class Launcher
 		{
 			logger.log(ERROR, "Invalid command line option definition", ex);
 		}
-		List<String> pathNames = null;
+		List<String> commandLineArgs = null;
 		try
 		{
-			pathNames = commandLineArguments.parse(args);
+			commandLineArgs = commandLineArguments.parse(args);
 		}
 		catch (InvalidCommandLineParametersException ex)
 		{
 			commandLineArguments.printFormattedDescription(System.err, true);
 			System.exit(1);
 		}
-		ApplicationConfiguration.initInstance(pathNames, developmentMode, Optional.ofNullable(initialPath));
+		ApplicationConfiguration.initInstance(Optional.ofNullable(initialPath), commandLineArgs, developmentMode);
 		if (helpMode)
 		{
 			final PrintStream ps = System.out;

@@ -47,7 +47,7 @@ class ToolBarImage
 	private final ToolBar toolBar;
 	private final ContextMenu contextMenu;
 
-	ToolBarImage(ImageControlActions actions, MultiImageView multiImageView)
+	ToolBarImage(ActionsImageControl actions, MultiImageView multiImageView)
 	{
 		final EventHandler<ScrollEvent> sliderScrollEventHandler = event ->
 		{

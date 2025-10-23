@@ -87,8 +87,8 @@ public class ApplicationConfiguration
 		}
 	}
 
-	public static void initInstance(List<String> commandLineArguments,
-		boolean developmentMode, Optional<String> initialPath)
+	public static void initInstance(Optional<String> initialPath,
+		List<String> commandLineArguments, boolean developmentMode)
 	{
 		if (instance == null)
 		{

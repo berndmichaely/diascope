@@ -34,7 +34,7 @@ class ImageGroupDataUpdater implements Callable<Result>
 	private final int mainListIndex;
 
 	record Result(ImageMetadata imageMetadata, int mainListIndex)
-		{
+	{
 	}
 
 	ImageGroupDataUpdater(Path imageFile, int mainListIndex)

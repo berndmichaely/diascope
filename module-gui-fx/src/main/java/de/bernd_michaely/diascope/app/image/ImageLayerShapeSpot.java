@@ -45,7 +45,10 @@ import static java.lang.Math.abs;
 import static java.lang.Math.atan2;
 import static java.lang.Math.clamp;
 import static java.lang.Math.cos;
+import static java.lang.Math.log;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.lang.Math.pow;
 import static java.lang.Math.round;
 import static java.lang.Math.sqrt;
 import static java.lang.Math.toDegrees;
@@ -197,7 +200,21 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 					}
 					ellipse.setRotate(theta);
 					circleMode.set(abs(ry - rx) < rx * DELTA_CIRCLE);
-					ellipse.setRadiusY(circleMode.get() ? rx : ry);
+					if (circleMode.get())
+					{
+						ellipse.setRadiusY(rx);
+					}
+					else
+					{
+//						final double domainRangeMax = min(viewportWidth.get(), viewportHeight.get()) * SCALE_DOMAIN;
+						final double domainRangeMax = 750;
+						final int e = 100_000;
+						final double codomainRangeMax = log(SPOT_RADIUS_MAX) / log(e);
+						// min(ry, domainRangeMax)
+						final double a = pow(e, min(ry, domainRangeMax) / domainRangeMax * codomainRangeMax);
+						System.out.println("· stretch : (%9.1f → %9.1f)".formatted(ry, a));
+						ellipse.setRadiusY(clamp(a + rx, rx, SPOT_RADIUS_MAX));
+					}
 				}
 				else if (!isShift && isControl) // set width
 				{
