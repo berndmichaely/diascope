@@ -72,50 +72,8 @@ class ListDualSelection<T>
 		dualItemsSelected.bind(createBooleanBinding(
 			() -> dualSelectionFirstItem.get().isPresent() && dualSelectionSecondItem.get().isPresent(),
 			dualSelectionFirstItem, dualSelectionSecondItem));
-		list.addListener(new ListChangeListenerBuilder<T>()
-			.onRemove(change ->
-			{
-				final int from = change.getFrom();
-				final int to = from + change.getRemovedSize();
-				for (int i = from; i < to; i++)
-				{
-					queueSelected.remove(i);
-				}
-			})
-			.build());
-		list.addSelectionListener(change ->
+		final Runnable checkSelection = () ->
 		{
-			final var selectionChangeType = change.getSelectionChangeType();
-			if (selectionChangeType != null)
-			{
-				switch (selectionChangeType)
-				{
-					case SINGLE_INCREMENT ->
-					{
-						queueSelected.addFirst(change.getFrom());
-					}
-					case SINGLE_DECREMENT ->
-					{
-						queueSelected.remove(change.getFrom());
-					}
-					case COMPLEX_CHANGE ->
-					{
-						for (int i = change.getFrom(); i <= change.getTo(); i++)
-						{
-							if (list.isSelected(i))
-							{
-								queueSelected.addFirst(i);
-							}
-							else
-							{
-								queueSelected.remove(i);
-							}
-						}
-					}
-					default -> throw new AssertionError(getClass().getName() +
-							": Invalid SelectionChangeType!");
-				}
-			}
 			final int n = list.size();
 			final int numSelected = list.getNumSelected();
 			// check single selection:
@@ -177,6 +135,54 @@ class ListDualSelection<T>
 				dualSelectionFirstItem.set(Optional.empty());
 				dualSelectionSecondItem.set(Optional.empty());
 			}
+		};
+		list.addListener(new ListChangeListenerBuilder<T>()
+			.onAdd(_ -> checkSelection.run())
+			.onRemove(change ->
+			{
+				final int from = change.getFrom();
+				final int to = from + change.getRemovedSize();
+				for (int i = from; i < to; i++)
+				{
+					queueSelected.remove(i);
+				}
+				checkSelection.run();
+			})
+			.build());
+		list.addSelectionListener(change ->
+		{
+			final var selectionChangeType = change.getSelectionChangeType();
+			if (selectionChangeType != null)
+			{
+				switch (selectionChangeType)
+				{
+					case SINGLE_INCREMENT ->
+					{
+						queueSelected.addFirst(change.getFrom());
+					}
+					case SINGLE_DECREMENT ->
+					{
+						queueSelected.remove(change.getFrom());
+					}
+					case COMPLEX_CHANGE ->
+					{
+						for (int i = change.getFrom(); i <= change.getTo(); i++)
+						{
+							if (list.isSelected(i))
+							{
+								queueSelected.addFirst(i);
+							}
+							else
+							{
+								queueSelected.remove(i);
+							}
+						}
+					}
+					default -> throw new AssertionError(getClass().getName() +
+							": Invalid SelectionChangeType!");
+				}
+			}
+			checkSelection.run();
 		});
 	}
 

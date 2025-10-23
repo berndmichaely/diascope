@@ -148,7 +148,7 @@ public class ListDualSelectionTest
 		//
 		_sel(2, true, null, null, null);
 		//
-		_sel(0, false, null, null, null);
+		_sel(0, false, null, "b", "c");
 		//
 		_sel(1, false, "c", null, null);
 		//
