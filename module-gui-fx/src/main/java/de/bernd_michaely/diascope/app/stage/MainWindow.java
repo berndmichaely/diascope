@@ -64,7 +64,6 @@ import static de.bernd_michaely.diascope.app.ApplicationConfiguration.getApplica
 import static de.bernd_michaely.diascope.app.control.ScaleBox.SpaceGainingMode.*;
 import static de.bernd_michaely.diascope.app.dialog.ResizableDialog.DialogType.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
-import static de.bernd_michaely.diascope.app.stage.StageBounds.initStageBounds;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
 import static java.lang.System.Logger.Level.*;
@@ -274,7 +273,10 @@ public class MainWindow
 		actions.actionInfoAbout.setOnAction(actionInfoAbout);
 		final var scene = new Scene(rootPane);
 		SceneStylesheetUtil.setStylesheet(scene);
-		initStageBounds(stage);
+		final var stageBounds = new StageBounds(stage, new StageBounds.PrefKeys(
+			PREF_KEY_WIDTH, PREF_KEY_HEIGHT, PREF_KEY_X, PREF_KEY_Y, PREF_KEY_MAXIMIZE));
+		stageBounds.initialize();
+		logger.log(TRACE, () -> stageBounds.getLogMessage());
 		stage.setOnCloseRequest(event -> onApplicationClose());
 		if (state.launchType() == UNIT_TEST)
 		{

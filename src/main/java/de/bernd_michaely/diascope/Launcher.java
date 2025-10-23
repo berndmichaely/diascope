@@ -80,7 +80,7 @@ public class Launcher
 					"path to open initially (no path parameter to open nothing)")
 				.addFlagOption(OPT_EXPERIMENTAL, 'E', "enable experimental options")
 				.addParameterOption(OPT_GEOMETRY, 'g', REGEX_GEOMETRY, true,
-					"»width«X»height«+»left«+»top« main window geometry, e.g. 800x600+200+100");
+					"main window geometry, e.g. 800x600-200+100");
 		}
 		catch (OptionDefinitionException ex)
 		{
@@ -99,15 +99,29 @@ public class Launcher
 		if (strGeometry != null)
 		{
 			final var matcher = commandLineArguments.getMatcher(OPT_GEOMETRY);
-			final String group3 = matcher.group(3);
-			if (group3 == null || group3.isBlank())
+			if (matcher != null)
 			{
-				geometry = new Geometry(matcher.group(1), matcher.group(2));
-			}
-			else
-			{
-				geometry = new Geometry(matcher.group(1), matcher.group(2),
-					matcher.group(4), matcher.group(5), matcher.group(6), matcher.group(7));
+				final String group1 = matcher.group(1);
+				final String group2 = matcher.group(2);
+				if (group1 != null && group2 != null)
+				{
+					final String group3 = matcher.group(3);
+					if (group3 == null || group3.isBlank())
+					{
+						geometry = new Geometry(group1, group2);
+					}
+					else
+					{
+						final String group4 = matcher.group(4);
+						final String group5 = matcher.group(5);
+						final String group6 = matcher.group(6);
+						final String group7 = matcher.group(7);
+						if (group4 != null && group5 != null && group6 != null && group7 != null)
+						{
+							geometry = new Geometry(group1, group2, group4, group5, group6, group7);
+						}
+					}
+				}
 			}
 		}
 		ApplicationConfiguration.initInstance(Optional.ofNullable(initialPath), commandLineArgs,

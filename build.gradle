@@ -196,6 +196,11 @@ dependencies {
 	//implementation 'xml-apis:xml-apis-ext:1.3.04'
 	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
+	
+checkerFramework {
+	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
+	excludeTests = true
+}
 
 task writeSemVer {
 	description = "Write application semantic version to resource file »${fileSemVer}«"

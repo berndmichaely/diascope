@@ -18,17 +18,14 @@ package de.bernd_michaely.diascope.app.stage;
 
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.PreferencesUtil;
-import java.lang.System.Logger;
 import java.util.prefs.Preferences;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
 import static de.bernd_michaely.diascope.app.stage.StageBounds.InitType.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Math.clamp;
-import static java.lang.System.Logger.Level.*;
 
 /**
  * Class to handle the main window bounds.
@@ -37,59 +34,98 @@ import static java.lang.System.Logger.Level.*;
  */
 class StageBounds
 {
-	private static final Logger logger = System.getLogger(StageBounds.class.getName());
-	private static final Rectangle2D screenBounds = Screen.getPrimary().getBounds();
-	private static final double SCREEN_HEIGHT = screenBounds.getHeight();
-	private static final double SCREEN_WIDTH = screenBounds.getWidth();
-	private static final Preferences preferences = PreferencesUtil.nodeForPackage(StageBounds.class);
 	private static final double UNINITIALIZED = -100_000;
 	private static final double INITIAL_WINDOW_SIZE = 0.7;
-	private static double width, height, x, y;
+	private final Stage stage;
+	private final PrefKeys prefKeys;
+	private final Preferences preferences;
+	private final ApplicationConfiguration.State state;
+	private final double screenWidth;
+	private final double screenHeight;
+	private final double widthPref, heightPref, xPref, yPref;
+	private double width, height, x, y;
 
 	enum InitType
 	{
-		GIVEN_GEOMETRY, FIRST_START, RESTORE_PREFERENCES
+		GIVEN_GEOMETRY
+		{
+			@Override
+			String getLogMessage()
+			{
+				return "Setting main window bounds";
+			}
+		}, FIRST_START
+		{
+			@Override
+			String getLogMessage()
+			{
+				return "Initializing main window bounds";
+			}
+		}, RESTORE_PREFERENCES
+		{
+			@Override
+			String getLogMessage()
+			{
+				return "Restoring main window bounds";
+			}
+		};
+
+		abstract String getLogMessage();
+	}
+	private final InitType initType;
+
+	record PrefKeys(
+		PreferencesKeys width, PreferencesKeys height,
+		PreferencesKeys x, PreferencesKeys y, PreferencesKeys maximize)
+	{
 	}
 
-	static void initStageBounds(Stage stage)
+	StageBounds(Stage stage, PrefKeys prefKeys)
 	{
-		initValues(stage);
-		initListener(stage);
-	}
-
-	private static void initValues(Stage stage)
-	{
-		final var state = ApplicationConfiguration.getState();
-		final double widthPref = preferences.getDouble(PREF_KEY_WIDTH.getKey(), UNINITIALIZED);
-		final double heightPref = preferences.getDouble(PREF_KEY_HEIGHT.getKey(), UNINITIALIZED);
-		final double xPref = preferences.getDouble(PREF_KEY_X.getKey(), UNINITIALIZED);
-		final double yPref = preferences.getDouble(PREF_KEY_Y.getKey(), UNINITIALIZED);
+		this.stage = stage;
+		this.prefKeys = prefKeys;
+		this.preferences = PreferencesUtil.nodeForPackage(StageBounds.class);
+		final Rectangle2D screenBounds = Screen.getPrimary().getBounds();
+		this.screenWidth = screenBounds.getWidth();
+		this.screenHeight = screenBounds.getHeight();
+		this.state = ApplicationConfiguration.getState();
+		this.widthPref = preferences.getDouble(prefKeys.width().getKey(), UNINITIALIZED);
+		this.heightPref = preferences.getDouble(prefKeys.height().getKey(), UNINITIALIZED);
+		this.xPref = preferences.getDouble(prefKeys.x().getKey(), UNINITIALIZED);
+		this.yPref = preferences.getDouble(prefKeys.y().getKey(), UNINITIALIZED);
 		final boolean needsInit =
 			widthPref == UNINITIALIZED || heightPref == UNINITIALIZED ||
 			xPref == UNINITIALIZED || yPref == UNINITIALIZED;
-		final var initType = state.geometry().isPresent() ? GIVEN_GEOMETRY :
+		this.initType = state.geometry().isPresent() ? GIVEN_GEOMETRY :
 			(needsInit ? FIRST_START : RESTORE_PREFERENCES);
+	}
+
+	void initialize()
+	{
+		initValues();
+		initListener();
+	}
+
+	private void initValues()
+	{
 		switch (initType)
 		{
 			case GIVEN_GEOMETRY ->
 			{
-				logger.log(TRACE, "Setting main window bounds…");
 				getGeometry();
 				checkBounds();
 			}
 			case FIRST_START ->
 			{
-				logger.log(TRACE, "Initializing main window bounds…");
 				final double f = INITIAL_WINDOW_SIZE;
-				final double w = SCREEN_WIDTH;
-				final double h = SCREEN_HEIGHT;
+				final double w = screenWidth;
+				final double h = screenHeight;
 				width = w * f;
 				height = h * f;
 				center();
 			}
 			case RESTORE_PREFERENCES ->
 			{
-				logger.log(TRACE, "Restoring main window bounds…");
 				width = widthPref;
 				height = heightPref;
 				x = xPref;
@@ -98,16 +134,15 @@ class StageBounds
 			}
 			default -> throw new AssertionError(StageBounds.class.getName() + ": Invalid InitType");
 		}
-		setBounds(stage);
+		setBounds();
 		if (state.geometry().isEmpty())
 		{
-			stage.setMaximized(preferences.getBoolean(PREF_KEY_MAXIMIZE.getKey(), false));
+			stage.setMaximized(preferences.getBoolean(prefKeys.maximize().getKey(), false));
 		}
 	}
 
-	private static void getGeometry()
+	private void getGeometry()
 	{
-		final var state = ApplicationConfiguration.getState();
 		final var geometry = state.geometry();
 		geometry.ifPresent(g ->
 		{
@@ -115,8 +150,8 @@ class StageBounds
 			height = g.height();
 			if (g.position())
 			{
-				x = g.fromRight() ? SCREEN_WIDTH - width - g.x() : g.x();
-				y = g.fromBottom() ? SCREEN_HEIGHT - height - g.y() : g.y();
+				x = g.fromRight() ? screenWidth - width - g.x() : g.x();
+				y = g.fromBottom() ? screenHeight - height - g.y() : g.y();
 			}
 			else
 			{
@@ -125,21 +160,21 @@ class StageBounds
 		});
 	}
 
-	private static void center()
+	private void center()
 	{
-		x = (SCREEN_WIDTH - width) / 2;
-		y = (SCREEN_HEIGHT - height) / 2;
+		x = (screenWidth - width) / 2;
+		y = (screenHeight - height) / 2;
 	}
 
-	private static void checkBounds()
+	private void checkBounds()
 	{
-		width = clamp(width, 100, SCREEN_WIDTH);
-		height = clamp(height, 100, SCREEN_HEIGHT);
-		x = clamp(x, 0, SCREEN_WIDTH - 50);
-		y = clamp(y, 0, SCREEN_HEIGHT - 50);
+		width = clamp(width, 100, screenWidth);
+		height = clamp(height, 100, screenHeight);
+		x = clamp(x, 0, screenWidth - 50);
+		y = clamp(y, 0, screenHeight - 50);
 	}
 
-	private static void setBounds(Stage stage)
+	private void setBounds()
 	{
 		stage.setX(x);
 		stage.setY(y);
@@ -147,7 +182,7 @@ class StageBounds
 		stage.setHeight(height);
 	}
 
-	private static void initListener(Stage stage)
+	private void initListener()
 	{
 		// Note to the following listeners:
 		// the test of (!stage.isMaximized()) doesn't work with all window managers
@@ -155,31 +190,43 @@ class StageBounds
 		{
 			if (!stage.isMaximized())
 			{
-				preferences.putDouble(PREF_KEY_X.getKey(), stage.getX());
+				preferences.putDouble(prefKeys.x().getKey(), stage.getX());
 			}
 		}));
 		stage.yProperty().addListener(onChange(() ->
 		{
 			if (!stage.isMaximized())
 			{
-				preferences.putDouble(PREF_KEY_Y.getKey(), stage.getY());
+				preferences.putDouble(prefKeys.y().getKey(), stage.getY());
 			}
 		}));
 		stage.widthProperty().addListener(onChange(() ->
 		{
 			if (!stage.isMaximized())
 			{
-				preferences.putDouble(PREF_KEY_WIDTH.getKey(), stage.getWidth());
+				preferences.putDouble(prefKeys.width().getKey(), stage.getWidth());
 			}
 		}));
 		stage.heightProperty().addListener(onChange(() ->
 		{
 			if (!stage.isMaximized())
 			{
-				preferences.putDouble(PREF_KEY_HEIGHT.getKey(), stage.getHeight());
+				preferences.putDouble(prefKeys.height().getKey(), stage.getHeight());
 			}
 		}));
 		stage.maximizedProperty().addListener(onChange(maximized ->
-			preferences.putBoolean(PREF_KEY_MAXIMIZE.getKey(), maximized)));
+			preferences.putBoolean(prefKeys.maximize().getKey(), maximized)));
+	}
+
+	String getLogMessage()
+	{
+		return "%s → [%.0fx%.0f+%.0f+%.0f]".formatted(
+			initType.getLogMessage(), width, height, x, y);
+	}
+
+	@Override
+	public String toString()
+	{
+		return getClass().getName() + " → " + getLogMessage();
 	}
 }
