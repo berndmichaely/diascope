@@ -7,7 +7,7 @@ plugins {
 apply plugin: 'org.checkerframework'
 
 final boolean deactivateCheckerFramework = false
-final def fstv_version = '0.9.4'
+final def fstv_version = '0.9.5'
 
 logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
 //logger.lifecycle "   -> Using common-filesystem-view version »${fstv_version}«"
