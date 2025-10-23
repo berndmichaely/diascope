@@ -38,7 +38,6 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -55,7 +54,6 @@ import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HeaderBar;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -66,6 +64,7 @@ import static de.bernd_michaely.diascope.app.ApplicationConfiguration.getApplica
 import static de.bernd_michaely.diascope.app.control.ScaleBox.SpaceGainingMode.*;
 import static de.bernd_michaely.diascope.app.dialog.ResizableDialog.DialogType.*;
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
+import static de.bernd_michaely.diascope.app.stage.StageBounds.initStageBounds;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
 import static java.lang.System.Logger.Level.*;
@@ -83,7 +82,6 @@ public class MainWindow
 	private static final String FILE_RES_ICON_STAGE_FULLSCREEN = "diascope_fullscreen2.png";
 	private final @MonotonicNonNull Image iconStage;
 	private final @MonotonicNonNull Image iconStageFullScreen;
-	private static final double INITIAL_WINDOW_SIZE = 2.0 / 3.0;
 	private static final Preferences preferences = PreferencesUtil.nodeForPackage(MainWindow.class);
 	private @MonotonicNonNull PaneFileSystem paneFileSystem;
 	private final StringProperty titleProperty = new SimpleStringProperty();
@@ -277,38 +275,6 @@ public class MainWindow
 		final var scene = new Scene(rootPane);
 		SceneStylesheetUtil.setStylesheet(scene);
 		initStageBounds(stage);
-		// Note to the following listeners:
-		// the test of (!stage.isMaximized()) doesn't work with all window managers
-		stage.xProperty().addListener(onChange(() ->
-		{
-			if (!stage.isMaximized())
-			{
-				preferences.putDouble(PREF_KEY_X.getKey(), stage.getX());
-			}
-		}));
-		stage.yProperty().addListener(onChange(() ->
-		{
-			if (!stage.isMaximized())
-			{
-				preferences.putDouble(PREF_KEY_Y.getKey(), stage.getY());
-			}
-		}));
-		stage.widthProperty().addListener(onChange(() ->
-		{
-			if (!stage.isMaximized())
-			{
-				preferences.putDouble(PREF_KEY_WIDTH.getKey(), stage.getWidth());
-			}
-		}));
-		stage.heightProperty().addListener(onChange(() ->
-		{
-			if (!stage.isMaximized())
-			{
-				preferences.putDouble(PREF_KEY_HEIGHT.getKey(), stage.getHeight());
-			}
-		}));
-		stage.maximizedProperty().addListener(onChange(maximized ->
-			preferences.putBoolean(PREF_KEY_MAXIMIZE.getKey(), maximized)));
 		stage.setOnCloseRequest(event -> onApplicationClose());
 		if (state.launchType() == UNIT_TEST)
 		{
@@ -419,39 +385,6 @@ public class MainWindow
 			logger.log(WARNING, "Can't find stage icon (ignoring…)");
 		}
 		return icon;
-	}
-
-	private static void initStageBounds(Stage stage)
-	{
-		final double widthPref = preferences.getDouble(PREF_KEY_WIDTH.getKey(), Integer.MIN_VALUE);
-		final double heightPref = preferences.getDouble(PREF_KEY_HEIGHT.getKey(), Integer.MIN_VALUE);
-		final boolean needsInit = widthPref < 0 || heightPref < 0;
-		if (needsInit)
-		{
-			logger.log(TRACE, "Initializing main window bounds…");
-			final Rectangle2D bounds = Screen.getPrimary().getBounds();
-			final double f = INITIAL_WINDOW_SIZE;
-			final double w = bounds.getWidth();
-			final double h = bounds.getHeight();
-			final double wf = w * f;
-			final double hf = h * f;
-			stage.setX((w - wf) / 2);
-			stage.setY((h - hf) / 2);
-			stage.setWidth(wf);
-			stage.setHeight(hf);
-			preferences.putDouble(PREF_KEY_X.getKey(), stage.getX());
-			preferences.putDouble(PREF_KEY_Y.getKey(), stage.getY());
-			preferences.putDouble(PREF_KEY_HEIGHT.getKey(), stage.getHeight());
-			preferences.putDouble(PREF_KEY_HEIGHT.getKey(), stage.getHeight());
-		}
-		else
-		{
-			stage.setX(preferences.getDouble(PREF_KEY_X.getKey(), 0));
-			stage.setY(preferences.getDouble(PREF_KEY_Y.getKey(), 0));
-			stage.setWidth(widthPref);
-			stage.setHeight(heightPref);
-			stage.setMaximized(preferences.getBoolean(PREF_KEY_MAXIMIZE.getKey(), false));
-		}
 	}
 
 	private void onApplicationClose()

@@ -97,9 +97,7 @@ class ImageDirectoryReaderTask implements Callable<@Nullable Object>
 		this.platformScheduler = platformScheduler;
 		this.directory = directory;
 		this.onCurrentTaskFinish = onCurrentTaskFinish;
-		final boolean useMultipleCores = ApplicationConfiguration.getState().isStartedInDevelopmentMode();
-//		final boolean useMultipleCores = false;
-//		final boolean useMultipleCores = true;
+		final boolean useMultipleCores = ApplicationConfiguration.getState().experimentalMode();
 		final int poolSizeMin = 1;
 		final int poolSize = useMultipleCores ? Math.max(poolSizeMin,
 			(int) (Runtime.getRuntime().availableProcessors() * 0.75)) : poolSizeMin;

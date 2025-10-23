@@ -50,12 +50,35 @@ public class ApplicationConfiguration
 		NORMAL, DEVELOPMENT, UNIT_TEST
 	}
 
+	public record Geometry(int width, int height, boolean position,
+		boolean fromRight, int x, boolean fromBottom, int y)
+	{
+		public Geometry(int width, int height)
+		{
+			this(width, height, false, false, -1, false, -1);
+		}
+
+		public Geometry(String width, String height)
+		{
+			this(Integer.parseInt(width), Integer.parseInt(height));
+		}
+
+		public Geometry(String width, String height,
+			String fromRight, String x, String fromBottom, String y)
+		{
+			this(Integer.parseInt(width), Integer.parseInt(height), true,
+				"-".equals(fromRight), Integer.parseInt(x), "-".equals(fromBottom), Integer.parseInt(y));
+		}
+	}
+
 	public record State(
 		Optional<SemanticVersion> version,
 		LaunchType launchType,
 		List<String> commandLineArguments,
 		Optional<String> initialPath,
-		BooleanProperty developmentModeProperty)
+		BooleanProperty developmentModeProperty,
+		boolean experimentalMode,
+		Optional<Geometry> geometry)
 	{
 		public boolean isStartedInDevelopmentMode()
 		{
@@ -88,7 +111,8 @@ public class ApplicationConfiguration
 	}
 
 	public static void initInstance(Optional<String> initialPath,
-		List<String> commandLineArguments, boolean developmentMode)
+		List<String> commandLineArguments, boolean developmentMode,
+		boolean experimentalMode, Optional<Geometry> geometry)
 	{
 		if (instance == null)
 		{
@@ -97,7 +121,9 @@ public class ApplicationConfiguration
 					developmentMode ? DEVELOPMENT : NORMAL,
 					commandLineArguments,
 					initialPath,
-					new SimpleBooleanProperty(developmentMode)));
+					new SimpleBooleanProperty(developmentMode),
+					experimentalMode,
+					geometry));
 		}
 		else
 		{
@@ -120,7 +146,8 @@ public class ApplicationConfiguration
 					UNIT_TEST,
 					commandLineArguments != null ? commandLineArguments : List.of(),
 					Optional.empty(),
-					new SimpleBooleanProperty()));
+					new SimpleBooleanProperty(),
+					false, Optional.empty()));
 		}
 		else
 		{

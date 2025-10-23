@@ -2,10 +2,10 @@
 
 ![version](doc/shields/version.svg "version")
 
-Diascope is an image viewer application for desktop. *Unique features* include:
+Diascope is an image viewer application for desktop. *Core features* include:
 
   * a multi layer image mode to overlay two or more images for comparison – split dividers can be freely moved and rotated
-  * a multi layer image mode to overlay a second image over a base image in a spot – the spot is freely movable and resizable.
+  * a multi layer image mode to overlay a second image over a base image in a spot – the spot is freely movable, resizable and adjustable in shape.
 
 Diascope is written based on Java/JavaFX and so should run on any platform providing Java and JavaFX support. (It is currently being developed and tested on Linux.)
 
@@ -25,9 +25,13 @@ to run the application immediately or
 
     ./gradlew installDist
 
-to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 23 (it is tested with Eclipse Adoptium JDK on Linux). When running on Java24, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
+to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 23 (it is tested with Eclipse Adoptium JDK on Linux). When running on Java 24 or 25, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
-    export JAVA_OPTS='--enable-native-access=javafx.graphics --sun-misc-unsafe-memory-access=allow'
+    export JAVA_OPTS='-Djavafx.enablePreview=true -Djavafx.suppressPreviewWarning=true'
+
+and when running on Java 24 or 25, additionally:
+
+    export JAVA_OPTS='… --enable-native-access=javafx.graphics'
 
 ### Full Screen Mode
 

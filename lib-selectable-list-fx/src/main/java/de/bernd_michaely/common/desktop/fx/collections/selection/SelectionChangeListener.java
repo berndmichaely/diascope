@@ -19,6 +19,7 @@ import java.lang.ref.WeakReference;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener.SelectionChange.SelectionChangeType.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
@@ -110,21 +111,8 @@ public interface SelectionChangeListener<E>
 				}
 				from = from < 0 ? index : min(from, index);
 				to = to < 0 ? index : max(to, index);
-				if (selectionChangeType == null)
-				{
-					if (selected)
-					{
-						selectionChangeType = SelectionChangeType.SINGLE_INCREMENT;
-					}
-					else
-					{
-						selectionChangeType = SelectionChangeType.SINGLE_DECREMENT;
-					}
-				}
-				else
-				{
-					selectionChangeType = SelectionChangeType.COMPLEX_CHANGE;
-				}
+				selectionChangeType = selectionChangeType != null ? COMPLEX_CHANGE :
+					(selected ? SINGLE_INCREMENT : SINGLE_DECREMENT);
 			}
 		}
 
@@ -166,7 +154,7 @@ public interface SelectionChangeListener<E>
 		 */
 		public boolean isEmptyRange()
 		{
-			return from < 0 || to < 0;
+			return selectionChangeType == null;
 		}
 
 		/**

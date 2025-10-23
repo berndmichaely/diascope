@@ -17,7 +17,7 @@
 package de.bernd_michaely.common.cli.parser;
 
 import java.util.Objects;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -30,6 +30,8 @@ class OptionInstance
 {
 	private final OptionDescriptor optionDescriptor;
 	private @MonotonicNonNull String parameter;
+	private @Nullable Matcher matcher;
+	private boolean matching;
 
 	OptionInstance(OptionDescriptor optionDescriptor)
 	{
@@ -69,14 +71,22 @@ class OptionInstance
 	boolean checkParamRegExpr()
 	{
 		final String param = getParameter();
-		if (param == null)
+		final var pattern = getOptionDescriptor().getPattern();
+		if (param == null || pattern == null)
 		{
 			return true;
 		}
-		else
+		if (matcher == null)
 		{
-			final Pattern pattern = getOptionDescriptor().getPattern();
-			return (pattern == null) ? true : pattern.matcher(param).matches();
+			matcher = pattern.matcher(param);
+			matching = matcher.matches();
 		}
+		return matching;
+	}
+
+	@Nullable
+	Matcher getMatcher()
+	{
+		return matcher;
 	}
 }

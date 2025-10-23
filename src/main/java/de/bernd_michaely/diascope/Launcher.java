@@ -20,6 +20,7 @@ import de.bernd_michaely.common.cli.parser.CommandLineArguments;
 import de.bernd_michaely.common.cli.parser.InvalidCommandLineParametersException;
 import de.bernd_michaely.common.cli.parser.OptionDefinitionException;
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
+import de.bernd_michaely.diascope.app.ApplicationConfiguration.Geometry;
 import de.bernd_michaely.diascope.app.DiascopeLauncher;
 import de.bernd_michaely.diascope.app.PreferencesUtil;
 import java.io.PrintStream;
@@ -38,13 +39,18 @@ import static java.util.Objects.requireNonNullElse;
 public class Launcher
 {
 	private static final Logger logger = System.getLogger(Launcher.class.getName());
+	private static final String REGEX_GEOMETRY = "(\\d{3,4})[xX](\\d{3,4})(([+-])(\\d{1,4})([+-])(\\d{1,4}))?";
 	private static final String OPT_HELP = "help";
 	private static final String OPT_DEVELOPMENT = "development";
+	private static final String OPT_EXPERIMENTAL = "experimental";
 	private static final String OPT_EXPORT_PREFERENCES = "show-preferences";
 	private static final String OPT_CLEAR_PREFERENCES = "clear-preferences";
 	private static final String OPT_INITIAL_PATH = "open";
-	private static boolean helpMode, developmentMode, exportPrefsMode, clearPrefsMode;
+	private static final String OPT_GEOMETRY = "geometry";
+	private static boolean helpMode, developmentMode, experimentalMode, exportPrefsMode, clearPrefsMode;
 	private static @Nullable String initialPath;
+	private static @Nullable String strGeometry;
+	private static @Nullable Geometry geometry;
 
 	public static void main(String... args)
 	{
@@ -54,9 +60,11 @@ public class Launcher
 			{
 				case OPT_HELP -> helpMode = true;
 				case OPT_DEVELOPMENT -> developmentMode = true;
+				case OPT_EXPERIMENTAL -> experimentalMode = true;
 				case OPT_EXPORT_PREFERENCES -> exportPrefsMode = true;
 				case OPT_CLEAR_PREFERENCES -> clearPrefsMode = true;
 				case OPT_INITIAL_PATH -> initialPath = requireNonNullElse(param, "");
+				case OPT_GEOMETRY -> strGeometry = param;
 				default -> throw new AssertionError(
 						"Invalid CommandLineArguments long option »%s«".formatted(longOption));
 			}
@@ -68,7 +76,11 @@ public class Launcher
 				.addFlagOption(OPT_DEVELOPMENT, 'd', "start application in development mode")
 				.addFlagOption(OPT_EXPORT_PREFERENCES, 'p', "export preferences to stdout")
 				.addFlagOption(OPT_CLEAR_PREFERENCES, 'c', "clear all preferences of this application")
-				.addParameterOption(OPT_INITIAL_PATH, 'o', false, "path to open initially (no path parameter to open nothing)");
+				.addParameterOption(OPT_INITIAL_PATH, 'o', false,
+					"path to open initially (no path parameter to open nothing)")
+				.addFlagOption(OPT_EXPERIMENTAL, 'E', "enable experimental options")
+				.addParameterOption(OPT_GEOMETRY, 'g', REGEX_GEOMETRY, true,
+					"»width«X»height«+»left«+»top« main window geometry, e.g. 800x600+200+100");
 		}
 		catch (OptionDefinitionException ex)
 		{
@@ -84,7 +96,22 @@ public class Launcher
 			commandLineArguments.printFormattedDescription(System.err, true);
 			System.exit(1);
 		}
-		ApplicationConfiguration.initInstance(Optional.ofNullable(initialPath), commandLineArgs, developmentMode);
+		if (strGeometry != null)
+		{
+			final var matcher = commandLineArguments.getMatcher(OPT_GEOMETRY);
+			final String group3 = matcher.group(3);
+			if (group3 == null || group3.isBlank())
+			{
+				geometry = new Geometry(matcher.group(1), matcher.group(2));
+			}
+			else
+			{
+				geometry = new Geometry(matcher.group(1), matcher.group(2),
+					matcher.group(4), matcher.group(5), matcher.group(6), matcher.group(7));
+			}
+		}
+		ApplicationConfiguration.initInstance(Optional.ofNullable(initialPath), commandLineArgs,
+			developmentMode, experimentalMode, Optional.ofNullable(geometry));
 		if (helpMode)
 		{
 			final PrintStream ps = System.out;

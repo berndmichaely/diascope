@@ -21,10 +21,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.common.cli.parser.AnsiColorEscapeCodesUtil.*;
@@ -69,6 +71,7 @@ public class CommandLineArguments
 	private final SortedMap<String, OptionDescriptor> mapLongOptions = new TreeMap<>();
 	private final SortedMap<Character, OptionDescriptor> mapShortOptions = new TreeMap<>();
 	private final List<OptionInstance> optionInstances = new ArrayList<>();
+	private final Map<String, Matcher> mapMatchers = new TreeMap<>();
 
 	/**
 	 * Constructs a command line argument parser.
@@ -236,7 +239,7 @@ public class CommandLineArguments
 			boolean endOfOptionArgs = false;
 			for (String arg : args)
 			{
-				if ((arg != null) && !arg.isEmpty())
+				if (arg != null && !arg.isEmpty())
 				{
 					final boolean isLongOption = arg.startsWith("--");
 					final boolean isShortOption = !isLongOption && arg.startsWith("-");
@@ -339,11 +342,28 @@ public class CommandLineArguments
 						"Invalid Parameter for option : --" +
 						oi.getOptionDescriptor().getLongOption() + "=" + oi.getParameter());
 				}
+				final var matcher = oi.getMatcher();
+				if (matcher != null)
+				{
+					mapMatchers.put(oi.getOptionDescriptor().getLongOption(), matcher);
+				}
 			}
 			this.optionInstances.forEach(oi -> callback.accept(
 				oi.getOptionDescriptor().getLongOption(), oi.getParameter()));
 		}
 		return Collections.unmodifiableList(nonOptionParameters);
+	}
+
+	/**
+	 * Returns a Matcher for parameter options checked with a regular expression.
+	 *
+	 * @param longOption long option name indicating the parameter to check
+	 * @return an initialized Matcher or {@code null}, if option is invalid
+	 */
+	public @Nullable
+	Matcher getMatcher(String longOption)
+	{
+		return mapMatchers.get(longOption);
 	}
 
 	/**
