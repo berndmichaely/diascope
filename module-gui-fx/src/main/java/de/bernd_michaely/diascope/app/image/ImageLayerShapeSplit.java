@@ -17,14 +17,15 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
-import javafx.beans.binding.ObjectBinding;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableObjectValue;
-import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Polygon;
 
 import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
-import static javafx.beans.binding.Bindings.createObjectBinding;
+import static javafx.beans.binding.Bindings.when;
 
 /// Class to describe an ImageLayer selection shape for SPLIT mode.
 ///
@@ -32,15 +33,19 @@ import static javafx.beans.binding.Bindings.createObjectBinding;
 ///
 final class ImageLayerShapeSplit extends ImageLayerShapeBase
 {
-	private static final Color COLOR_SELECTED = Color.CORNFLOWERBLUE;
 	private static final double STROKE_WIDTH_SELECTED = 4 * STROKE_WIDTH_UNSELECTED;
-	private final ObjectBinding<Paint> strokeSelectedPaint;
+	private final BooleanProperty dualSpotSelected;
+	private final ReadOnlyObjectWrapper<Paint> strokeSelectedPaint;
 	private final Polygon polygon = new Polygon();
 
 	private ImageLayerShapeSplit()
 	{
 		super(false, null, null);
-		strokeSelectedPaint = createObjectBinding(() -> COLOR_SELECTED);
+		this.dualSpotSelected = new SimpleBooleanProperty();
+		this.strokeSelectedPaint = new ReadOnlyObjectWrapper<>();
+		strokeSelectedPaint.bind(when(dualSpotSelected)
+			.then(COLORS_SELECTED.getLast())
+			.otherwise(COLORS_SELECTED.getFirst()));
 	}
 
 	static ImageLayerShapeSplit createInstance()
@@ -60,10 +65,15 @@ final class ImageLayerShapeSplit extends ImageLayerShapeBase
 		polygon.getPoints().clear();
 	}
 
+	BooleanProperty dualSpotSelectedProperty()
+	{
+		return dualSpotSelected;
+	}
+
 	@Override
 	ObservableObjectValue<Paint> getStrokeSelectedPaint()
 	{
-		return strokeSelectedPaint;
+		return strokeSelectedPaint.getReadOnlyProperty();
 	}
 
 	@Override

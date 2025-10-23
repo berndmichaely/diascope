@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
+import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -45,6 +46,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLayerShapeSpot
 {
+	static final List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
 	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
 	static final double STROKE_WIDTH_UNSELECTED = max(1, round(Font.getDefault().getSize() / 15));
 	private final BooleanProperty selected;

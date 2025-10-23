@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.lang.ref.WeakReference;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javafx.application.ConditionalFeature;
@@ -45,6 +46,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
+import static javafx.beans.binding.Bindings.createBooleanBinding;
 import static javafx.beans.binding.Bindings.isNull;
 import static javafx.beans.binding.Bindings.max;
 import static javafx.beans.binding.Bindings.min;
@@ -203,6 +205,24 @@ class ImageLayer
 		if (onDividerRotate != null)
 		{
 			d.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(d));
+		}
+		if (imageLayer.getImageLayerShape() instanceof ImageLayerShapeSplit imageLayerShapeSplit)
+		{
+			final var layerSelectionModel = viewport.getLayerSelectionModel();
+			if (layerSelectionModel != null)
+			{
+				final var dualProperty = layerSelectionModel.dualSelectedLayerSecondProperty();
+				imageLayerShapeSplit.dualSpotSelectedProperty().bind(createBooleanBinding(() ->
+				{
+					final Optional<ImageLayer> optional = dualProperty.get();
+					return optional.isPresent() ?
+						layerSelectionModel.getSize() > 2 && optional.get() == imageLayer : false;
+				}, dualProperty));
+			}
+			else
+			{
+				throw new IllegalStateException("viewport LayerSelectionModel not initialized");
+			}
 		}
 		return imageLayer;
 	}

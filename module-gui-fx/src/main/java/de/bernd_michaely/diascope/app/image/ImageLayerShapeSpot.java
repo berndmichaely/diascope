@@ -30,7 +30,6 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableObjectValue;
 import javafx.geometry.Point2D;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Paint;
@@ -63,8 +62,6 @@ import static javafx.beans.binding.Bindings.when;
 final class ImageLayerShapeSpot extends ImageLayerShapeBase
 {
 	private static final Logger logger = System.getLogger(ImageLayerShapeSpot.class.getName());
-	private static final List<Color> COLORS_SELECTED = List.of(
-		Color.CORNFLOWERBLUE, Color.CORAL);
 	private static final LinearGradient STROKE_GRADIENT = new LinearGradient(
 		0, 0, 1, 0, true, CycleMethod.NO_CYCLE, List.of(
 			new Stop(0, COLORS_SELECTED.getFirst()),

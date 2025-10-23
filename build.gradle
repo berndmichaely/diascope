@@ -242,11 +242,13 @@ application {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 		applicationDefaultJvmArgs += '--sun-misc-unsafe-memory-access=allow'
 	}
-	if (javafxVer == 25 && javaLangVer >= 24) {
-		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
+	if (javafxVer == 25) {
+		if (javaLangVer >= 24) {
+			applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
+		}
+		applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
+		applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	}
-	applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
-	applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	logger.lifecycle "==> applicationDefaultJvmArgs -> " + applicationDefaultJvmArgs
 }
 

@@ -386,6 +386,12 @@ class Viewport
 		return dividersVisible;
 	}
 
+	@Nullable
+	LayerSelectionModel getLayerSelectionModel()
+	{
+		return layerSelectionModel;
+	}
+
 	Region getRegion()
 	{
 		return stackPane;
