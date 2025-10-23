@@ -3,7 +3,7 @@ plugins {
 	id 'application'
 	id 'jacoco'
 	id 'org.openjfx.javafxplugin' version '0.1.0'
-	id 'org.checkerframework' version '0.6.56' apply false
+	id 'org.checkerframework' version '0.6.59' apply false
 	
 	// auto create automatic modules:
 	//id 'extra-java-module-info' apply false
@@ -22,7 +22,7 @@ final def javaLangVersion = JavaLanguageVersion.of(23)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
 
-final def versionCheckerFramework = '3.49.5'
+final def versionCheckerFramework = '3.51.0'
 
 java {
 	toolchain {

@@ -17,9 +17,14 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
+import javafx.beans.binding.ObjectBinding;
+import javafx.beans.value.ObservableObjectValue;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Polygon;
 
 import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
+import static javafx.beans.binding.Bindings.createObjectBinding;
 
 /// Class to describe an ImageLayer selection shape for SPLIT mode.
 ///
@@ -27,11 +32,15 @@ import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 ///
 final class ImageLayerShapeSplit extends ImageLayerShapeBase
 {
+	private static final Color COLOR_SELECTED = Color.CORNFLOWERBLUE;
+	private static final double STROKE_WIDTH_SELECTED = 4 * STROKE_WIDTH_UNSELECTED;
+	private final ObjectBinding<Paint> strokeSelectedPaint;
 	private final Polygon polygon = new Polygon();
 
 	private ImageLayerShapeSplit()
 	{
 		super(false, null, null);
+		strokeSelectedPaint = createObjectBinding(() -> COLOR_SELECTED);
 	}
 
 	static ImageLayerShapeSplit createInstance()
@@ -49,6 +58,18 @@ final class ImageLayerShapeSplit extends ImageLayerShapeBase
 	void clearPoints()
 	{
 		polygon.getPoints().clear();
+	}
+
+	@Override
+	ObservableObjectValue<Paint> getStrokeSelectedPaint()
+	{
+		return strokeSelectedPaint;
+	}
+
+	@Override
+	double getStrokeWidthSelected()
+	{
+		return STROKE_WIDTH_SELECTED;
 	}
 
 	@Override

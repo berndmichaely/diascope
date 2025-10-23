@@ -23,6 +23,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Cursor;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
 
@@ -39,8 +40,8 @@ import static javafx.beans.binding.Bindings.when;
  */
 class Divider
 {
-	private static final Color COLOR_DEFAULT = ImageLayerShapeSplit.COLOR_UNSELECTED;
-	private static final Color COLOR_HOVER = Color.LIGHTCORAL;
+	private static final Paint COLOR_DEFAULT = ImageLayerShapeSplit.COLOR_UNSELECTED;
+	private static final Paint COLOR_HOVER = Color.LIGHTCORAL;
 	private final DoubleProperty angle;
 	private final ReadOnlyDoubleWrapper angleNorm;
 	private final ReadOnlyDoubleProperty angleNormalized;

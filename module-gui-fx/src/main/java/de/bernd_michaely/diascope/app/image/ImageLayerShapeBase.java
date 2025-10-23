@@ -20,16 +20,21 @@ import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ObservableObjectValue;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.shape.StrokeType;
+import javafx.scene.text.Font;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
+import static java.lang.Math.max;
+import static java.lang.Math.round;
 import static javafx.beans.binding.Bindings.when;
 
 /// Base class to describe an ImageLayer selection shape.
@@ -38,10 +43,8 @@ import static javafx.beans.binding.Bindings.when;
 ///
 abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLayerShapeSpot
 {
-	static final Color COLOR_UNSELECTED = Color.ALICEBLUE;
-	static final double STROKE_WIDTH_UNSELECTED = 1.0;
-	private static final Color COLOR_SELECTED = Color.CORNFLOWERBLUE;
-	private static final double STROKE_WIDTH_SELECTED = 4.0;
+	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
+	static final double STROKE_WIDTH_UNSELECTED = max(1, round(Font.getDefault().getSize() / 15));
 	private final BooleanProperty selected;
 	private final BooleanProperty unselectedVisible;
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
@@ -65,9 +68,9 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 		getShape().setStrokeLineCap(StrokeLineCap.ROUND);
 		getShape().setStrokeLineJoin(StrokeLineJoin.ROUND);
 		getShape().setStrokeType(StrokeType.INSIDE);
-		getShape().strokeProperty().bind(when(selected).then(COLOR_SELECTED).otherwise(
+		getShape().strokeProperty().bind(when(selected).then(getStrokeSelectedPaint()).otherwise(
 			when(unselectedVisible).then(COLOR_UNSELECTED).otherwise(Color.TRANSPARENT)));
-		getShape().strokeWidthProperty().bind(when(selected).then(STROKE_WIDTH_SELECTED).otherwise(
+		getShape().strokeWidthProperty().bind(when(selected).then(getStrokeWidthSelected()).otherwise(
 			when(unselectedVisible).then(STROKE_WIDTH_UNSELECTED).otherwise(0.0)));
 		getShape().setOnMouseDragged(event ->
 		{
@@ -122,6 +125,10 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 	{
 		return selected;
 	}
+
+	abstract ObservableObjectValue<Paint> getStrokeSelectedPaint();
+
+	abstract double getStrokeWidthSelected();
 
 	abstract Type getType();
 
