@@ -15,9 +15,7 @@ plugins {
 apply plugin: 'org.checkerframework'
 
 wrapper {
-	gradleVersion = '8.10.2'
-	//gradleVersion = '8.14.3'
-	//gradleVersion = '9.1.0'
+	gradleVersion = '9.1.0'
 }
 
 final def javaLangVersion = JavaLanguageVersion.of(23)
@@ -133,7 +131,7 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = '25'
+			version = '25.0.1'
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}

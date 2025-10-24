@@ -347,6 +347,7 @@ public class MainWindow
 		headerBar.setLeading(paneLeading);
 		final Label title = new Label();
 		title.textProperty().bind(titleProperty);
+		title.setMouseTransparent(true);
 		headerBar.setCenter(title);
 		final var icon = createResourceImage(FILE_RES_ICON_STAGE_2);
 		if (icon != null)
