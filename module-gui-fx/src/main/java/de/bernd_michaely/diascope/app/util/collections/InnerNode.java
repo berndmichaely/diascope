@@ -86,9 +86,20 @@ public final class InnerNode<I> extends Node
 	@Override
 	public String toString()
 	{
-		return "%s[<%s>:%s|%s]".formatted(getClass().getSimpleName(),
-			Objects.toString(getValue(), STRING_EMPTY),
-			Objects.toString(getSubNode(0), STRING_EMPTY),
-			Objects.toString(getSubNode(1), STRING_EMPTY));
+		final var s = new StringBuilder();
+		s.append(getClass().getSimpleName())
+			.append("[<")
+			.append(Objects.toString(getValue(), STRING_EMPTY))
+			.append(">:");
+		for (int i = 0; i < getSubNodes().size(); i++)
+		{
+			if (i > 0)
+			{
+				s.append("|");
+			}
+			s.append(Objects.toString(getSubNode(i), STRING_EMPTY));
+		}
+		s.append("]");
+		return s.toString();
 	}
 }
