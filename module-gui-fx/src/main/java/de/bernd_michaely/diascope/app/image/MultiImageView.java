@@ -56,7 +56,7 @@ public class MultiImageView
 	///
 	public enum Mode
 	{
-		SINGLE, SPLIT, SPOT;
+		SINGLE, GRID, SPLIT, SPOT;
 
 		public static Mode getInitialMode()
 		{

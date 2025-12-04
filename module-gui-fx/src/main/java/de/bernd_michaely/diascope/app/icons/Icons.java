@@ -47,7 +47,7 @@ public enum Icons
 	// Layer
 	LayerAdd, LayerRemove, ShowDividers,
 	// Multi image modes
-	ModeSplit, ModeSpot;
+	ModeGrid, ModeSplit, ModeSpot;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());
 

@@ -215,14 +215,10 @@ class Viewport
 		final var nodes = isSpotMode() ?
 			this.cacheChildrenTopLayer : this.paneTopLayer.getChildren();
 		final var divider = imageLayer.getDivider();
-		final var lineEvent = divider.getLineEvent();
-		final var lineShape = divider.getLineShape();
-		final var dividersEnabledProperty = dividersEnabled.getReadOnlyProperty();
-		lineEvent.visibleProperty().bind(dividersEnabledProperty);
-		lineShape.visibleProperty().bind(dividersEnabledProperty);
+		divider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 		nodes.add(index, imageLayer.getImageLayerShape().getShape());
-		nodes.add(index + numLayers, lineEvent);
-		paneDividerLines.getChildren().add(index, lineShape);
+		nodes.add(index + numLayers, divider.getLineEvent());
+		paneDividerLines.getChildren().add(index, divider.getLineShape());
 		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
 	}
 
@@ -255,10 +251,8 @@ class Viewport
 				final var nodes = isSpotMode() ?
 					this.cacheChildrenTopLayer : this.paneTopLayer.getChildren();
 				final var divider = imageLayer.getDivider();
-				final var lineEvent = divider.getLineEvent();
-				final var lineShape = divider.getLineShape();
-				nodes.remove(lineEvent);
-				paneDividerLines.getChildren().remove(lineShape);
+				nodes.remove(divider.getLineEvent());
+				paneDividerLines.getChildren().remove(divider.getLineShape());
 				nodes.remove(imageLayer.getImageLayerShape().getShape());
 				paneImageLayers.getChildren().remove(imageLayer.getRegion());
 			}

@@ -82,6 +82,7 @@ class ActionsImageControl
 			single-select the base layer and then
 			<Ctrl>-select the spot layer.""";
 		this.actionMode = new ToggleAction<>(SINGLE, Map.of(
+			GRID, new ActionItemDescriptor(Icons.ModeGrid, "Grid", "Grid Mode", "Set multi image GRID mode."),
 			SPLIT, new ActionItemDescriptor(Icons.ModeSplit, "Split", "Split Mode", strTooltipModeSplit),
 			SPOT, new ActionItemDescriptor(Icons.ModeSpot, "Spot", "Spot Mode", strTooltipModeSpot)));
 		actionMode.disableProperty().bind(emptyProperty);

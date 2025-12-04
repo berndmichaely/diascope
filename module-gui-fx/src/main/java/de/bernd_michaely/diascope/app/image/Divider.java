@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
@@ -30,23 +31,24 @@ import javafx.scene.text.Font;
 import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
 import static de.bernd_michaely.diascope.app.image.Bindings.tan;
 import static de.bernd_michaely.diascope.app.image.Border.*;
+import static de.bernd_michaely.diascope.app.image.ImageLayerShapeBase.*;
 import static java.lang.Math.ceil;
 import static javafx.beans.binding.Bindings.when;
 
-/**
- * Class to handle image layer dividers.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Class to handle image layer dividers.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 class Divider
 {
-	private static final Paint COLOR_DEFAULT = ImageLayerShapeSplit.COLOR_UNSELECTED;
+	private static final Paint COLOR_DEFAULT = COLOR_UNSELECTED;
 	private static final Paint COLOR_HOVER = Color.LIGHTCORAL;
-	private final DoubleProperty angle;
-	private final ReadOnlyDoubleWrapper angleNorm;
-	private final ReadOnlyDoubleProperty angleNormalized;
-	private final ReadOnlyObjectWrapper<Border> border;
-	private final ReadOnlyDoubleWrapper borderIntersectionX, borderIntersectionY;
+	private final DoubleProperty angle = new SimpleDoubleProperty();
+	private final ReadOnlyDoubleWrapper angleNorm = new ReadOnlyDoubleWrapper();
+	private final ReadOnlyDoubleProperty angleNormalized = angleNorm.getReadOnlyProperty();
+	private final ReadOnlyObjectWrapper<Border> border = new ReadOnlyObjectWrapper<>();
+	private final ReadOnlyDoubleWrapper borderIntersectionX = new ReadOnlyDoubleWrapper();
+	private final ReadOnlyDoubleWrapper borderIntersectionY = new ReadOnlyDoubleWrapper();
 	private final Line lineShape, lineEvent;
 	private final MouseDragState mouseDragState;
 
@@ -58,13 +60,7 @@ class Divider
 		ReadOnlyDoubleProperty splitCenterDx,
 		ReadOnlyDoubleProperty splitCenterDy)
 	{
-		this.angle = new SimpleDoubleProperty(0.0);
-		this.border = new ReadOnlyObjectWrapper<>(Border.RIGHT);
-		this.borderIntersectionX = new ReadOnlyDoubleWrapper();
-		this.borderIntersectionY = new ReadOnlyDoubleWrapper();
-		this.angleNorm = new ReadOnlyDoubleWrapper();
 		angleNorm.bind(normalizeAngle(angle));
-		this.angleNormalized = angleNorm.getReadOnlyProperty();
 		border.bind(
 			when(angleNormalized.lessThanOrEqualTo(cornerAngles.get(RIGHT)))
 				.then(RIGHT).otherwise(
@@ -102,7 +98,7 @@ class Divider
 		final double sizeDefault = Font.getDefault().getSize();
 		lineShape = new Line();
 		lineShape.setStroke(COLOR_DEFAULT);
-		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * ImageLayerShapeSplit.STROKE_WIDTH_UNSELECTED);
+		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * STROKE_WIDTH_UNSELECTED);
 		lineShape.startXProperty().bind(splitCenterX);
 		lineShape.startYProperty().bind(splitCenterY);
 		lineShape.endXProperty().bind(borderIntersectionX);
@@ -114,11 +110,17 @@ class Divider
 		lineEvent.startYProperty().bind(lineShape.startYProperty());
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
+		lineEvent.visibleProperty().bind(lineShape.visibleProperty());
 		lineEvent.setCursor(Cursor.HAND);
 		lineEvent.setOnMouseEntered(_ -> lineShape.setStroke(COLOR_HOVER));
 		lineEvent.setOnMouseExited(_ -> lineShape.setStroke(COLOR_DEFAULT));
 		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
 		mouseDragState.setListenersFor(lineEvent);
+	}
+
+	BooleanProperty visibleProperty()
+	{
+		return lineShape.visibleProperty();
 	}
 
 	MouseDragState getMouseDragState()
