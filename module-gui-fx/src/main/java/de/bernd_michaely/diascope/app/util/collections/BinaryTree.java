@@ -25,7 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Generic class to describe a binary tree structure.
 ///
-/// This is a {@code  Collection<Node>}.
+/// This is a {@code  Collection<TreeNode>}.
 /// Note, that {@code add} and {@code remove} methods are not supported.
 ///
 /// @see #append(Object)
@@ -39,9 +39,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /// @param <L> data type associated with leaf nodes
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class BinaryTree<I, L> extends AbstractCollection<Node>
+public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 {
-	private @Nullable Node root;
+	private @Nullable TreeNode root;
 	private int size;
 
 	/// Returns the root node.
@@ -49,13 +49,13 @@ public class BinaryTree<I, L> extends AbstractCollection<Node>
 	/// @return the root node
 	///
 	@Nullable
-	Node getRoot()
+	TreeNode getRoot()
 	{
 		return root;
 	}
 
 	@Override
-	public Iterator<Node> iterator()
+	public Iterator<TreeNode> iterator()
 	{
 		return new TreeNodeIterator(getRoot());
 	}
@@ -74,7 +74,7 @@ public class BinaryTree<I, L> extends AbstractCollection<Node>
 	public @Nullable
 	InnerNode findInnerNode(I value)
 	{
-		final Iterator<Node> iter = iterator();
+		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
 		{
 			if (iter.next() instanceof InnerNode innerNode && Objects.equals(innerNode.getValue(), value))
@@ -93,7 +93,7 @@ public class BinaryTree<I, L> extends AbstractCollection<Node>
 	public @Nullable
 	LeafNode findLeafNode(L value)
 	{
-		final Iterator<Node> iter = iterator();
+		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
 		{
 			if (iter.next() instanceof LeafNode leafNode && Objects.equals(leafNode.getValue(), value))
@@ -166,7 +166,7 @@ public class BinaryTree<I, L> extends AbstractCollection<Node>
 		{
 			// find last leaf:
 			LeafNode lastLeaf = null;
-			final Iterator<Node> iterator = iterator();
+			final Iterator<TreeNode> iterator = iterator();
 			while (iterator.hasNext())
 			{
 				if (iterator.next() instanceof LeafNode nextLeaf)
@@ -255,7 +255,7 @@ public class BinaryTree<I, L> extends AbstractCollection<Node>
 			if (pn != null)
 			{
 				final InnerNode ppn = pn.getParentNode();
-				final Node otherChild = pn.getSubNode(leafNode == pn.getSubNode(1) ? 0 : 1);
+				final TreeNode otherChild = pn.getSubNode(leafNode == pn.getSubNode(1) ? 0 : 1);
 				if (ppn != null)
 				{
 					ppn.setSubNode(pn == ppn.getSubNode(1) ? 1 : 0, otherChild);

@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.util.collections.Node.STRING_EMPTY;
+import static de.bernd_michaely.diascope.app.util.collections.TreeNode.STRING_EMPTY;
 
 /// Simple tree formatter.
 ///
@@ -31,12 +31,12 @@ class SimpleTreeFormatter
 {
 	private final List<String> lines;
 
-	SimpleTreeFormatter(@Nullable Node node)
+	SimpleTreeFormatter(@Nullable TreeNode node)
 	{
 		lines = addNode(node);
 	}
 
-	private static String getNodeValue(@Nullable Node node)
+	private static String getNodeValue(@Nullable TreeNode node)
 	{
 		if (node != null)
 		{
@@ -59,7 +59,7 @@ class SimpleTreeFormatter
 		return s.toString();
 	}
 
-	private static List<String> addNode(@Nullable Node node)
+	private static List<String> addNode(@Nullable TreeNode node)
 	{
 		final List<String> result = new ArrayList<>();
 		switch (node)

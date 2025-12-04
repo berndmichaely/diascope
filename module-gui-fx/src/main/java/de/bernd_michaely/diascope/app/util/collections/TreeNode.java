@@ -20,11 +20,11 @@ import java.lang.ref.WeakReference;
 import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-/// Base class for nodes of a BinaryTree.
+/// Base class for tree nodes.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public abstract sealed class Node permits InnerNode, LeafNode
+public abstract sealed class TreeNode permits InnerNode, LeafNode
 {
 	static final String STRING_EMPTY = "·";
 	private @Nullable WeakReference<InnerNode> parentNode;
@@ -32,7 +32,7 @@ public abstract sealed class Node permits InnerNode, LeafNode
 	abstract @Nullable
 	Object getValue();
 
-	Node()
+	TreeNode()
 	{
 	}
 

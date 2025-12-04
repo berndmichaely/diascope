@@ -23,7 +23,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public final class LeafNode<L> extends Node
+public final class LeafNode<L> extends TreeNode
 {
 	private @Nullable L value;
 

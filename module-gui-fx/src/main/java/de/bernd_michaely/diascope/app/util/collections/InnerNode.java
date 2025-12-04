@@ -27,12 +27,17 @@ import static java.util.Collections.unmodifiableList;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public final class InnerNode<I> extends Node
+public final class InnerNode<I> extends TreeNode
 {
 	private @Nullable I value;
-	private final List<@Nullable Node> nodes;
-	private final List<@Nullable Node> nodesUnmodifiable;
+	private final List<@Nullable TreeNode> nodes;
+	private final List<@Nullable TreeNode> nodesUnmodifiable;
 
+	/// Creates a new inner node instance with a fixed number of subnodes.
+	///
+	/// @param numSubNodes the number of possible subnodes.
+	/// @param value a value associated with the inner node (may be {@code null})
+	///
 	InnerNode(int numSubNodes, @Nullable I value)
 	{
 		this.value = value;
@@ -62,20 +67,20 @@ public final class InnerNode<I> extends Node
 	}
 
 	@Nullable
-	Node getSubNode(int index)
+	TreeNode getSubNode(int index)
 	{
 		return nodes.get(index);
 	}
 
-	List<@Nullable Node> getSubNodes()
+	List<@Nullable TreeNode> getSubNodes()
 	{
 		return nodesUnmodifiable;
 	}
 
 	@Nullable
-	Node setSubNode(int index, @Nullable Node node)
+	TreeNode setSubNode(int index, @Nullable TreeNode node)
 	{
-		final Node oldValue = nodes.set(index, node);
+		final TreeNode oldValue = nodes.set(index, node);
 		if (node != null)
 		{
 			node.setParentNode(this);

@@ -21,11 +21,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Node classes Test.
+ * TreeNode classes Test.
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
-public class NodeTest
+public class TreeNodeTest
 {
 	@Test
 	public void test_node_classes()
@@ -54,6 +54,6 @@ public class NodeTest
 		assertEquals(innerNode2, leafNode3.getParentNode());
 		assertEquals(
 			"InnerNode[<inner-1>:LeafNode(7)|InnerNode[<inner-2>:LeafNode(9)|%1$s]|%1$s|LeafNode(8)]"
-				.formatted(Node.STRING_EMPTY), root.toString());
+				.formatted(TreeNode.STRING_EMPTY), root.toString());
 	}
 }

@@ -25,11 +25,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class TreeNodeIterator implements Iterator<Node>
+class TreeNodeIterator implements Iterator<TreeNode>
 {
-	private final Deque<Node> stack = new ArrayDeque<>();
+	private final Deque<TreeNode> stack = new ArrayDeque<>();
 
-	TreeNodeIterator(@Nullable Node root)
+	TreeNodeIterator(@Nullable TreeNode root)
 	{
 		if (root != null)
 		{
@@ -44,9 +44,9 @@ class TreeNodeIterator implements Iterator<Node>
 	}
 
 	@Override
-	public Node next()
+	public TreeNode next()
 	{
-		final Node next = stack.pop();
+		final TreeNode next = stack.pop();
 		if (next instanceof InnerNode<?> innerNode)
 		{
 			innerNode.getSubNodes().reversed().forEach(subNode ->

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+import static de.bernd_michaely.diascope.app.util.collections.TreeNode.STRING_EMPTY;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -29,14 +30,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class BinaryTreeTest
 {
-	private List<Node> toList(BinaryTree binaryTree)
+	private List<TreeNode> toList(BinaryTree binaryTree)
 	{
-		final List<Node> result = new ArrayList<>();
+		final List<TreeNode> result = new ArrayList<>();
 		_toList(result, binaryTree.getRoot());
 		return result;
 	}
 
-	private void _toList(List<Node> result, Node node)
+	private void _toList(List<TreeNode> result, TreeNode node)
 	{
 		if (node != null)
 		{
@@ -198,7 +199,7 @@ public class BinaryTreeTest
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
 		assertEquals(
-			"BinaryTree:{InnerNode[<%1$s>:LeafNode(two)|LeafNode(three)]}".formatted(Node.STRING_EMPTY),
+			"BinaryTree:{InnerNode[<%1$s>:LeafNode(two)|LeafNode(three)]}".formatted(STRING_EMPTY),
 			binaryTree.toString());
 	}
 
@@ -222,7 +223,7 @@ public class BinaryTreeTest
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
 		assertEquals(
-			"BinaryTree:{InnerNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(Node.STRING_EMPTY),
+			"BinaryTree:{InnerNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(STRING_EMPTY),
 			binaryTree.toString());
 	}
 }
