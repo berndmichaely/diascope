@@ -11,9 +11,15 @@ Diascope is written based on Java/JavaFX and so should run on any platform provi
 
 ### Screenshots
 
-![Screenshot 1](doc/screenshots/Screenshot_01.png "Screenshot 1")
+![Screenshot 1](doc/screenshots/Screenshot_01.jpg "Screenshot 1")
 
-![Screenshot 2](doc/screenshots/Screenshot_02.png "Screenshot 2")
+![Screenshot 2](doc/screenshots/Screenshot_02.jpg "Screenshot 2")
+
+![Screenshot 3](doc/screenshots/Screenshot_03.jpg "Screenshot 3")
+
+![Screenshot 4](doc/screenshots/Screenshot_04.jpg "Screenshot 4")
+
+![Screenshot 5](doc/screenshots/Screenshot_05.jpg "Screenshot 5")
 
 ## Building the application
 
@@ -25,7 +31,9 @@ to run the application immediately or
 
     ./gradlew installDist
 
-to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 23 (it is tested with Eclipse Adoptium JDK on Linux). When running on Java 24 or 25, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
+to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 23 (it is tested with Eclipse Adoptium JDK on Linux).
+
+Since this version uses preview features of JavaFX25, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
     export JAVA_OPTS='-Djavafx.enablePreview=true -Djavafx.suppressPreviewWarning=true'
 
@@ -46,18 +54,18 @@ Configuration like showing/hiding toolbar/thumbnail/dividers is kept and remembe
 
 In addition to the toolbar and context menu, you can use the following hotkeys in the image area:
 
-| Key | Function                   |
-| --- | -------------------------- |
-| F11 | Enter/Exit full screen mode|
-| ESC | Exit full screen mode      |
-| 1   | Zoom to 100%               |
-| 2   | Zoom to fit window         |
-| 3   | Zoom to fill window        |
-| t   | Show/Hide toolbar          |
-| l   | Show/Hide thumbnail list   |
-| s   | Show/Hide scrollbars       |
-| h   | Mirror horizontally        |
-| v   | Mirror vertically          |
+| Key | Function                    |
+| --- | --------------------------- |
+| F11 | Enter/Exit full screen mode |
+| ESC | Exit full screen mode       |
+| 1   | Zoom to 100%                |
+| 2   | Zoom to fit window          |
+| 3   | Zoom to fill window         |
+| t   | Show/Hide toolbar           |
+| l   | Show/Hide thumbnail list    |
+| s   | Show/Hide scrollbars        |
+| h   | Mirror horizontally         |
+| v   | Mirror vertically           |
 
 ## Features
 
@@ -68,7 +76,6 @@ In addition to the toolbar and context menu, you can use the following hotkeys i
 Select the test image directory `./doc/test-images/png` and add alternately a layer (using the **+** button in the toolbar) and select another test image (a section must be selected to change the image). Then try the functionality available in the toolbar:
 
 Try to compare e.g. different post processed versions of a RAW image, exposure bracketing series…
-
 
 ### Split Mode
 
@@ -92,21 +99,28 @@ The Split Mode allows to view 2 or more similar images stacked on each other.
 
 The Spot Mode allows to view part of an image in a spot on top of a base image.
 
+#### Entering Spot Mode
+
 To enter the spot mode:
 
-  1. in *split mode*, select a *base image* in one layer
-  2. add a *second layer* and select the *spot image*
-  3. enter the *spot mode* with the toolbar button.
+  1. Open 2 or more layers in *split mode*.
+  2. Select 2 of the layers. The earlier selected layer will be the *base* layer and the later selected will be the *spot* layer. (If exactly 2 layers are open and one is selected, the unselected will be the *base* layer and the selected will be the *spot* layer.)
+  3. Enter the *spot mode* with the toolbar button.
 
-In more detail, images from split mode are selected as *base* and *spot* image for spot mode as follows:
+#### Circle and Ellipse/Band sub-modes
 
-  * If 2 layers are open and none is selected, the image of the first layer will be the base image, and the image of the second layer will be the spot image.
-  * If 2 layers are open and 1 is selected, the selected image will be the spot image.
-  * If 2 or more layers are open, select *base* and *spot* image as follows:
-    1. Single-Click to select the base layer
-    2. Ctrl-Single-Click a second layer to become the spot.
+The spot can be *moved* by dragging with the mouse.
 
-You can
+The *shape* can be controlled using Ctrl-dragging with the mouse inside the spot:
 
-  * *move* the spot by dragging with the mouse and
-  * *resize* the spot by Ctrl-mouse-dragging.
+  * The shape will change from a circle via an ellipse to a band.
+  * When the shape comes close to a circle, it will snap into circle mode.
+
+When in *circle mode*, Shift-dragging with the mouse changes the circle size.
+
+When in *ellipse/band mode*:
+
+  * Shift-dragging with the mouse changes the *width* of the ellipse/band.
+  * Ctrl-dragging changes the *length* of the ellipse/band and allows its *rotation*.
+  * Shift+Ctrl-dragging will *rotate only* the ellipse/band, and will leave the shape unmodified.
+  * Alt+Ctrl-dragging will rotate in discrete steps.
