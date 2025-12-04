@@ -344,6 +344,7 @@ public class MainWindow
 		HeaderBar.setAlignment(menuBar, Pos.CENTER_LEFT);
 		HeaderBar.setMargin(menuBar, new Insets(5));
 		final var paneLeading = new BorderPane(menuBar);
+		paneLeading.setMouseTransparent(true);
 		headerBar.setLeading(paneLeading);
 		final Label title = new Label();
 		title.textProperty().bind(titleProperty);
