@@ -91,7 +91,8 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// Finds a leaf node by its value.
 	///
 	/// @param value the value to search for
-	/// @return the leaf node, if found, or {@code null}
+	/// @return the first leaf node in iteration order with the given value,
+	///         if found, or {@code null}
 	///
 	public @Nullable
 	LeafNode findLeafNode(L value)
@@ -246,7 +247,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// Removes the leaf node indicated by the given value.
 	///
 	/// @param item the given leaf value
-	/// @return the LeafNode found or {@code null}
+	/// @return the first LeafNode in iteration order with the given value found or {@code null}
 	///
 	public @Nullable
 	LeafNode removeItem(L item)
@@ -254,27 +255,39 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		final var leafNode = findLeafNode(item);
 		if (leafNode != null)
 		{
-			final InnerNode pn = leafNode.getParentNode();
-			if (pn != null)
+			removeNode(leafNode);
+		}
+		return leafNode;
+	}
+
+	/// Removes the given leaf node.
+	///
+	/// *Implementation note:*
+	/// There is no test, that the given node is part of this tree.
+	///
+	/// @param leafNode the given leaf node
+	///
+	public void removeNode(LeafNode leafNode)
+	{
+		final InnerNode pn = leafNode.getParentNode();
+		if (pn != null)
+		{
+			final InnerNode ppn = pn.getParentNode();
+			final TreeNode otherChild = pn.getSubNode(leafNode == pn.getSubNode(1) ? 0 : 1);
+			if (ppn != null)
 			{
-				final InnerNode ppn = pn.getParentNode();
-				final TreeNode otherChild = pn.getSubNode(leafNode == pn.getSubNode(1) ? 0 : 1);
-				if (ppn != null)
-				{
-					ppn.setSubNode(pn == ppn.getSubNode(1) ? 1 : 0, otherChild);
-				}
-				else
-				{
-					root = otherChild;
-				}
-				size--;
+				ppn.setSubNode(pn == ppn.getSubNode(1) ? 1 : 0, otherChild);
 			}
 			else
 			{
-				clear();
+				root = otherChild;
 			}
+			size--;
 		}
-		return leafNode;
+		else
+		{
+			clear();
+		}
 	}
 
 	@Override

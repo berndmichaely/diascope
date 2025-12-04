@@ -36,6 +36,12 @@ public abstract sealed class TreeNode permits InnerNode, LeafNode
 	{
 	}
 
+	/// Returns the parent node, if this node is not the root.
+	///
+	/// *Implementation note:*
+	/// Parent nodes are held via weak references.
+	///
+	/// @return the parent node or {@code null}
 	public @Nullable
 	InnerNode getParentNode()
 	{
@@ -47,6 +53,10 @@ public abstract sealed class TreeNode permits InnerNode, LeafNode
 		this.parentNode = parentNode != null ? new WeakReference<>(parentNode) : null;
 	}
 
+	/// Returns true, iff this node is the root node.
+	///
+	/// @return true, iff this node is the root node
+	///
 	public boolean isRootNode()
 	{
 		return parentNode == null;
