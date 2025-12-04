@@ -128,7 +128,7 @@ class Viewport
 					stackItems.add(0, paneSpotLayers);
 					final int numLayers = numLayersProperty.get();
 					final var nodes = paneTopLayer.getChildren();
-					final var subList = nodes.subList(0, 2 * numLayers + 1);
+					final var subList = nodes.subList(0, 2 * numLayers);
 					this.cacheChildrenTopLayer.clear();
 					this.cacheChildrenTopLayer.addAll(subList);
 					subList.clear();
