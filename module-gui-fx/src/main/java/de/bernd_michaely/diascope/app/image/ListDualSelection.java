@@ -18,9 +18,9 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.Optional;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -66,7 +66,7 @@ class ListDualSelection<T>
 		this.dualItemsSelected = new ReadOnlyBooleanWrapper();
 		this.dualSelectionFirstItem = new ReadOnlyObjectWrapper<>(Optional.empty());
 		this.dualSelectionSecondItem = new ReadOnlyObjectWrapper<>(Optional.empty());
-		this.queueSelected = new LinkedList<>();
+		this.queueSelected = new ArrayDeque<>();
 		this.selectedIndices = unmodifiableCollection(queueSelected);
 		singleItemSelected.bind(singleSelectionItem.map(Optional::isPresent));
 		dualItemsSelected.bind(createBooleanBinding(
