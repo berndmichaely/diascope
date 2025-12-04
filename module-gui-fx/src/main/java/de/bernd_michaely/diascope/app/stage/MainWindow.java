@@ -53,6 +53,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HeaderBar;
+import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -338,13 +339,13 @@ public class MainWindow
 	@SuppressWarnings("deprecation")
 	private HeaderBar createHeaderBar(Stage stage)
 	{
+		final double offset = Font.getDefault().getSize() * 3 / 8;
 		stage.initStyle(StageStyle.EXTENDED);
 		final var headerBar = new HeaderBar();
 		menuBar.setBorder(Border.EMPTY);
 		HeaderBar.setAlignment(menuBar, Pos.CENTER_LEFT);
-		HeaderBar.setMargin(menuBar, new Insets(5));
+		HeaderBar.setMargin(menuBar, new Insets(offset));
 		final var paneLeading = new BorderPane(menuBar);
-		paneLeading.setMouseTransparent(true);
 		headerBar.setLeading(paneLeading);
 		final Label title = new Label();
 		title.textProperty().bind(titleProperty);
@@ -361,9 +362,10 @@ public class MainWindow
 				imageView.fitWidthProperty().set(height);
 				imageView.fitHeightProperty().set(height);
 			}));
+			//imageView.setMouseTransparent(true);
 			paneLeading.setLeft(imageView);
 			BorderPane.setAlignment(imageView, Pos.CENTER);
-			BorderPane.setMargin(imageView, new Insets(0, 5, 0, 5));
+			BorderPane.setMargin(imageView, new Insets(0, offset, 0, offset));
 		}
 		return headerBar;
 	}
