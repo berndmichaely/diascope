@@ -48,6 +48,11 @@ public abstract sealed class TreeNode permits InnerNode, LeafNode
 		return parentNode != null ? parentNode.get() : null;
 	}
 
+	boolean wasWeakRefGarbageCollected()
+	{
+		return parentNode != null && parentNode.get() == null;
+	}
+
 	void setParentNode(@Nullable InnerNode parentNode)
 	{
 		this.parentNode = parentNode != null ? new WeakReference<>(parentNode) : null;
