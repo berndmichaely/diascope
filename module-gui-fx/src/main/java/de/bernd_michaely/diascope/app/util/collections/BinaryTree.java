@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.util.collections.InnerNode.createBinaryTreeNode;
+import static de.bernd_michaely.diascope.app.util.collections.InnerNode.createBinaryNode;
 
 /// Generic class to describe a binary tree structure.
 ///
@@ -225,7 +225,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode)
 	{
 		final InnerNode parentNode = insertionNode.getParentNode();
-		final InnerNode<I> newInnerNode = createBinaryTreeNode(insertionNode, new LeafNode<>(item));
+		final InnerNode<I> newInnerNode = createBinaryNode(insertionNode, new LeafNode<>(item));
 		newInnerNode.setValue(value);
 		if (parentNode != null)
 		{
@@ -246,12 +246,12 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// Removes the leaf node indicated by the given value.
 	///
 	/// @param item the given leaf value
-	/// @return true, if the leaf node was found and removed,
-	///					false, if the leaf was not found and nothing was changed
+	/// @return the LeafNode found or {@code null}
 	///
-	public boolean removeItem(L item)
+	public @Nullable
+	LeafNode removeItem(L item)
 	{
-		final LeafNode leafNode = findLeafNode(item);
+		final var leafNode = findLeafNode(item);
 		if (leafNode != null)
 		{
 			final InnerNode pn = leafNode.getParentNode();
@@ -273,12 +273,8 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 			{
 				clear();
 			}
-			return true;
 		}
-		else
-		{
-			return false;
-		}
+		return leafNode;
 	}
 
 	@Override

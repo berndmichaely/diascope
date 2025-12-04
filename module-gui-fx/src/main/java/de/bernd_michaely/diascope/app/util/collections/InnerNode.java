@@ -54,7 +54,7 @@ public final class InnerNode<I> extends TreeNode
 	/// @param firstNode first binary tree node
 	/// @param secondNode second binary tree node
 	///
-	static <V> InnerNode<V> createBinaryTreeNode(TreeNode firstNode, TreeNode secondNode)
+	static <V> InnerNode<V> createBinaryNode(TreeNode firstNode, TreeNode secondNode)
 	{
 		final var node = new InnerNode<V>(2, null);
 		node.setSubNode(0, firstNode);
