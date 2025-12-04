@@ -197,7 +197,9 @@ public class BinaryTreeTest
 		assertTrue(binaryTree.containsLeaf("three"));
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
-		assertEquals("BinaryTree:{InnerNode[<·>:LeafNode(two)|LeafNode(three)]}", binaryTree.toString());
+		assertEquals(
+			"BinaryTree:{InnerNode[<%1$s>:LeafNode(two)|LeafNode(three)]}".formatted(Node.STRING_EMPTY),
+			binaryTree.toString());
 	}
 
 	@Test
@@ -219,6 +221,8 @@ public class BinaryTreeTest
 		assertTrue(binaryTree.containsLeaf("three"));
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
-		assertEquals("BinaryTree:{InnerNode[<·>:LeafNode(one)|LeafNode(three)]}", binaryTree.toString());
+		assertEquals(
+			"BinaryTree:{InnerNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(Node.STRING_EMPTY),
+			binaryTree.toString());
 	}
 }
