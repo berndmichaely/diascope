@@ -49,6 +49,19 @@ public final class InnerNode<I> extends TreeNode
 		this.nodesUnmodifiable = unmodifiableList(nodes);
 	}
 
+	/// Creates a new binary tree node.
+	///
+	/// @param firstNode first binary tree node
+	/// @param secondNode second binary tree node
+	///
+	static <V> InnerNode<V> createBinaryTreeNode(TreeNode firstNode, TreeNode secondNode)
+	{
+		final var node = new InnerNode<V>(2, null);
+		node.setSubNode(0, firstNode);
+		node.setSubNode(1, secondNode);
+		return node;
+	}
+
 	public int getSize()
 	{
 		return nodes.size();

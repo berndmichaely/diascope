@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.diascope.app.util.collections.InnerNode.createBinaryTreeNode;
+
 /// Generic class to describe a binary tree structure.
 ///
 /// This is a {@code  Collection<TreeNode>}.
@@ -37,6 +39,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 ///
 /// @param <I> data type associated with inner nodes
 /// @param <L> data type associated with leaf nodes
+///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
 public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
@@ -190,6 +193,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	///
 	/// @param item the given leaf node value
 	/// @param insertionPoint the insertion point indicated by its leaf value
+	/// @return true, iff the insertion point was found and a new node was inserted
 	///
 	public boolean insertItemAt(L item, L insertionPoint)
 	{
@@ -202,6 +206,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// @param item the given leaf node value
 	/// @param value the associated inner node value
 	/// @param insertionPoint the insertion point indicated by its leaf value
+	/// @return true, iff the insertion point was found and a new node was inserted
 	///
 	public boolean insertItemAt(L item, @Nullable I value, L insertionPoint)
 	{
@@ -220,10 +225,8 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode)
 	{
 		final InnerNode parentNode = insertionNode.getParentNode();
-		final LeafNode<L> newLeafNode = new LeafNode<>(item);
-		final InnerNode<I> newInnerNode = new InnerNode<>(2, value);
-		newInnerNode.setSubNode(0, insertionNode);
-		newInnerNode.setSubNode(1, newLeafNode);
+		final InnerNode<I> newInnerNode = createBinaryTreeNode(insertionNode, new LeafNode<>(item));
+		newInnerNode.setValue(value);
 		if (parentNode != null)
 		{
 			int childIndex = parentNode.getSize() - 1;
