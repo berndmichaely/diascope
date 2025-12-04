@@ -15,8 +15,7 @@ plugins {
 apply plugin: 'org.checkerframework'
 
 wrapper {
-	//gradleVersion = '9.2.0'
-	gradleVersion = '9.1.0'
+	gradleVersion = '9.2.0'
 }
 
 final def javaLangVersion = JavaLanguageVersion.of(23)
@@ -266,7 +265,6 @@ jar {
 		
 run {
 	logger.lifecycle " -> run task modularity : ${modularity.inferModulePath.get()}"
-	//args = [ '--development', 'running from within gradle' ]
 	
 	systemProperty 'java.util.logging.config.file', file('logging.properties')
 	
