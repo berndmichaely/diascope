@@ -3,7 +3,7 @@ plugins {
 	id 'application'
 	id 'jacoco'
 	id 'org.openjfx.javafxplugin' version '0.1.0'
-	id 'org.checkerframework' version '0.6.60' apply false
+	id 'org.checkerframework' version '0.6.61' apply false
 	
 	// auto create automatic modules:
 	//id 'extra-java-module-info' apply false
@@ -15,6 +15,7 @@ plugins {
 apply plugin: 'org.checkerframework'
 
 wrapper {
+	//gradleVersion = '9.2.0'
 	gradleVersion = '9.1.0'
 }
 
@@ -22,7 +23,7 @@ final def javaLangVersion = JavaLanguageVersion.of(23)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
 
-final def versionCheckerFramework = '3.51.1'
+final def versionCheckerFramework = '3.52.0'
 
 java {
 	toolchain {
@@ -79,16 +80,15 @@ def String readSvnRevision()
 						// create valid semantic version build-nr:
 						svnRev = 'r' + svnRev.replaceAll('[^0-9a-zA-Z]+' , '.')
 						svnRev = svnRev.endsWith('.') ? svnRev.substring(0, n-1) : svnRev
-						if (isolateNumericBuildParts) {
-							final int n = svnRev.length()
-							final def s = new StringBuilder();
-							final def p = ~/([a-zA-Z][0-9])|([0-9][a-zA-Z])/
-							for (int i = 1; i < n; i++) {
-								s.append(svnRev.substring(i-1, i))
-								if (svnRev.substring(i-1, i+1) ==~ p) s.append('.')
-							}
-							svnRev = s.append(svnRev.substring(n-1, n)).toString()
+						// isolate numeric build parts:
+						final int n = svnRev.length()
+						final def s = new StringBuilder();
+						final def p = ~/([a-zA-Z][0-9])|([0-9][a-zA-Z])/
+						for (int i = 1; i < n; i++) {
+							s.append(svnRev.substring(i-1, i))
+							if (svnRev.substring(i-1, i+1) ==~ p) s.append('.')
 						}
+						svnRev = s.append(svnRev.substring(n-1, n)).toString()
 					}
 				}
 			} else {
@@ -120,7 +120,8 @@ allprojects {
 	group = 'de.bernd_michaely'
 	version = semVer
 	
-	ext.versionJUnit = '5.13.4'
+	ext.versionJUnit = '6.0.1'
+	// ext.versionJUnit = '5.14.1'
 	// ext.versionJUnitVintage = '4.13.2'
 	
 	repositories {
@@ -243,10 +244,10 @@ application {
 	}
 	final int javaLangVer = javaLangVersion.asInt()
 
+	if (javaLangVer >= 24) {
+		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
+	}
 	if (javafxVer == 25) {
-		if (javaLangVer >= 24) {
-			applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
-		}
 		applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
 		applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	}
