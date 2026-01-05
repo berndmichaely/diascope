@@ -23,8 +23,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.util.collections.InnerNode.createBinaryNode;
-
 /// Generic class to describe a binary tree structure.
 ///
 /// This is a {@code  Collection<TreeNode>}.
@@ -226,8 +224,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode)
 	{
 		final InnerNode parentNode = insertionNode.getParentNode();
-		final InnerNode<I> newInnerNode = createBinaryNode(insertionNode, new LeafNode<>(item));
-		newInnerNode.setValue(value);
+		final var newInnerNode = new BinaryNode<I>(insertionNode, new LeafNode<>(item), value);
 		if (parentNode != null)
 		{
 			int childIndex = parentNode.getSize() - 1;

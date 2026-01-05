@@ -74,7 +74,7 @@ public class BinaryTreeTest
 		System.out.println();
 		System.out.println("→ " + binaryTree);
 		assertEquals(
-			"BinaryTree:{InnerNode[<1>:LeafNode(one)|InnerNode[<2>:LeafNode(two)|InnerNode[<3>:LeafNode(three)|InnerNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
+			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:LeafNode(three)|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
 			binaryTree.toString());
 		assertEquals(listTest.size(), binaryTree.size());
 		assertIterableEquals(toList(binaryTree), binaryTree);
@@ -85,7 +85,7 @@ public class BinaryTreeTest
 		System.out.println();
 		System.out.println("→ " + binaryTree);
 		assertEquals(
-			"BinaryTree:{InnerNode[<1>:LeafNode(one)|InnerNode[<2>:LeafNode(two)|InnerNode[<3>:InnerNode[<789>:LeafNode(three)|LeafNode(six)]|InnerNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
+			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:BinaryNode[<789>:LeafNode(three)|LeafNode(six)]|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
 			binaryTree.toString());
 		System.out.println();
 		binaryTree.formatted(System.out::println);
@@ -203,7 +203,7 @@ public class BinaryTreeTest
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
 		assertEquals(
-			"BinaryTree:{InnerNode[<%1$s>:LeafNode(two)|LeafNode(three)]}".formatted(STRING_EMPTY),
+			"BinaryTree:{BinaryNode[<%1$s>:LeafNode(two)|LeafNode(three)]}".formatted(STRING_EMPTY),
 			binaryTree.toString());
 	}
 
@@ -228,7 +228,7 @@ public class BinaryTreeTest
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
 		assertEquals(
-			"BinaryTree:{InnerNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(STRING_EMPTY),
+			"BinaryTree:{BinaryNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(STRING_EMPTY),
 			binaryTree.toString());
 	}
 }

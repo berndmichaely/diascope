@@ -23,11 +23,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.util.Collections.unmodifiableList;
 
-/// Inner nodes of a BinaryTree.
+/// Inner nodes of a tree.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public final class InnerNode<I> extends TreeNode
+public sealed class InnerNode<I> extends TreeNode permits BinaryNode
 {
 	private @Nullable I value;
 	private final List<@Nullable TreeNode> nodes;
@@ -49,19 +49,6 @@ public final class InnerNode<I> extends TreeNode
 		this.nodesUnmodifiable = unmodifiableList(nodes);
 	}
 
-	/// Creates a new binary tree node.
-	///
-	/// @param firstNode first binary tree node
-	/// @param secondNode second binary tree node
-	///
-	static <V> InnerNode<V> createBinaryNode(TreeNode firstNode, TreeNode secondNode)
-	{
-		final var node = new InnerNode<V>(2, null);
-		node.setSubNode(0, firstNode);
-		node.setSubNode(1, secondNode);
-		return node;
-	}
-
 	public int getSize()
 	{
 		return nodes.size();
@@ -74,6 +61,10 @@ public final class InnerNode<I> extends TreeNode
 		return value;
 	}
 
+	/// Sets the value associated with this node.
+	///
+	/// @param value the value to associate with this node
+	///
 	public void setValue(@Nullable I value)
 	{
 		this.value = value;
@@ -82,9 +73,33 @@ public final class InnerNode<I> extends TreeNode
 	@Nullable
 	TreeNode getSubNode(int index)
 	{
-		return nodes.get(index);
+		return nodesUnmodifiable.get(index);
 	}
 
+	/// Returns the first subnode.
+	///
+	/// @return the first subnode
+	///
+	@Nullable
+	TreeNode getFirst()
+	{
+		return getSubNodes().getFirst();
+	}
+
+	/// Returns the last subnode.
+	///
+	/// @return the last subnode
+	///
+	@Nullable
+	TreeNode getLast()
+	{
+		return getSubNodes().getLast();
+	}
+
+	/// Returns an unmodifiable list of subnodes.
+	///
+	/// @return an unmodifiable list of subnodes
+	///
 	List<@Nullable TreeNode> getSubNodes()
 	{
 		return nodesUnmodifiable;

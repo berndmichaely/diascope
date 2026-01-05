@@ -29,6 +29,10 @@ public abstract sealed class TreeNode permits InnerNode, LeafNode
 	static final String STRING_EMPTY = "·";
 	private @Nullable WeakReference<InnerNode> parentNode;
 
+	/// Returns the value associated with this node.
+	///
+	/// @return the value associated with this node
+	///
 	abstract @Nullable
 	Object getValue();
 
