@@ -67,11 +67,12 @@ final class ImageLayers extends ImageLayersBase
 					final var imageLayer = list.get(i);
 					if (imageLayer != null)
 					{
-						final var divider = SplitDivider.createInstance(viewport);
-						splitDividers.put(imageLayer, divider);
+						final var splitDivider = SplitDivider.createInstance(viewport);
+						splitDividers.put(imageLayer, splitDivider);
 						viewport.addSplitLayer(i, imageLayer);
-						divider.angleProperty().addListener(clippingPointsListener);
-						divider.getMouseDragState().setOnRotate(() -> dividerRotationControl.accept(divider));
+						splitDivider.angleProperty().addListener(clippingPointsListener);
+						splitDivider.getMouseDragState().setOnRotate(
+							() -> dividerRotationControl.accept(splitDivider));
 					}
 				}
 				dividerRotationControl.initializeDividerAngles();
@@ -83,7 +84,7 @@ final class ImageLayers extends ImageLayersBase
 					if (imageLayer != null)
 					{
 						viewport.removeLayer(imageLayer);
-						try (var divider = splitDividers.remove(imageLayer))
+						try (var divider = splitDividers.get(imageLayer))
 						{
 							if (divider != null)
 							{
@@ -98,6 +99,7 @@ final class ImageLayers extends ImageLayersBase
 						imageLayer.close();
 					}
 				}
+				change.getRemoved().forEach(splitDividers::remove);
 				dividerRotationControl.initializeDividerAngles();
 			}).build());
 		// listener for imageTransforms:
