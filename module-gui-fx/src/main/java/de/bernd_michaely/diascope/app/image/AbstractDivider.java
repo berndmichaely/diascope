@@ -31,14 +31,14 @@ import static java.lang.Math.ceil;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class DividerBase permits Divider, DividerGrid
+abstract sealed class AbstractDivider permits SplitDivider, GridDivider
 {
 	private static final Paint COLOR_DEFAULT = COLOR_UNSELECTED;
 	private static final Paint COLOR_HOVER = Color.LIGHTCORAL;
 	private final Line lineShape = new Line();
 	private final Line lineEvent = new Line();
 
-	DividerBase()
+	AbstractDivider()
 	{
 		final double sizeDefault = Font.getDefault().getSize();
 		lineShape.setStroke(COLOR_DEFAULT);

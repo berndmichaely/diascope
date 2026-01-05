@@ -27,7 +27,7 @@ import static java.lang.Math.toRadians;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test class for Divider.
+ * Test class for SplitDivider.
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
@@ -66,7 +66,7 @@ public class DividerTest
 		final var cornerAngles = new CornerAngles(
 			x.getReadOnlyProperty(), y.getReadOnlyProperty(),
 			dx.getReadOnlyProperty(), dy.getReadOnlyProperty());
-		try (var divider = new Divider(cornerAngles, width, height, x, y, dx, dy))
+		try (var divider = new SplitDivider(cornerAngles, width, height, x, y, dx, dy))
 		{
 			divider.setAngle(0.0);
 			assertEquals(RIGHT, divider.getBorder());
@@ -116,7 +116,7 @@ public class DividerTest
 		final var cornerAngles = new CornerAngles(
 			x.getReadOnlyProperty(), y.getReadOnlyProperty(),
 			dx.getReadOnlyProperty(), dy.getReadOnlyProperty());
-		try (var divider = new Divider(cornerAngles, width, height, x, y, dx, dy))
+		try (var divider = new SplitDivider(cornerAngles, width, height, x, y, dx, dy))
 		{
 			final double d30add = rint(50.0 + 50.0 * tan(toRadians(30.0)));
 			final double d30sub = rint(50.0 - 50.0 * tan(toRadians(30.0)));

@@ -79,7 +79,7 @@ public class MultiImageView
 
 	public MultiImageView()
 	{
-		final Map<ImageLayer, Divider> splitDividers = new IdentityHashMap<>();
+		final Map<ImageLayer, SplitDivider> splitDividers = new IdentityHashMap<>();
 		this.numLayers = new ReadOnlyIntegerWrapper();
 		this.viewport = new Viewport(unmodifiableMap(splitDividers), numLayers.getReadOnlyProperty());
 		this.imageTransforms = new ImageTransforms();

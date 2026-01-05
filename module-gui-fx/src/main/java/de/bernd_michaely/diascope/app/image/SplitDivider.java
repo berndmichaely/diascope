@@ -32,7 +32,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class Divider extends DividerBase implements AutoCloseable
+final class SplitDivider extends AbstractDivider implements AutoCloseable
 {
 	private final DoubleProperty angle = new SimpleDoubleProperty();
 	private final ReadOnlyDoubleWrapper angleNorm = new ReadOnlyDoubleWrapper();
@@ -42,7 +42,7 @@ final class Divider extends DividerBase implements AutoCloseable
 	private final ReadOnlyDoubleWrapper borderIntersectionY = new ReadOnlyDoubleWrapper();
 	private final MouseDragState mouseDragState;
 
-	Divider(CornerAngles cornerAngles,
+	SplitDivider(CornerAngles cornerAngles,
 		ReadOnlyDoubleProperty viewportWidth,
 		ReadOnlyDoubleProperty viewportHeight,
 		ReadOnlyDoubleProperty splitCenterX,
@@ -88,10 +88,10 @@ final class Divider extends DividerBase implements AutoCloseable
 		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
 	}
 
-	static Divider createInstance(Viewport viewport)
+	static SplitDivider createInstance(Viewport viewport)
 	{
 		final var splitCenter = viewport.getSplitCenter();
-		final var divider = new Divider(viewport.getCornerAngles(),
+		final var divider = new SplitDivider(viewport.getCornerAngles(),
 			viewport.widthProperty(), viewport.heightProperty(),
 			splitCenter.xProperty(), splitCenter.yProperty(),
 			splitCenter.dxProperty(), splitCenter.dyProperty());

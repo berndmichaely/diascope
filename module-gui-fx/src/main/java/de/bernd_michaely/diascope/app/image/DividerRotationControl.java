@@ -32,7 +32,7 @@ import static java.lang.System.Logger.Level.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class DividerRotationControl implements Consumer<Divider>
+class DividerRotationControl implements Consumer<SplitDivider>
 {
 	private static final Logger logger = System.getLogger(DividerRotationControl.class.getName());
 	private static final double DIVIDERS_START_ANGLE = 90.0;
@@ -40,11 +40,11 @@ class DividerRotationControl implements Consumer<Divider>
 	private static final double C2 = 2 * C;
 	private final DoubleProperty dividerMinGapProperty;
 	private final List<ImageLayer> layers;
-	private final Function<ImageLayer, Divider> dividerByImageLayer;
-	private @Nullable Divider divider;
+	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
+	private @Nullable SplitDivider divider;
 	private @Nullable Runnable dividerDragCycle;
 
-	DividerRotationControl(List<ImageLayer> layers, Function<ImageLayer, Divider> dividerByImageLayer)
+	DividerRotationControl(List<ImageLayer> layers, Function<ImageLayer, SplitDivider> dividerByImageLayer)
 	{
 		this.layers = layers;
 		this.dividerByImageLayer = dividerByImageLayer;
@@ -124,12 +124,12 @@ class DividerRotationControl implements Consumer<Divider>
 				logger.log(WARNING, () -> "Last divider angle is %f".formatted(a));
 			}
 			logger.log(TRACE, () -> "normalized divider angles → %s".formatted(
-				layers.stream().map(dividerByImageLayer::apply).map(Divider::getAngle).toList()));
+				layers.stream().map(dividerByImageLayer::apply).map(SplitDivider::getAngle).toList()));
 		}
 	}
 
 	@Override
-	public void accept(Divider divider)
+	public void accept(SplitDivider divider)
 	{
 		final var mouseDragState = divider.getMouseDragState();
 		final boolean dividerChanged = this.divider != null && this.divider != divider;

@@ -46,7 +46,7 @@ import static javafx.collections.FXCollections.unmodifiableObservableList;
 ///
 class Viewport implements AutoCloseable
 {
-	private final Map<ImageLayer, Divider> splitDividersUnmodifiable;
+	private final Map<ImageLayer, SplitDivider> splitDividersUnmodifiable;
 	private final Pane paneImageLayers = new Pane();
 	private final Pane paneDividerLines = new Pane();
 	private final Pane paneSpotLayers = new Pane();
@@ -80,7 +80,7 @@ class Viewport implements AutoCloseable
 	private @Nullable ImageLayer spotBaseLayer, spotLayer;
 	private @MonotonicNonNull LayerSelectionModel layerSelectionModel;
 
-	Viewport(Map<ImageLayer, Divider> splitDividersUnmodifiable, ReadOnlyIntegerProperty numLayersProperty)
+	Viewport(Map<ImageLayer, SplitDivider> splitDividersUnmodifiable, ReadOnlyIntegerProperty numLayersProperty)
 	{
 		this.splitDividersUnmodifiable = splitDividersUnmodifiable;
 		this.modeProperty = new SimpleObjectProperty<>();
@@ -238,7 +238,7 @@ class Viewport implements AutoCloseable
 	/// @return the split divider associated with the given image layer
 	/// @throws IllegalStateException if there is no divider associated with the given image layer
 	///
-	Divider getDivider(ImageLayer imageLayer)
+	SplitDivider getDivider(ImageLayer imageLayer)
 	{
 		final var divider = splitDividersUnmodifiable.get(imageLayer);
 		if (divider == null)

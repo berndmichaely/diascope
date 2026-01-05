@@ -34,7 +34,7 @@ final class ImageLayers extends ImageLayersBase
 	private final DividerRotationControl dividerRotationControl;
 	private final ChangeListener<Number> clippingPointsListener;
 
-	ImageLayers(Viewport viewport, Map<ImageLayer, Divider> splitDividers,
+	ImageLayers(Viewport viewport, Map<ImageLayer, SplitDivider> splitDividers,
 		ImageTransforms imageTransforms)
 	{
 		this.viewport = viewport;
@@ -67,7 +67,7 @@ final class ImageLayers extends ImageLayersBase
 					final var imageLayer = list.get(i);
 					if (imageLayer != null)
 					{
-						final var divider = Divider.createInstance(viewport);
+						final var divider = SplitDivider.createInstance(viewport);
 						splitDividers.put(imageLayer, divider);
 						viewport.addSplitLayer(i, imageLayer);
 						divider.angleProperty().addListener(clippingPointsListener);

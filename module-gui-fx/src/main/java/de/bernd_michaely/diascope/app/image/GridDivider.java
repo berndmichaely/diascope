@@ -20,7 +20,7 @@ package de.bernd_michaely.diascope.app.image;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class DividerGrid extends DividerBase
+final class GridDivider extends AbstractDivider
 {
 	private Orientation orientation = Orientation.values()[0];
 
@@ -29,13 +29,13 @@ final class DividerGrid extends DividerBase
 		VERTICAL, HORIZONTAL
 	}
 
-	DividerGrid()
+	GridDivider()
 	{
 	}
 
-	static DividerGrid createInstance(Viewport viewport)
+	static GridDivider createInstance(Viewport viewport)
 	{
-		return new DividerGrid();
+		return new GridDivider();
 	}
 
 	Orientation getOrientation()

@@ -36,10 +36,10 @@ class DividerDragCycle implements Runnable
 {
 	private static final Logger logger = System.getLogger(DividerDragCycle.class.getName());
 	private final List<ImageLayer> layers;
-	private final Function<ImageLayer, Divider> dividerByImageLayer;
+	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
 	private final int n;
 	private final int indexLast;
-	private final Divider divider;
+	private final SplitDivider divider;
 	private final double dividerMinGap;
 	private final List<Double> startAngles;
 	private final int indexDivider;
@@ -106,8 +106,8 @@ class DividerDragCycle implements Runnable
 		}
 	}
 
-	DividerDragCycle(List<ImageLayer> layers, Divider divider, double dividerMinGap,
-		Function<ImageLayer, Divider> dividerByImageLayer)
+	DividerDragCycle(List<ImageLayer> layers, SplitDivider divider, double dividerMinGap,
+		Function<ImageLayer, SplitDivider> dividerByImageLayer)
 	{
 		this.dividerByImageLayer = dividerByImageLayer;
 		this.layers = layers;
