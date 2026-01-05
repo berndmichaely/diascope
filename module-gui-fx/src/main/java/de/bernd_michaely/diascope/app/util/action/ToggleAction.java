@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.util.action;
 
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -23,12 +24,14 @@ import java.util.List;
 import java.util.Map;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
@@ -49,7 +52,7 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 	private final Map<Toggle, E> toggleIds;
 	private final Map<E, ActionItemDescriptor> actionItemDescriptors;
 	private final Map<E, BooleanProperty> disableProperties;
-	private final ObjectProperty<E> selectedId;
+	private final EnumProperties<E> selectedIdProperties;
 	private boolean changing;
 
 	/// Creates a new instance.
@@ -73,8 +76,7 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 		}
 		this.toggleIds = new HashMap<>();
 		this.disableProperties = new EnumMap<>(enumClass);
-		this.selectedId = new SimpleObjectProperty<>(unselectedId);
-		selectedId.addListener(onChange(id ->
+		final ChangeListener<E> changeListener = onChange(id ->
 		{
 			if (!changing)
 			{
@@ -88,7 +90,8 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 					changing = false;
 				}
 			}
-		}));
+		});
+		this.selectedIdProperties = EnumProperties.createInstance(unselectedId, List.of(changeListener));
 	}
 
 	/// Add toggles.
@@ -126,7 +129,7 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 						toggleIds.keySet().stream()
 							.filter(t -> t != toggle)
 							.forEach(t -> t.setSelected(toggleIds.get(t) == id ? selected : false));
-						selectedId.set(selected ? id : unselectedId);
+						selectedIdProperties.setRawValue(selected ? id : unselectedId);
 					}
 					finally
 					{
@@ -213,9 +216,14 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 		return unselectedId;
 	}
 
-	public ObjectProperty<E> selectedIdProperty()
+	public ReadOnlyObjectProperty<E> selectedIdProperty()
 	{
-		return selectedId;
+		return selectedIdProperties.valueOrDefaultProperty();
+	}
+
+	public ObjectProperty<@Nullable E> selectedIdRawProperty()
+	{
+		return selectedIdProperties.rawValueProperty();
 	}
 
 	public E getSelectedId()
@@ -225,7 +233,7 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 
 	public void setSelectedId(E id)
 	{
-		selectedIdProperty().set(id);
+		selectedIdProperties.setRawValue(id);
 	}
 
 	public BooleanProperty getDisableProperty(E id)

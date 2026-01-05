@@ -89,7 +89,7 @@ public class MultiImageView
 			.then(imageLayersSpot.layersMaxWidth).otherwise(imageLayersSplit.layersMaxWidth));
 		viewport.layersMaxHeightProperty().bind(when(viewport.spotProperty())
 			.then(imageLayersSpot.layersMaxHeight).otherwise(imageLayersSplit.layersMaxHeight));
-		viewport.modeProperty().valueOrDefaultProperty().addListener(onChange(mode ->
+		viewport.modeProperties().valueOrDefaultProperty().addListener(onChange(mode ->
 		{
 			if (mode == null || mode == SINGLE)
 			{
@@ -252,9 +252,9 @@ public class MultiImageView
 	///
 	/// @return property to indicate the multi image mode
 	///
-	public EnumProperties<Mode> modeProperty()
+	public EnumProperties<Mode> modeProperties()
 	{
-		return viewport.modeProperty();
+		return viewport.modeProperties();
 	}
 
 	/// Returns the multi image mode.
@@ -263,7 +263,7 @@ public class MultiImageView
 	///
 	public Mode getMode()
 	{
-		return modeProperty().getValueOrDefault();
+		return modeProperties().getValueOrDefault();
 	}
 
 	/// Sets the multi image mode.
@@ -272,7 +272,7 @@ public class MultiImageView
 	///
 	public void setMode(Mode mode)
 	{
-		modeProperty().setRawValue(mode);
+		modeProperties().setRawValue(mode);
 	}
 
 	public ReadOnlyBooleanProperty spotModeDisabledProperty()

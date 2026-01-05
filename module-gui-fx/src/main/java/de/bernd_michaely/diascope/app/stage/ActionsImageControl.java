@@ -87,7 +87,8 @@ class ActionsImageControl
 			SPOT, new ActionItemDescriptor(Icons.ModeSpot, "Spot", "Spot Mode", strTooltipModeSpot)));
 		actionMode.disableProperty().bind(emptyProperty);
 		actionMode.getDisableProperty(SPOT).bind(multiImageView.spotModeDisabledProperty());
-		init(multiImageView, actionMode);
+		actionMode.selectedIdRawProperty().bindBidirectional(
+			multiImageView.modeProperties().rawValueProperty());
 		// ShowDividers
 		this.actionShowDividers = new CheckedAction(new ActionItemDescriptor(
 			Icons.ShowDividers, "\\/", "Show/Hide dividers", "Show/Hide dividers"));
@@ -99,7 +100,8 @@ class ActionsImageControl
 			FIT, new ActionItemDescriptor(Icons.ZoomFitWindow, "Fit", "Zoom to fit window", "Zoom image to fit window"),
 			FILL, new ActionItemDescriptor(Icons.ZoomFillWindow, "Fill", "Zoom to fill window", "Zoom image to fill window")));
 		actionZoom.disableProperty().bind(emptyProperty);
-		actionZoom.selectedIdProperty().bindBidirectional(multiImageView.getImageTransforms().zoomModeProperty());
+		actionZoom.selectedIdRawProperty().bindBidirectional(
+			multiImageView.getImageTransforms().zoomModeProperties().rawValueProperty());
 		// Mirror
 		this.actionMirrorX = new CheckedAction(new ActionItemDescriptor(
 			Icons.MirrorX, "<––>", "Mirror horizontally", "Mirror image horizontally"));
@@ -134,11 +136,5 @@ class ActionsImageControl
 		this.actionFullScreen = new CheckedAction(ACTION_ITEM_DESCRIPTOR_FULLSCREEN);
 		actionFullScreen.selectedProperty().bindBidirectional(imageControlProperties.getFullScreen().enabledProperty());
 		actionFullScreen.disableProperty().bind(emptyProperty);
-	}
-
-	@SuppressWarnings("argument")
-	private static void init(MultiImageView multiImageView, ToggleAction<MultiImageView.Mode> actionMode)
-	{
-		actionMode.selectedIdProperty().bindBidirectional(multiImageView.modeProperty().rawValueProperty());
 	}
 }

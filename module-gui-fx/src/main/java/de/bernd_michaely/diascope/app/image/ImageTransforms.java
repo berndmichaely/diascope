@@ -16,14 +16,14 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
 
 /// Properties for external control of image transforms.
 ///
@@ -31,7 +31,7 @@ import javafx.beans.property.SimpleObjectProperty;
 ///
 public class ImageTransforms
 {
-	private final ObjectProperty<ZoomMode> zoomMode;
+	private final EnumProperties<ZoomMode> zoomModeProperties;
 	private final DoubleProperty zoomFixed;
 	private final ReadOnlyDoubleWrapper zoomFactor;
 	private final DoubleProperty rotate;
@@ -39,7 +39,7 @@ public class ImageTransforms
 
 	ImageTransforms()
 	{
-		this.zoomMode = new SimpleObjectProperty<>(ZoomMode.getDefault());
+		this.zoomModeProperties = EnumProperties.createInstance(ZoomMode.getDefault());
 		this.zoomFixed = new SimpleDoubleProperty(1.0);
 		this.zoomFactor = new ReadOnlyDoubleWrapper();
 		this.rotate = new SimpleDoubleProperty(0.0);
@@ -53,7 +53,7 @@ public class ImageTransforms
 	///
 	void bindProperties(ImageTransforms other)
 	{
-		this.zoomMode.bind(other.zoomMode);
+		this.zoomModeProperties.rawValueProperty().bind(other.zoomModeProperties.rawValueProperty());
 		this.zoomFixed.bind(other.zoomFixed);
 //		other.zoomFactorWrapperProperty().bind(this.zoomFactor);
 		this.rotate.bind(other.rotate);
@@ -67,7 +67,7 @@ public class ImageTransforms
 	///
 	void unbindProperties(ImageTransforms other)
 	{
-		this.zoomMode.unbind();
+		this.zoomModeProperties.rawValueProperty().unbind();
 		this.zoomFixed.unbind();
 //		other.zoomFactorWrapperProperty().unbind();
 		this.rotate.unbind();
@@ -75,9 +75,14 @@ public class ImageTransforms
 		this.mirrorY.unbind();
 	}
 
-	public ObjectProperty<ZoomMode> zoomModeProperty()
+	public ReadOnlyObjectProperty<ZoomMode> zoomModeProperty()
 	{
-		return zoomMode;
+		return zoomModeProperties.valueOrDefaultProperty();
+	}
+
+	public EnumProperties<ZoomMode> zoomModeProperties()
+	{
+		return zoomModeProperties;
 	}
 
 	public DoubleProperty zoomFixedProperty()

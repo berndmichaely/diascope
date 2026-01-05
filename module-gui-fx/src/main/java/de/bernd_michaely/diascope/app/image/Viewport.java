@@ -64,7 +64,7 @@ class Viewport implements AutoCloseable
 	private final EnumMap<Mode, ObservableList<ObservableList<Node>>> mapTopLayerNodeLists;
 	private final ObservableList<ObservableList<Node>> topLayerNodeLists = observableArrayList();
 	private final ListContentConcatenation<Node> topLayerNodes;
-	private final EnumProperties<Mode> modeProperty;
+	private final EnumProperties<Mode> modeProperties;
 	private final ReadOnlyBooleanWrapper spotProperty;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
@@ -183,10 +183,10 @@ class Viewport implements AutoCloseable
 				}
 			}
 		});
-		this.modeProperty = EnumProperties.createInstance(getInitialMode(), List.of(onModeChange));
-		spotProperty.bind(modeProperty.isValueProperty(SPOT));
+		this.modeProperties = EnumProperties.createInstance(getInitialMode(), List.of(onModeChange));
+		spotProperty.bind(modeProperties.isValueProperty(SPOT));
 		dividersEnabled.bind(multiLayerMode.getReadOnlyProperty()
-			.and(dividersVisible).and(modeProperty.isValueProperty(SPLIT)));
+			.and(dividersVisible).and(modeProperties.isValueProperty(SPLIT)));
 		stackPane.setBackground(Background.fill(Color.BLACK));
 		stackPane.setMinSize(0, 0);
 		stackPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -323,14 +323,14 @@ class Viewport implements AutoCloseable
 		return splitCenter;
 	}
 
-	EnumProperties<Mode> modeProperty()
+	EnumProperties<Mode> modeProperties()
 	{
-		return modeProperty;
+		return modeProperties;
 	}
 
 	boolean isSpotMode()
 	{
-		return modeProperty.isValue(SPOT);
+		return modeProperties.isValue(SPOT);
 	}
 
 	ReadOnlyBooleanProperty multiLayerModeProperty()
