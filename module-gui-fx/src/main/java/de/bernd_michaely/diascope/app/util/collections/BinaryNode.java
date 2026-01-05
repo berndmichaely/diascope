@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.util.collections;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Inner nodes of a BinaryTree.
@@ -58,6 +59,7 @@ public final class BinaryNode<I> extends InnerNode<I>
 	}
 
 	@Override
+	@NonNull
 	TreeNode getFirst()
 	{
 		final var node = getSubNodes().getFirst();
@@ -72,6 +74,7 @@ public final class BinaryNode<I> extends InnerNode<I>
 	}
 
 	@Override
+	@NonNull
 	TreeNode getLast()
 	{
 		final var node = getSubNodes().getLast();

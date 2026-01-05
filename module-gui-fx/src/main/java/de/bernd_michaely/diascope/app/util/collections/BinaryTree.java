@@ -47,7 +47,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 
 	/// Returns the root node.
 	///
-	/// @return the root node
+	/// @return the root node or `null`, if the tree is empty
 	///
 	@Nullable
 	TreeNode getRoot()
@@ -73,12 +73,12 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// @return the inner node, if found, or {@code null}
 	///
 	public @Nullable
-	InnerNode findInnerNode(I value)
+	BinaryNode findInnerNode(I value)
 	{
 		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
 		{
-			if (iter.next() instanceof InnerNode innerNode && Objects.equals(innerNode.getValue(), value))
+			if (iter.next() instanceof BinaryNode innerNode && Objects.equals(innerNode.getValue(), value))
 			{
 				return innerNode;
 			}
@@ -223,7 +223,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 
 	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode)
 	{
-		final InnerNode parentNode = insertionNode.getParentNode();
+		final var parentNode = insertionNode.getParentNode();
 		final var newInnerNode = new BinaryNode<I>(insertionNode, new LeafNode<>(item), value);
 		if (parentNode != null)
 		{
@@ -266,10 +266,10 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	///
 	public void removeNode(LeafNode leafNode)
 	{
-		final InnerNode pn = leafNode.getParentNode();
+		final var pn = leafNode.getParentNode();
 		if (pn != null)
 		{
-			final InnerNode ppn = pn.getParentNode();
+			final var ppn = pn.getParentNode();
 			final TreeNode otherChild = pn.getSubNode(leafNode == pn.getSubNode(1) ? 0 : 1);
 			if (ppn != null)
 			{
