@@ -17,9 +17,11 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
-import java.util.ArrayList;
+import de.bernd_michaely.diascope.app.util.beans.ListContentConcatenation;
+import java.util.EnumMap;
 import java.util.List;
 import javafx.beans.property.*;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
@@ -33,6 +35,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Math.clamp;
+import static javafx.collections.FXCollections.observableArrayList;
+import static javafx.collections.FXCollections.singletonObservableList;
 
 /// Class to describe the viewport of a MultiImageView containing all images.
 ///
@@ -46,7 +50,15 @@ class Viewport
 	private final Pane paneTopLayer = new Pane();
 	private final StackPane stackPane = new StackPane(
 		paneImageLayers, paneDividerLines, paneTopLayer);
-	private final ReadOnlyIntegerProperty numLayersProperty;
+	private final ObservableList<Node> topLayerNodeListGridLines = observableArrayList();
+	private final ObservableList<Node> topLayerNodeListSplitShapes = observableArrayList();
+	private final ObservableList<Node> topLayerNodeListSplitLines = observableArrayList();
+	private final ObservableList<Node> topLayerNodeListSpotShapes = observableArrayList();
+	private final ObservableList<Node> topLayerNodeListScrollBars;
+	private final ObservableList<Node> topLayerNodeListSplitCenter;
+	private final EnumMap<Mode, ObservableList<ObservableList<Node>>> mapTopLayerNodeLists;
+	private final ObservableList<ObservableList<Node>> topLayerNodeLists = observableArrayList();
+	private final ListContentConcatenation<Node> topLayerNodes;
 	private final ObjectProperty<Mode> modeProperty;
 	private final ReadOnlyBooleanWrapper spotProperty;
 	private final ScrollBars scrollBars;
@@ -62,14 +74,12 @@ class Viewport
 	private final ReadOnlyBooleanWrapper dividersEnabled;
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
-	private final List<Node> cacheChildrenTopLayer = new ArrayList<>();
 	private @Nullable ImageLayer spotBaseLayer, spotLayer;
 	private @MonotonicNonNull LayerSelectionModel layerSelectionModel;
 
 	Viewport(ReadOnlyIntegerProperty numLayersProperty)
 	{
-		this.numLayersProperty = numLayersProperty;
-		this.modeProperty = new SimpleObjectProperty<>(Mode.getInitialMode());
+		this.modeProperty = new SimpleObjectProperty<>();
 		this.spotProperty = new ReadOnlyBooleanWrapper();
 		spotProperty.bind(modeProperty.isEqualTo(SPOT));
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
@@ -87,13 +97,35 @@ class Viewport
 		this.scrollPosX = new ReadOnlyDoubleWrapper();
 		this.scrollPosY = new ReadOnlyDoubleWrapper();
 		this.scrollBars = new ScrollBars(stackPane.widthProperty(), stackPane.heightProperty());
+		this.topLayerNodeListScrollBars = scrollBars.getScrollBars();
 		this.splitCenter = new SplitCenter(stackPane.widthProperty(), stackPane.heightProperty());
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
+		topLayerNodeListSplitCenter = singletonObservableList(splitCenter.getShape());
+		this.mapTopLayerNodeLists = new EnumMap<>(Mode.class);
+		mapTopLayerNodeLists.put(SINGLE, singletonObservableList(topLayerNodeListScrollBars));
+		mapTopLayerNodeLists.put(GRID, observableArrayList(
+			List.of(topLayerNodeListGridLines, topLayerNodeListScrollBars)));
+		mapTopLayerNodeLists.put(SPLIT, observableArrayList(
+			List.of(topLayerNodeListSplitShapes, topLayerNodeListSplitLines,
+				topLayerNodeListScrollBars, topLayerNodeListSplitCenter)));
+		mapTopLayerNodeLists.put(SPOT, observableArrayList(
+			List.of(topLayerNodeListSpotShapes, topLayerNodeListScrollBars)));
 		paneTopLayer.setBackground(Background.EMPTY);
 		paneDividerLines.setBackground(Background.EMPTY);
 		paneSpotLayers.setBackground(Background.EMPTY);
+		this.topLayerNodes = new ListContentConcatenation<>(topLayerNodeLists, paneTopLayer.getChildren());
 		modeProperty.addListener(onChange((oldMode, newMode) ->
 		{
+			final var subLists = mapTopLayerNodeLists.get(newMode);
+			if (subLists != null)
+			{
+				topLayerNodeLists.setAll(subLists);
+			}
+			else
+			{
+				throw new IllegalStateException(getClass().getName() +
+					": mapTopLayerNodeLists not initialized for " + newMode);
+			}
 			if (oldMode == SPOT)
 			{
 				final var stackItems = stackPane.getChildren();
@@ -102,13 +134,6 @@ class Viewport
 					stackItems.remove(paneSpotLayers);
 					stackItems.add(0, paneImageLayers);
 					stackItems.add(1, paneDividerLines);
-					final var nodes = paneTopLayer.getChildren();
-					if (spotLayer != null)
-					{
-						nodes.remove(spotLayer.getImageLayerShape().getShape());
-					}
-					nodes.addAll(0, this.cacheChildrenTopLayer);
-					this.cacheChildrenTopLayer.clear();
 				}
 				if (spotBaseLayer != null)
 				{
@@ -126,16 +151,6 @@ class Viewport
 				{
 					stackItems.removeAll(paneImageLayers, paneDividerLines);
 					stackItems.add(0, paneSpotLayers);
-					final int numLayers = numLayersProperty.get();
-					final var nodes = paneTopLayer.getChildren();
-					final var subList = nodes.subList(0, 2 * numLayers);
-					this.cacheChildrenTopLayer.clear();
-					this.cacheChildrenTopLayer.addAll(subList);
-					subList.clear();
-					if (spotLayer != null)
-					{
-						nodes.add(0, spotLayer.getImageLayerShape().getShape());
-					}
 				}
 				if (layerSelectionModel != null && layerSelectionModel.dualLayerSelected().get())
 				{
@@ -156,8 +171,7 @@ class Viewport
 				}
 			}
 		}));
-		paneTopLayer.getChildren().addAll(scrollBars.getControls());
-		paneTopLayer.getChildren().addAll(splitCenter.getShape());
+		modeProperty.set(Mode.getInitialMode());
 		stackPane.setBackground(Background.fill(Color.BLACK));
 		stackPane.setMinSize(0, 0);
 		stackPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -211,13 +225,10 @@ class Viewport
 
 	void addSplitLayer(int index, ImageLayer imageLayer)
 	{
-		final int numLayers = numLayersProperty.get();
-		final var nodes = isSpotMode() ?
-			this.cacheChildrenTopLayer : this.paneTopLayer.getChildren();
 		final var divider = imageLayer.getDivider();
 		divider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
-		nodes.add(index, imageLayer.getImageLayerShape().getShape());
-		nodes.add(index + numLayers, divider.getLineEvent());
+		topLayerNodeListSplitShapes.add(index, imageLayer.getImageLayerShape().getShape());
+		topLayerNodeListSplitLines.add(index, divider.getLineEvent());
 		paneDividerLines.getChildren().add(index, divider.getLineShape());
 		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
 	}
@@ -234,7 +245,9 @@ class Viewport
 		paneSpotLayers.getChildren().add(imageLayer.getRegion());
 		if (imageLayer.getImageLayerShape() instanceof ImageLayerShapeSpot imageLayerShapeSpot)
 		{
-			paneTopLayer.getChildren().add(imageLayerShapeSpot.getSpotCenter().getShape());
+			topLayerNodeListSpotShapes.addAll(
+				imageLayerShapeSpot.getShape(),
+				imageLayerShapeSpot.getSpotCenter().getShape());
 		}
 		else
 		{
@@ -244,16 +257,15 @@ class Viewport
 
 	void removeLayer(ImageLayer imageLayer)
 	{
-		switch (imageLayer.getImageLayerShape().getType())
+		final ImageLayerShapeBase imageLayerShape = imageLayer.getImageLayerShape();
+		switch (imageLayerShape.getType())
 		{
 			case SPLIT ->
 			{
-				final var nodes = isSpotMode() ?
-					this.cacheChildrenTopLayer : this.paneTopLayer.getChildren();
 				final var divider = imageLayer.getDivider();
-				nodes.remove(divider.getLineEvent());
+				topLayerNodeListSplitLines.remove(divider.getLineEvent());
 				paneDividerLines.getChildren().remove(divider.getLineShape());
-				nodes.remove(imageLayer.getImageLayerShape().getShape());
+				topLayerNodeListSplitShapes.remove(imageLayerShape.getShape());
 				paneImageLayers.getChildren().remove(imageLayer.getRegion());
 			}
 			case BASE ->
@@ -263,9 +275,11 @@ class Viewport
 			case SPOT ->
 			{
 				paneSpotLayers.getChildren().remove(imageLayer.getRegion());
-				final var nodes = isSpotMode() ?
-					this.cacheChildrenTopLayer : this.paneTopLayer.getChildren();
-				nodes.remove(imageLayer.getImageLayerShape().getShape());
+				topLayerNodeListSpotShapes.remove(imageLayerShape.getShape());
+				if (imageLayerShape instanceof ImageLayerShapeSpot imageLayerShapeSpot)
+				{
+					topLayerNodeListSpotShapes.remove(imageLayerShapeSpot.getSpotCenter().getShape());
+				}
 			}
 			default -> throw new AssertionError(getClass().getName() +
 					"::removeLayer: Invalid image layer type");
@@ -353,16 +367,6 @@ class Viewport
 	ReadOnlyBooleanProperty scrollBarEnabledVerticalProperty()
 	{
 		return scrollBarEnabledVertical.getReadOnlyProperty();
-	}
-
-	ReadOnlyDoubleProperty scrollRangeMaxWidthProperty()
-	{
-		return scrollRangeMaxWidth.getReadOnlyProperty();
-	}
-
-	ReadOnlyDoubleProperty scrollRangeMaxHeightProperty()
-	{
-		return scrollRangeMaxHeight.getReadOnlyProperty();
 	}
 
 	ReadOnlyDoubleProperty scrollPosXProperty()

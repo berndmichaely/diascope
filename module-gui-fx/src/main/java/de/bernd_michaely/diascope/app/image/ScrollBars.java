@@ -16,16 +16,18 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
-import javafx.scene.control.Control;
+import javafx.scene.Node;
 import javafx.scene.control.ScrollBar;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static javafx.collections.FXCollections.observableArrayList;
+import static javafx.collections.FXCollections.unmodifiableObservableList;
 
 /// Class to handle viewport scrollbars.
 ///
@@ -34,6 +36,7 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 class ScrollBars
 {
 	private final ScrollBar scrollBarH, scrollBarV;
+	private final ObservableList<Node> scrollBars;
 	private final BooleanProperty enabled = new SimpleBooleanProperty();
 
 	ScrollBars(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
@@ -46,6 +49,7 @@ class ScrollBars
 		scrollBarV.setOrientation(Orientation.VERTICAL);
 		scrollBarH.visibleProperty().bind(enabled);
 		scrollBarV.visibleProperty().bind(enabled);
+		this.scrollBars = unmodifiableObservableList(observableArrayList(scrollBarH, scrollBarV));
 		// anchor:
 		final Runnable adjustWidth = () ->
 		{
@@ -72,7 +76,7 @@ class ScrollBars
 		scrollBar.setValue(0.5);
 		scrollBar.setUnitIncrement(0.05);
 		scrollBar.setBlockIncrement(0.2);
-		scrollBar.setOpacity(0.75);
+		scrollBar.setOpacity(0.85);
 	}
 
 	DoubleProperty valueHProperty()
@@ -100,8 +104,12 @@ class ScrollBars
 		return scrollBarV.visibleProperty();
 	}
 
-	List<Control> getControls()
+	/// Returns an unmodifiable list of scrollbars.
+	///
+	/// @return an unmodifiable list of scrollbars
+	///
+	ObservableList<Node> getScrollBars()
 	{
-		return List.of(scrollBarH, scrollBarV);
+		return scrollBars;
 	}
 }
