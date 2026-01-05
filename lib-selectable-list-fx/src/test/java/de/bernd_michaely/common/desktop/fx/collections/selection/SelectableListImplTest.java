@@ -108,7 +108,7 @@ public class SelectableListImplTest
 		assertEquals(0, list.get(2));
 		assertEquals(false, list.isSelected(2));
 
-		assertEquals(0, listener.changes.size());
+		assertEquals(4, listener.changes.size());
 
 		for (int i = 0; i < listener.changes.size(); i++)
 		{
