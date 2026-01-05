@@ -30,7 +30,6 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 final class ImageLayers extends ImageLayersBase
 {
-	private final Map<ImageLayer, Divider> splitDividers;
 	private final Viewport viewport;
 	private final DividerRotationControl dividerRotationControl;
 	private final ChangeListener<Number> clippingPointsListener;
@@ -38,7 +37,6 @@ final class ImageLayers extends ImageLayersBase
 	ImageLayers(Viewport viewport, Map<ImageLayer, Divider> splitDividers,
 		ImageTransforms imageTransforms)
 	{
-		this.splitDividers = splitDividers;
 		this.viewport = viewport;
 		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers, viewport::getDivider);
 		this.clippingPointsListener = onChange(new ClippingPointsListener(viewport, unmodifiableLayers));
@@ -69,12 +67,11 @@ final class ImageLayers extends ImageLayersBase
 					final var imageLayer = list.get(i);
 					if (imageLayer != null)
 					{
-						final var divider = splitDividers.get(imageLayer);
-						if (divider != null)
-						{
-							divider.angleProperty().addListener(clippingPointsListener);
-						}
+						final var divider = Divider.createInstance(viewport);
+						splitDividers.put(imageLayer, divider);
 						viewport.addSplitLayer(i, imageLayer);
+						divider.angleProperty().addListener(clippingPointsListener);
+						divider.getMouseDragState().setOnRotate(() -> dividerRotationControl.accept(divider));
 					}
 				}
 				dividerRotationControl.initializeDividerAngles();
@@ -83,14 +80,19 @@ final class ImageLayers extends ImageLayersBase
 			{
 				for (var imageLayer : change.getRemoved())
 				{
-					viewport.removeLayer(imageLayer);
 					if (imageLayer != null)
 					{
-						try (var divider = splitDividers.get(imageLayer))
+						viewport.removeLayer(imageLayer);
+						try (var divider = splitDividers.remove(imageLayer))
 						{
 							if (divider != null)
 							{
 								divider.angleProperty().removeListener(clippingPointsListener);
+							}
+							else
+							{
+								throw new IllegalStateException(getClass().getName() +
+									" : on remove layer : no divider associated with this ImageLayer");
 							}
 						}
 						imageLayer.close();
@@ -144,10 +146,7 @@ final class ImageLayers extends ImageLayersBase
 
 	ImageLayer createImageLayer(int index)
 	{
-		final var divider = new Divider(viewport);
-		divider.getMouseDragState().setOnRotate(() -> dividerRotationControl.accept(divider));
 		final var imageLayer = ImageLayer.createInstance(viewport, this::selectImageLayer);
-		splitDividers.put(imageLayer, divider);
 		layers.add(index, imageLayer);
 		selectImageLayer(imageLayer);
 		return imageLayer;

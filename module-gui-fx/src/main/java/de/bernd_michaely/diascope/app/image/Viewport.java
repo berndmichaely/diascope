@@ -232,9 +232,11 @@ class Viewport implements AutoCloseable
 		});
 	}
 
-	/// Convenience method to return the split divider associated with this image layer.
+	/// Convenience method to return the split divider associated with the given image layer.
 	///
-	/// @return the split divider associated with this image layer
+	/// @param imageLayer the given image layer
+	/// @return the split divider associated with the given image layer
+	/// @throws IllegalStateException if there is no divider associated with the given image layer
 	///
 	Divider getDivider(ImageLayer imageLayer)
 	{

@@ -44,11 +44,6 @@ class DividerRotationControl implements Consumer<Divider>
 	private @Nullable Divider divider;
 	private @Nullable Runnable dividerDragCycle;
 
-	enum RotationType
-	{
-		NEUTRAL, WHEEL, SINGLE, FOLD
-	}
-
 	DividerRotationControl(List<ImageLayer> layers, Function<ImageLayer, Divider> dividerByImageLayer)
 	{
 		this.layers = layers;

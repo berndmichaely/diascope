@@ -16,14 +16,13 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.DividerRotationControl.RotationType.*;
+import static de.bernd_michaely.diascope.app.image.MouseDragState.RotationType.*;
 import static java.lang.Math.atan2;
 import static java.lang.Math.toDegrees;
 
@@ -39,6 +38,11 @@ class MouseDragState
 	private boolean dragRelease = false;
 	private double rotationAngle;
 	private RotationType rotationType = NEUTRAL;
+
+	enum RotationType
+	{
+		NEUTRAL, WHEEL, SINGLE, FOLD
+	}
 
 	MouseDragState(ReadOnlyDoubleProperty originX, ReadOnlyDoubleProperty originY)
 	{

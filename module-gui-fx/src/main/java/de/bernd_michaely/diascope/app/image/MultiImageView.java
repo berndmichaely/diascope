@@ -17,7 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.lang.System.Logger;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
@@ -79,7 +79,7 @@ public class MultiImageView
 
 	public MultiImageView()
 	{
-		final Map<ImageLayer, Divider> splitDividers = new HashMap<>();
+		final Map<ImageLayer, Divider> splitDividers = new IdentityHashMap<>();
 		this.numLayers = new ReadOnlyIntegerWrapper();
 		this.viewport = new Viewport(unmodifiableMap(splitDividers), numLayers.getReadOnlyProperty());
 		this.imageTransforms = new ImageTransforms();

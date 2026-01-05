@@ -16,49 +16,31 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.scene.Cursor;
-import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
-import javafx.scene.text.Font;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
 import static de.bernd_michaely.diascope.app.image.Bindings.tan;
 import static de.bernd_michaely.diascope.app.image.Border.*;
-import static de.bernd_michaely.diascope.app.image.ImageLayerShapeBase.*;
-import static java.lang.Math.ceil;
 import static javafx.beans.binding.Bindings.when;
 
-/// Class to handle image layer dividers.
+/// Class to handle image layer split dividers.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class Divider implements AutoCloseable
+final class Divider extends DividerBase implements AutoCloseable
 {
-	private static final Paint COLOR_DEFAULT = COLOR_UNSELECTED;
-	private static final Paint COLOR_HOVER = Color.LIGHTCORAL;
 	private final DoubleProperty angle = new SimpleDoubleProperty();
 	private final ReadOnlyDoubleWrapper angleNorm = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleProperty angleNormalized = angleNorm.getReadOnlyProperty();
 	private final ReadOnlyObjectWrapper<Border> border = new ReadOnlyObjectWrapper<>();
 	private final ReadOnlyDoubleWrapper borderIntersectionX = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper borderIntersectionY = new ReadOnlyDoubleWrapper();
-	private final Line lineShape, lineEvent;
 	private final MouseDragState mouseDragState;
-
-	Divider(Viewport viewport)
-	{
-		this(viewport.getCornerAngles(),
-			viewport.widthProperty(), viewport.heightProperty(),
-			viewport.getSplitCenter().xProperty(), viewport.getSplitCenter().yProperty(),
-			viewport.getSplitCenter().dxProperty(), viewport.getSplitCenter().dyProperty());
-	}
 
 	Divider(CornerAngles cornerAngles,
 		ReadOnlyDoubleProperty viewportWidth,
@@ -103,32 +85,28 @@ class Divider implements AutoCloseable
 							tan(angleNormalized.subtract(180.0))
 								.multiply(splitCenterX)))
 						.otherwise(0.0)))); // TOP
-		final double sizeDefault = Font.getDefault().getSize();
-		lineShape = new Line();
-		lineShape.setStroke(COLOR_DEFAULT);
-		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * STROKE_WIDTH_UNSELECTED);
-		lineShape.startXProperty().bind(splitCenterX);
-		lineShape.startYProperty().bind(splitCenterY);
-		lineShape.endXProperty().bind(borderIntersectionX);
-		lineShape.endYProperty().bind(borderIntersectionY);
-		lineEvent = new Line();
-		lineEvent.setStroke(Color.TRANSPARENT);
-		lineEvent.setStrokeWidth(lineShape.getStrokeWidth() * 4);
+		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
+	}
+
+	static Divider createInstance(Viewport viewport)
+	{
+		final var splitCenter = viewport.getSplitCenter();
+		final var divider = new Divider(viewport.getCornerAngles(),
+			viewport.widthProperty(), viewport.heightProperty(),
+			splitCenter.xProperty(), splitCenter.yProperty(),
+			splitCenter.dxProperty(), splitCenter.dyProperty());
+		final Line lineShape = divider.getLineShape();
+		lineShape.startXProperty().bind(splitCenter.xProperty());
+		lineShape.startYProperty().bind(splitCenter.yProperty());
+		lineShape.endXProperty().bind(divider.borderIntersectionX);
+		lineShape.endYProperty().bind(divider.borderIntersectionY);
+		final Line lineEvent = divider.getLineEvent();
 		lineEvent.startXProperty().bind(lineShape.startXProperty());
 		lineEvent.startYProperty().bind(lineShape.startYProperty());
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
-		lineEvent.visibleProperty().bind(lineShape.visibleProperty());
-		lineEvent.setCursor(Cursor.HAND);
-		lineEvent.setOnMouseEntered(_ -> lineShape.setStroke(COLOR_HOVER));
-		lineEvent.setOnMouseExited(_ -> lineShape.setStroke(COLOR_DEFAULT));
-		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
-		mouseDragState.setListenersFor(lineEvent);
-	}
-
-	BooleanProperty visibleProperty()
-	{
-		return lineShape.visibleProperty();
+		divider.mouseDragState.setListenersFor(lineEvent);
+		return divider;
 	}
 
 	MouseDragState getMouseDragState()
@@ -166,21 +144,11 @@ class Divider implements AutoCloseable
 		return borderIntersectionY.getValue();
 	}
 
-	Line getLineShape()
-	{
-		return lineShape;
-	}
-
-	Line getLineEvent()
-	{
-		return lineEvent;
-	}
-
 	@Override
 	public void close()
 	{
 		angleProperty().unbind();
-		mouseDragState.removeListenersFor(lineEvent);
+		mouseDragState.removeListenersFor(getLineEvent());
 		mouseDragState.setOnRotate(null);
 	}
 }
