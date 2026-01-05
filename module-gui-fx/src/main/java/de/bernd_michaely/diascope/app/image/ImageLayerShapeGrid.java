@@ -17,49 +17,37 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
-import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
 
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
-
-/// Class to describe an ImageLayer selection shape for SPLIT mode.
+/// Class to describe an ImageLayer selection shape for GRID mode.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeSplit extends ImageLayerShapeBaseStroke
+final class ImageLayerShapeGrid extends ImageLayerShapeBaseStroke
 {
-	private final Polygon polygon = new Polygon();
+	private final Rectangle rectangle = new Rectangle();
 
-	private ImageLayerShapeSplit()
+	private ImageLayerShapeGrid()
 	{
 		super(false, null, null);
 	}
 
-	static ImageLayerShapeSplit createInstance()
+	static ImageLayerShapeGrid createInstance()
 	{
-		final var imageLayerShape = new ImageLayerShapeSplit();
+		final var imageLayerShape = new ImageLayerShapeGrid();
 		imageLayerShape._postInit();
 		return imageLayerShape;
-	}
-
-	void setShapePoints(Double... points)
-	{
-		polygon.getPoints().setAll(points);
-	}
-
-	void clearPoints()
-	{
-		polygon.getPoints().clear();
 	}
 
 	@Override
 	Type getType()
 	{
-		return SPLIT;
+		return Type.BASE;
 	}
 
 	@Override
-	Polygon getShape()
+	Rectangle getShape()
 	{
-		return polygon;
+		return rectangle;
 	}
 }

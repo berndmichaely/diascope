@@ -44,7 +44,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLayerShapeSpot
+abstract sealed class ImageLayerShapeBase permits ImageLayerShapeBaseStroke, ImageLayerShapeSpot
 {
 	static final List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
 	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
