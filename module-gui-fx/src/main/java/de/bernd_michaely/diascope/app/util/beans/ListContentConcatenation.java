@@ -23,6 +23,8 @@ import javafx.collections.ObservableList;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /// Binding to concatenate the content of a (possibly observable) List of
 /// observable lists into a single flat target list.
 ///
@@ -65,7 +67,8 @@ public class ListContentConcatenation<T> implements AutoCloseable
 	///
 	public ListContentConcatenation(List<ObservableList<T>> sourceLists, @Nullable List<T> targetList)
 	{
-		this.sourceLists = sourceLists;
+		this.sourceLists = requireNonNull(sourceLists,
+			() -> getClass().getName() + " : no source lists provided");
 		this.observableLists = sourceLists instanceof ObservableList ?
 			(ObservableList<ObservableList<T>>) sourceLists : null;
 		this.targetList = targetList != null ? targetList : new ArrayList<>();
@@ -95,13 +98,11 @@ public class ListContentConcatenation<T> implements AutoCloseable
 				})
 				.onRemove(change ->
 				{
-					change.getRemoved().forEach(list ->
-					{
-						list.removeListener(listenerSrcList);
-						final int from = getPrefixSize(change.getFrom());
-						final int to = from + list.size();
-						this.targetList.subList(from, to).clear();
-					});
+					change.getRemoved().forEach(list -> list.removeListener(listenerSrcList));
+					final int sizeRemoved = change.getRemoved().stream().mapToInt(List::size).sum();
+					final int from = getPrefixSize(change.getFrom());
+					final int to = from + sizeRemoved;
+					this.targetList.subList(from, to).clear();
 				})
 				.build();
 			observableLists.addListener(listenerLists);
