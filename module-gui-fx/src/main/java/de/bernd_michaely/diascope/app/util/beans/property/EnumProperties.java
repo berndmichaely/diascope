@@ -23,6 +23,7 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -44,7 +45,7 @@ public class EnumProperties<V extends Enum<V>>
 	private final Enum<V> defaultValue;
 	private final ObjectProperty<@Nullable Enum<V>> rawValueProperty;
 	private final ReadOnlyObjectWrapper<Enum<V>> valueOrDefaultProperty;
-	private final EnumMap<V, ReadOnlyBooleanProperty> map;
+	private @MonotonicNonNull EnumMap<V, ReadOnlyBooleanProperty> map;
 
 	/// Creates a new instance with the given default value.
 	///
@@ -56,22 +57,6 @@ public class EnumProperties<V extends Enum<V>>
 		this.defaultValue = requireNonNull(defaultValue);
 		this.rawValueProperty = new SimpleObjectProperty<>();
 		this.valueOrDefaultProperty = new ReadOnlyObjectWrapper<>();
-		final Class<V> enumClass = defaultValue.getDeclaringClass();
-		this.map = new EnumMap<>(enumClass);
-		final V[] enumConstants = enumClass.getEnumConstants();
-		if (enumConstants != null)
-		{
-			for (V enumConstant : enumConstants)
-			{
-				final var readOnlyBooleanWrapper = new ReadOnlyBooleanWrapper();
-				readOnlyBooleanWrapper.bind(equal(valueOrDefaultProperty, enumConstant));
-				map.put(enumConstant, readOnlyBooleanWrapper.getReadOnlyProperty());
-			}
-		}
-		else
-		{
-			throw new IllegalStateException(getClass().getName() + ": enumConstants is null");
-		}
 	}
 
 	@SuppressWarnings("argument")
@@ -89,7 +74,7 @@ public class EnumProperties<V extends Enum<V>>
 	///
 	public static <E extends Enum<E>> EnumProperties<E> createInstance(E defaultValue)
 	{
-		final EnumProperties<E> enumProperties = new EnumProperties<>(defaultValue);
+		final var enumProperties = new EnumProperties<E>(defaultValue);
 		enumProperties.init();
 		return enumProperties;
 	}
@@ -125,22 +110,21 @@ public class EnumProperties<V extends Enum<V>>
 		return valueOrDefaultProperty().get();
 	}
 
-	public ReadOnlyBooleanProperty isValueProperty(Enum<V> value)
+	public ReadOnlyBooleanProperty isValueProperty(V enumValue)
 	{
-		final var readOnlyBooleanProperty = map.get(value);
-		if (readOnlyBooleanProperty != null)
+		if (map == null)
 		{
-			return readOnlyBooleanProperty;
+			map = new EnumMap<>(defaultValue.getDeclaringClass());
 		}
-		else
+		return map.computeIfAbsent(enumValue, key ->
 		{
-			throw new IllegalStateException(
-				"%s: ReadOnlyBooleanProperty map not initialized for enum constant »%s«"
-					.formatted(getClass().getName(), value));
-		}
+			final var readOnlyBooleanWrapper = new ReadOnlyBooleanWrapper();
+			readOnlyBooleanWrapper.bind(equal(valueOrDefaultProperty, key));
+			return readOnlyBooleanWrapper.getReadOnlyProperty();
+		});
 	}
 
-	public boolean isValue(Enum<V> value)
+	public boolean isValue(V value)
 	{
 		return isValueProperty(value).get();
 	}
