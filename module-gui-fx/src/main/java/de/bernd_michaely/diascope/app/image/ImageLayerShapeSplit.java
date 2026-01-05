@@ -16,10 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import javafx.scene.shape.Polygon;
-
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 
 /// Class to describe an ImageLayer selection shape for SPLIT mode.
 ///
@@ -52,9 +49,9 @@ final class ImageLayerShapeSplit extends ImageLayerShapeBaseStroke
 	}
 
 	@Override
-	Type getType()
+	ImageLayer.Type getType()
 	{
-		return SPLIT;
+		return ImageLayer.Type.SPLIT;
 	}
 
 	@Override

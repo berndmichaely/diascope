@@ -17,6 +17,8 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.lang.System.Logger;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -33,6 +35,7 @@ import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.FIT;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
+import static java.util.Collections.unmodifiableMap;
 import static javafx.beans.binding.Bindings.not;
 import static javafx.beans.binding.Bindings.when;
 
@@ -76,10 +79,11 @@ public class MultiImageView
 
 	public MultiImageView()
 	{
+		final Map<ImageLayer, Divider> splitDividers = new HashMap<>();
 		this.numLayers = new ReadOnlyIntegerWrapper();
-		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
+		this.viewport = new Viewport(unmodifiableMap(splitDividers), numLayers.getReadOnlyProperty());
 		this.imageTransforms = new ImageTransforms();
-		this.imageLayersSplit = new ImageLayers(viewport, imageTransforms);
+		this.imageLayersSplit = new ImageLayers(viewport, splitDividers, imageTransforms);
 		final var layerSelectionModel = imageLayersSplit.layerSelectionModel;
 		viewport.setLayerSelectionModel(layerSelectionModel);
 		this.imageLayersSpot = new ImageLayersSpot(viewport, imageTransforms);

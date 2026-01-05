@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import java.lang.System.Logger;
 import java.util.List;
@@ -289,9 +288,9 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	}
 
 	@Override
-	Type getType()
+	ImageLayer.Type getType()
 	{
-		return Type.SPOT;
+		return ImageLayer.Type.SPOT;
 	}
 
 	@Override

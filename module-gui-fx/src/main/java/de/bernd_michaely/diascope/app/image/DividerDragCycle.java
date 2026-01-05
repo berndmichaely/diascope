@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.image;
 import java.lang.System.Logger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
@@ -35,6 +36,7 @@ class DividerDragCycle implements Runnable
 {
 	private static final Logger logger = System.getLogger(DividerDragCycle.class.getName());
 	private final List<ImageLayer> layers;
+	private final Function<ImageLayer, Divider> dividerByImageLayer;
 	private final int n;
 	private final int indexLast;
 	private final Divider divider;
@@ -104,8 +106,10 @@ class DividerDragCycle implements Runnable
 		}
 	}
 
-	DividerDragCycle(List<ImageLayer> layers, Divider divider, double dividerMinGap)
+	DividerDragCycle(List<ImageLayer> layers, Divider divider, double dividerMinGap,
+		Function<ImageLayer, Divider> dividerByImageLayer)
 	{
+		this.dividerByImageLayer = dividerByImageLayer;
 		this.layers = layers;
 		this.n = layers.size();
 		this.indexLast = n - 1;
@@ -115,7 +119,7 @@ class DividerDragCycle implements Runnable
 		int index = -1;
 		for (int i = 0; i < n; i++)
 		{
-			final var d = layers.get(i).getDivider();
+			final var d = dividerByImageLayer.apply(layers.get(i));
 			final double angle = d.angleProperty().get();
 			angles.add(i, angle);
 			if (d == divider)
@@ -150,12 +154,12 @@ class DividerDragCycle implements Runnable
 		{
 			final int indexPrev = index > 0 ? index - 1 : indexLast;
 			final int indexNext = index < indexLast ? index + 1 : 0;
-			double anglePrev = layers.get(indexPrev).getDivider().getAngle();
+			double anglePrev = dividerByImageLayer.apply(layers.get(indexPrev)).getAngle();
 			while (anglePrev > angle)
 			{
 				anglePrev -= C;
 			}
-			double angleNext = layers.get(indexNext).getDivider().getAngle();
+			double angleNext = dividerByImageLayer.apply(layers.get(indexNext)).getAngle();
 			while (angleNext < angle)
 			{
 				angleNext += C;
@@ -207,7 +211,7 @@ class DividerDragCycle implements Runnable
 			{
 				for (int i = 0; i < n; i++)
 				{
-					layers.get(i).getDivider().angleProperty().setValue(startAngles.get(i));
+					dividerByImageLayer.apply(layers.get(i)).angleProperty().setValue(startAngles.get(i));
 				}
 			}
 			case WHEEL ->
@@ -215,7 +219,7 @@ class DividerDragCycle implements Runnable
 				final double da = rotationAngle - dividerStartAngle;
 				for (int i = 0; i < n; i++)
 				{
-					final var d = layers.get(i).getDivider();
+					final var d = dividerByImageLayer.apply(layers.get(i));
 					d.setAngle(startAngles.get(i) + da);
 				}
 			}
@@ -223,7 +227,7 @@ class DividerDragCycle implements Runnable
 			{
 				for (int i = 0; i < n; i++)
 				{
-					final var d = layers.get(i).getDivider();
+					final var d = dividerByImageLayer.apply(layers.get(i));
 					if (d == divider)
 					{
 						// normalize the rotation angle to the middle of the invalid range:
@@ -272,11 +276,11 @@ class DividerDragCycle implements Runnable
 							p = (ra - dl) / (dh - dl);
 							a = tl - p * normalizeAngleToRange(tl - th, 0.0);
 						}
-						layers.get(index).getDivider().setAngle(a);
+						dividerByImageLayer.apply(layers.get(index)).setAngle(a);
 					}
 					else
 					{
-						layers.get(index).getDivider().setAngle(startAngle);
+						dividerByImageLayer.apply(layers.get(index)).setAngle(startAngle);
 					}
 				}
 			}

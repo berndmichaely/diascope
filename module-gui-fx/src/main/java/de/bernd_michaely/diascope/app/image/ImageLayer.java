@@ -77,7 +77,6 @@ final class ImageLayer implements AutoCloseable
 	private final BooleanProperty zoomModeIsFill;
 	private final BooleanProperty zoomModeIsOriginal;
 	private final DoubleProperty focusPointX, focusPointY;
-	private final Divider divider;
 	private final Scale scale;
 	private final Rotate rotate;
 	private final Translate translateScroll;
@@ -138,7 +137,6 @@ final class ImageLayer implements AutoCloseable
 		this.zoomFit = new SimpleDoubleProperty();
 		this.zoomFill = new SimpleDoubleProperty();
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
-		this.divider = new Divider(viewport);
 		imageIsNull.bind(isNull(imageView.imageProperty()));
 		this.zoomModeIsFit = new SimpleBooleanProperty();
 		zoomModeIsFit.bind(imageTransforms.zoomModeProperty().isEqualTo(FIT));
@@ -199,16 +197,10 @@ final class ImageLayer implements AutoCloseable
 	}
 
 	static ImageLayer createInstance(Viewport viewport,
-		BiConsumer<ImageLayer, Boolean> layerSelectionHandler,
-		@Nullable Consumer<Divider> onDividerRotate)
+		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
 		final var imageLayer = createInstance(SPLIT, viewport, layerSelectionHandler);
 		// post init:
-		final Divider d = imageLayer.getDivider();
-		if (onDividerRotate != null)
-		{
-			d.getMouseDragState().setOnRotate(() -> onDividerRotate.accept(d));
-		}
 		if (imageLayer.getImageLayerShape() instanceof ImageLayerShapeSplit imageLayerShapeSplit)
 		{
 			final var layerSelectionModel = viewport.getLayerSelectionModel();
@@ -337,11 +329,6 @@ final class ImageLayer implements AutoCloseable
 		getImageLayerShape().selectedProperty().set(selected);
 	}
 
-	Divider getDivider()
-	{
-		return divider;
-	}
-
 	ImageLayerShapeBase getImageLayerShape()
 	{
 		return imageLayerShape;
@@ -387,6 +374,5 @@ final class ImageLayer implements AutoCloseable
 	public void close()
 	{
 		clearClip();
-		getDivider().close();
 	}
 }

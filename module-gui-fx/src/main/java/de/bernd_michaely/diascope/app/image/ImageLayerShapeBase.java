@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
@@ -139,7 +138,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeBaseStroke, Ima
 
 	abstract double getStrokeWidthSelected();
 
-	abstract Type getType();
+	abstract ImageLayer.Type getType();
 
 	abstract Shape getShape();
 }

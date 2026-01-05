@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
+import java.util.Map;
 import java.util.function.Predicate;
 import javafx.beans.value.ChangeListener;
 
@@ -29,14 +30,17 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 final class ImageLayers extends ImageLayersBase
 {
+	private final Map<ImageLayer, Divider> splitDividers;
+	private final Viewport viewport;
 	private final DividerRotationControl dividerRotationControl;
 	private final ChangeListener<Number> clippingPointsListener;
-	private final Viewport viewport;
 
-	ImageLayers(Viewport viewport, ImageTransforms imageTransforms)
+	ImageLayers(Viewport viewport, Map<ImageLayer, Divider> splitDividers,
+		ImageTransforms imageTransforms)
 	{
+		this.splitDividers = splitDividers;
 		this.viewport = viewport;
-		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers);
+		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers, viewport::getDivider);
 		this.clippingPointsListener = onChange(new ClippingPointsListener(viewport, unmodifiableLayers));
 		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
 		{
@@ -63,8 +67,15 @@ final class ImageLayers extends ImageLayersBase
 				for (int i = change.getFrom(); i < change.getTo(); i++)
 				{
 					final var imageLayer = list.get(i);
-					imageLayer.getDivider().angleProperty().addListener(clippingPointsListener);
-					viewport.addSplitLayer(i, imageLayer);
+					if (imageLayer != null)
+					{
+						final var divider = splitDividers.get(imageLayer);
+						if (divider != null)
+						{
+							divider.angleProperty().addListener(clippingPointsListener);
+						}
+						viewport.addSplitLayer(i, imageLayer);
+					}
 				}
 				dividerRotationControl.initializeDividerAngles();
 			})
@@ -73,8 +84,17 @@ final class ImageLayers extends ImageLayersBase
 				for (var imageLayer : change.getRemoved())
 				{
 					viewport.removeLayer(imageLayer);
-					imageLayer.getDivider().angleProperty().removeListener(clippingPointsListener);
-					imageLayer.close();
+					if (imageLayer != null)
+					{
+						try (var divider = splitDividers.get(imageLayer))
+						{
+							if (divider != null)
+							{
+								divider.angleProperty().removeListener(clippingPointsListener);
+							}
+						}
+						imageLayer.close();
+					}
 				}
 				dividerRotationControl.initializeDividerAngles();
 			}).build());
@@ -124,8 +144,10 @@ final class ImageLayers extends ImageLayersBase
 
 	ImageLayer createImageLayer(int index)
 	{
-		final var imageLayer = ImageLayer.createInstance(
-			viewport, this::selectImageLayer, dividerRotationControl);
+		final var divider = new Divider(viewport);
+		divider.getMouseDragState().setOnRotate(() -> dividerRotationControl.accept(divider));
+		final var imageLayer = ImageLayer.createInstance(viewport, this::selectImageLayer);
+		splitDividers.put(imageLayer, divider);
 		layers.add(index, imageLayer);
 		selectImageLayer(imageLayer);
 		return imageLayer;

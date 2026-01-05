@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.image;
 import java.lang.System.Logger;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -39,6 +40,7 @@ class DividerRotationControl implements Consumer<Divider>
 	private static final double C2 = 2 * C;
 	private final DoubleProperty dividerMinGapProperty;
 	private final List<ImageLayer> layers;
+	private final Function<ImageLayer, Divider> dividerByImageLayer;
 	private @Nullable Divider divider;
 	private @Nullable Runnable dividerDragCycle;
 
@@ -47,9 +49,10 @@ class DividerRotationControl implements Consumer<Divider>
 		NEUTRAL, WHEEL, SINGLE, FOLD
 	}
 
-	DividerRotationControl(List<ImageLayer> layers)
+	DividerRotationControl(List<ImageLayer> layers, Function<ImageLayer, Divider> dividerByImageLayer)
 	{
 		this.layers = layers;
+		this.dividerByImageLayer = dividerByImageLayer;
 		this.dividerMinGapProperty = new SimpleDoubleProperty(DEFAULT_DIVIDER_MIN_GAP);
 	}
 
@@ -73,7 +76,7 @@ class DividerRotationControl implements Consumer<Divider>
 			double a = DIVIDERS_START_ANGLE;
 			for (int i = 0; i < numLayers; i++, a += da)
 			{
-				layers.get(i).getDivider().setAngle(a);
+				dividerByImageLayer.apply(layers.get(i)).setAngle(a);
 			}
 		}
 	}
@@ -88,12 +91,12 @@ class DividerRotationControl implements Consumer<Divider>
 		if (!layers.isEmpty())
 		{
 			final double minGap = getDividerMinGap();
-			final double angle = layers.getFirst().getDivider().getAngle();
+			final double angle = dividerByImageLayer.apply(layers.getFirst()).getAngle();
 			final double da = normalizeAngle(angle) - angle;
 			double anglePrev = 0.0;
 			for (int i = 0; i < layers.size(); i++)
 			{
-				final var d = layers.get(i).getDivider();
+				final var d = dividerByImageLayer.apply(layers.get(i));
 				double an = d.getAngle() + da;
 				final double aMin = anglePrev + minGap;
 				if (i > 0)
@@ -126,7 +129,7 @@ class DividerRotationControl implements Consumer<Divider>
 				logger.log(WARNING, () -> "Last divider angle is %f".formatted(a));
 			}
 			logger.log(TRACE, () -> "normalized divider angles → %s".formatted(
-				layers.stream().map(ImageLayer::getDivider).map(Divider::getAngle).toList()));
+				layers.stream().map(dividerByImageLayer::apply).map(Divider::getAngle).toList()));
 		}
 	}
 
@@ -143,7 +146,7 @@ class DividerRotationControl implements Consumer<Divider>
 		{
 			logger.log(TRACE, () -> ">>> start drag cycle");
 			this.divider = divider;
-			this.dividerDragCycle = new DividerDragCycle(layers, divider, getDividerMinGap());
+			this.dividerDragCycle = new DividerDragCycle(layers, divider, getDividerMinGap(), dividerByImageLayer);
 		}
 		if (mouseDragState.isDragRelease() || dividerChanged)
 		{

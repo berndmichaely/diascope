@@ -20,6 +20,7 @@ import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListContentConcatenation;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import javafx.beans.property.*;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
@@ -45,6 +46,7 @@ import static javafx.collections.FXCollections.unmodifiableObservableList;
 ///
 class Viewport implements AutoCloseable
 {
+	private final Map<ImageLayer, Divider> splitDividersUnmodifiable;
 	private final Pane paneImageLayers = new Pane();
 	private final Pane paneDividerLines = new Pane();
 	private final Pane paneSpotLayers = new Pane();
@@ -78,8 +80,9 @@ class Viewport implements AutoCloseable
 	private @Nullable ImageLayer spotBaseLayer, spotLayer;
 	private @MonotonicNonNull LayerSelectionModel layerSelectionModel;
 
-	Viewport(ReadOnlyIntegerProperty numLayersProperty)
+	Viewport(Map<ImageLayer, Divider> splitDividersUnmodifiable, ReadOnlyIntegerProperty numLayersProperty)
 	{
+		this.splitDividersUnmodifiable = splitDividersUnmodifiable;
 		this.modeProperty = new SimpleObjectProperty<>();
 		this.spotProperty = new ReadOnlyBooleanWrapper();
 		spotProperty.bind(modeProperty.isEqualTo(SPOT));
@@ -229,6 +232,21 @@ class Viewport implements AutoCloseable
 		});
 	}
 
+	/// Convenience method to return the split divider associated with this image layer.
+	///
+	/// @return the split divider associated with this image layer
+	///
+	Divider getDivider(ImageLayer imageLayer)
+	{
+		final var divider = splitDividersUnmodifiable.get(imageLayer);
+		if (divider == null)
+		{
+			throw new IllegalStateException(getClass().getName() +
+				"::getDivider : no divider associated with this ImageLayer");
+		}
+		return divider;
+	}
+
 	void setLayerSelectionModel(LayerSelectionModel layerSelectionModel)
 	{
 		this.layerSelectionModel = layerSelectionModel;
@@ -236,7 +254,7 @@ class Viewport implements AutoCloseable
 
 	void addSplitLayer(int index, ImageLayer imageLayer)
 	{
-		final var divider = imageLayer.getDivider();
+		final var divider = getDivider(imageLayer);
 		divider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 		topLayerNodeListSplitShapes.add(index, imageLayer.getImageLayerShape().getShape());
 		topLayerNodeListSplitLines.add(index, divider.getLineEvent());
@@ -273,7 +291,7 @@ class Viewport implements AutoCloseable
 		{
 			case SPLIT ->
 			{
-				final var divider = imageLayer.getDivider();
+				final var divider = getDivider(imageLayer);
 				topLayerNodeListSplitLines.remove(divider.getLineEvent());
 				paneDividerLines.getChildren().remove(divider.getLineShape());
 				topLayerNodeListSplitShapes.remove(imageLayerShape.getShape());

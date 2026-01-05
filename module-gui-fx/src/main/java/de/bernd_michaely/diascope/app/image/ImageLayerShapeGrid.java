@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
 import javafx.scene.shape.Rectangle;
 
 /// Class to describe an ImageLayer selection shape for GRID mode.
@@ -40,9 +39,9 @@ final class ImageLayerShapeGrid extends ImageLayerShapeBaseStroke
 	}
 
 	@Override
-	Type getType()
+	ImageLayer.Type getType()
 	{
-		return Type.BASE;
+		return ImageLayer.Type.BASE;
 	}
 
 	@Override
