@@ -138,7 +138,9 @@ allprojects {
 }
 
 logger.lifecycle "Running Gradle $project.gradle.gradleVersion"
-logger.lifecycle "Java source level           : ${java.sourceCompatibility}"
+logger.lifecycle "Java source compatibility   : ${java.sourceCompatibility}"
+logger.lifecycle "Java target compatibility   : ${java.targetCompatibility}"
+logger.lifecycle "Java toolchain              : ${java.toolchain.displayName}"
 logger.lifecycle "Compile      -> Debug-Level : ${compileJava.options.debug}"
 logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}"
 logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"

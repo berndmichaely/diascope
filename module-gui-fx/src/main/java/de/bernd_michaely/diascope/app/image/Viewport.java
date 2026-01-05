@@ -239,15 +239,15 @@ class Viewport implements AutoCloseable
 	/// @return the split divider associated with the given image layer
 	/// @throws IllegalStateException if there is no divider associated with the given image layer
 	///
-	SplitDivider getDivider(ImageLayer imageLayer)
+	SplitDivider getSplitDivider(ImageLayer imageLayer)
 	{
-		final var divider = splitDividersUnmodifiable.get(imageLayer);
-		if (divider == null)
+		final var splitDivider = splitDividersUnmodifiable.get(imageLayer);
+		if (splitDivider == null)
 		{
 			throw new IllegalStateException(getClass().getName() +
 				"::getDivider : no divider associated with this ImageLayer");
 		}
-		return divider;
+		return splitDivider;
 	}
 
 	void setLayerSelectionModel(LayerSelectionModel layerSelectionModel)
@@ -257,11 +257,11 @@ class Viewport implements AutoCloseable
 
 	void addSplitLayer(int index, ImageLayer imageLayer)
 	{
-		final var divider = getDivider(imageLayer);
-		divider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
+		final var splitDivider = getSplitDivider(imageLayer);
+		splitDivider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 		topLayerNodeListSplitShapes.add(index, imageLayer.getImageLayerShape().getShape());
-		topLayerNodeListSplitLines.add(index, divider.getLineEvent());
-		paneDividerLines.getChildren().add(index, divider.getLineShape());
+		topLayerNodeListSplitLines.add(index, splitDivider.getLineEvent());
+		paneDividerLines.getChildren().add(index, splitDivider.getLineShape());
 		paneImageLayers.getChildren().add(index, imageLayer.getRegion());
 	}
 
@@ -294,7 +294,7 @@ class Viewport implements AutoCloseable
 		{
 			case SPLIT ->
 			{
-				final var divider = getDivider(imageLayer);
+				final var divider = getSplitDivider(imageLayer);
 				topLayerNodeListSplitLines.remove(divider.getLineEvent());
 				paneDividerLines.getChildren().remove(divider.getLineShape());
 				topLayerNodeListSplitShapes.remove(imageLayerShape.getShape());

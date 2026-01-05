@@ -45,10 +45,10 @@ class ClippingPointsListener implements Runnable
 			for (int i = 0; i < n; i++)
 			{
 				final var layer = unmodifiableLayers.get(i);
-				final var divider = viewport.getDivider(layer);
+				final var divider = viewport.getSplitDivider(layer);
 				final var corner = divider.getBorder();
 				final var layerNext = unmodifiableLayers.get(i == n - 1 ? 0 : i + 1);
-				final var dividerNext = viewport.getDivider(layerNext);
+				final var dividerNext = viewport.getSplitDivider(layerNext);
 				final var cornerNext = dividerNext.getBorder();
 				final int numIntermediateCorners = numberOfCornerPointsBetween(
 					corner, divider.getAngle(), cornerNext, dividerNext.getAngle());

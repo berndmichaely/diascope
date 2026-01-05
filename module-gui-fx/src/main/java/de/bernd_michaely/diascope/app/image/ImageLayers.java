@@ -38,7 +38,7 @@ final class ImageLayers extends ImageLayersBase
 		ImageTransforms imageTransforms)
 	{
 		this.viewport = viewport;
-		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers, viewport::getDivider);
+		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers, viewport::getSplitDivider);
 		this.clippingPointsListener = onChange(new ClippingPointsListener(viewport, unmodifiableLayers));
 		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
 		{

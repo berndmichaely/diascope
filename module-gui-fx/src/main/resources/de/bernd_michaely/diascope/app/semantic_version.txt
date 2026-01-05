@@ -1,1 +1,1 @@
-0.6.0-snapshot+r3677
+0.6.0-snapshot+r3678
