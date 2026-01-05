@@ -18,9 +18,10 @@ package de.bernd_michaely.diascope.app.util.beans;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -71,14 +72,25 @@ public class ListContentConcatenation<T> implements AutoCloseable
 			() -> getClass().getName() + " : no source lists provided");
 		this.observableLists = sourceLists instanceof ObservableList ?
 			(ObservableList<ObservableList<T>>) sourceLists : null;
-		this.targetList = targetList != null ? targetList : new ArrayList<>();
-		this.targetList.clear();
+		if (targetList != null)
+		{
+			this.targetList = targetList;
+			this.targetList.clear();
+		}
+		else
+		{
+			this.targetList = new ArrayList<>();
+		}
+		final IntFunction<Integer> getPrefixSizeByIndex =
+			index -> sourceLists.stream().limit(index).mapToInt(List::size).sum();
+		final Function<List, Integer> getPrefixSizeByList =
+			list -> getPrefixSizeByIndex.apply(sourceLists.indexOf(list));
 		this.listenerSrcList = new ListChangeListenerBuilder<T>()
 			.onAdd(change -> this.targetList.addAll(
-				getPrefixSize(change.getList()) + change.getFrom(), change.getAddedSubList()))
+				getPrefixSizeByList.apply(change.getList()) + change.getFrom(), change.getAddedSubList()))
 			.onRemove(change ->
 			{
-				final int from = getPrefixSize(change.getList()) + change.getFrom();
+				final int from = getPrefixSizeByList.apply(change.getList()) + change.getFrom();
 				final int to = from + change.getRemovedSize();
 				this.targetList.subList(from, to).clear();
 			})
@@ -92,7 +104,7 @@ public class ListContentConcatenation<T> implements AutoCloseable
 				{
 					change.getAddedSubList().forEach(list ->
 					{
-						this.targetList.addAll(getPrefixSize(list), list);
+						this.targetList.addAll(getPrefixSizeByList.apply(list), list);
 						list.addListener(listenerSrcList);
 					});
 				})
@@ -100,7 +112,7 @@ public class ListContentConcatenation<T> implements AutoCloseable
 				{
 					change.getRemoved().forEach(list -> list.removeListener(listenerSrcList));
 					final int sizeRemoved = change.getRemoved().stream().mapToInt(List::size).sum();
-					final int from = getPrefixSize(change.getFrom());
+					final int from = getPrefixSizeByIndex.apply(change.getFrom());
 					final int to = from + sizeRemoved;
 					this.targetList.subList(from, to).clear();
 				})
@@ -111,32 +123,6 @@ public class ListContentConcatenation<T> implements AutoCloseable
 		{
 			this.listenerLists = null;
 		}
-	}
-
-	private int getPrefixSize(@UnderInitialization ListContentConcatenation<T> this,
-		List list)
-	{
-		int size = 0;
-		if (sourceLists != null)
-		{
-			final int index = sourceLists.indexOf(list);
-			if (index >= 0)
-			{
-				size = getPrefixSize(index);
-			}
-			else
-			{
-				throw new IllegalStateException(
-					getClass().getName() + "::getPrefixSize : list not found");
-			}
-		}
-		return size;
-	}
-
-	private int getPrefixSize(@UnderInitialization ListContentConcatenation<T> this,
-		int index)
-	{
-		return sourceLists != null ? sourceLists.stream().limit(index).mapToInt(List::size).sum() : 0;
 	}
 
 	/// Returns true, iff the list of observable source lists is observable itself.
