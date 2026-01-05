@@ -74,7 +74,7 @@ final class ImageLayers extends ImageLayersBase
 				{
 					viewport.removeLayer(imageLayer);
 					imageLayer.getDivider().angleProperty().removeListener(clippingPointsListener);
-					imageLayer.clear();
+					imageLayer.close();
 				}
 				dividerRotationControl.initializeDividerAngles();
 			}).build());

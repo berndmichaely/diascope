@@ -39,7 +39,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class Divider
+class Divider implements AutoCloseable
 {
 	private static final Paint COLOR_DEFAULT = COLOR_UNSELECTED;
 	private static final Paint COLOR_HOVER = Color.LIGHTCORAL;
@@ -51,6 +51,14 @@ class Divider
 	private final ReadOnlyDoubleWrapper borderIntersectionY = new ReadOnlyDoubleWrapper();
 	private final Line lineShape, lineEvent;
 	private final MouseDragState mouseDragState;
+
+	Divider(Viewport viewport)
+	{
+		this(viewport.getCornerAngles(),
+			viewport.widthProperty(), viewport.heightProperty(),
+			viewport.getSplitCenter().xProperty(), viewport.getSplitCenter().yProperty(),
+			viewport.getSplitCenter().dxProperty(), viewport.getSplitCenter().dyProperty());
+	}
 
 	Divider(CornerAngles cornerAngles,
 		ReadOnlyDoubleProperty viewportWidth,
@@ -168,7 +176,8 @@ class Divider
 		return lineEvent;
 	}
 
-	void clear()
+	@Override
+	public void close()
 	{
 		angleProperty().unbind();
 		mouseDragState.removeListenersFor(lineEvent);

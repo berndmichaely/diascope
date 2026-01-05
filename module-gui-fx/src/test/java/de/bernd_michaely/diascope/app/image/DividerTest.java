@@ -66,34 +66,36 @@ public class DividerTest
 		final var cornerAngles = new CornerAngles(
 			x.getReadOnlyProperty(), y.getReadOnlyProperty(),
 			dx.getReadOnlyProperty(), dy.getReadOnlyProperty());
-		final var divider = new Divider(cornerAngles, width, height, x, y, dx, dy);
-		divider.setAngle(0.0);
-		assertEquals(RIGHT, divider.getBorder());
-		divider.setAngle(45.0);
-		assertEquals(RIGHT, divider.getBorder());
-		divider.setAngle(45.001);
-		assertEquals(BOTTOM, divider.getBorder());
-		divider.setAngle(90.0);
-		assertEquals(BOTTOM, divider.getBorder());
-		divider.setAngle(135.0);
-		assertEquals(BOTTOM, divider.getBorder());
-		divider.setAngle(135.001);
-		assertEquals(LEFT, divider.getBorder());
-		divider.setAngle(180.0);
-		assertEquals(LEFT, divider.getBorder());
-		divider.setAngle(225.0);
-		assertEquals(LEFT, divider.getBorder());
-		divider.setAngle(225.001);
-		assertEquals(TOP, divider.getBorder());
-		divider.setAngle(270.0);
-		assertEquals(TOP, divider.getBorder());
-		divider.setAngle(315.0);
-		assertEquals(TOP, divider.getBorder());
-		divider.setAngle(315.001);
-		assertEquals(RIGHT, divider.getBorder());
-		divider.setAngle(360.0);
-		assertEquals(RIGHT, divider.getBorder());
-		assertEquals(360.0, divider.getAngle());
+		try (var divider = new Divider(cornerAngles, width, height, x, y, dx, dy))
+		{
+			divider.setAngle(0.0);
+			assertEquals(RIGHT, divider.getBorder());
+			divider.setAngle(45.0);
+			assertEquals(RIGHT, divider.getBorder());
+			divider.setAngle(45.001);
+			assertEquals(BOTTOM, divider.getBorder());
+			divider.setAngle(90.0);
+			assertEquals(BOTTOM, divider.getBorder());
+			divider.setAngle(135.0);
+			assertEquals(BOTTOM, divider.getBorder());
+			divider.setAngle(135.001);
+			assertEquals(LEFT, divider.getBorder());
+			divider.setAngle(180.0);
+			assertEquals(LEFT, divider.getBorder());
+			divider.setAngle(225.0);
+			assertEquals(LEFT, divider.getBorder());
+			divider.setAngle(225.001);
+			assertEquals(TOP, divider.getBorder());
+			divider.setAngle(270.0);
+			assertEquals(TOP, divider.getBorder());
+			divider.setAngle(315.0);
+			assertEquals(TOP, divider.getBorder());
+			divider.setAngle(315.001);
+			assertEquals(RIGHT, divider.getBorder());
+			divider.setAngle(360.0);
+			assertEquals(RIGHT, divider.getBorder());
+			assertEquals(360.0, divider.getAngle());
+		}
 	}
 
 	@Test
@@ -114,105 +116,106 @@ public class DividerTest
 		final var cornerAngles = new CornerAngles(
 			x.getReadOnlyProperty(), y.getReadOnlyProperty(),
 			dx.getReadOnlyProperty(), dy.getReadOnlyProperty());
-		final var divider = new Divider(cornerAngles, width, height, x, y, dx, dy);
+		try (var divider = new Divider(cornerAngles, width, height, x, y, dx, dy))
+		{
+			final double d30add = rint(50.0 + 50.0 * tan(toRadians(30.0)));
+			final double d30sub = rint(50.0 - 50.0 * tan(toRadians(30.0)));
 
-		final double d30add = rint(50.0 + 50.0 * tan(toRadians(30.0)));
-		final double d30sub = rint(50.0 - 50.0 * tan(toRadians(30.0)));
+			divider.setAngle(0.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(50.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(0.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(50.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(30.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(d30add, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(30.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(d30add, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(60.0);
+			assertEquals(d30add, rint(divider.getBorderIntersectionX()));
+			assertEquals(100.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(60.0);
-		assertEquals(d30add, rint(divider.getBorderIntersectionX()));
-		assertEquals(100.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(90.0);
+			assertEquals(50.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(100.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(90.0);
-		assertEquals(50.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(100.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(120.0);
+			assertEquals(d30sub, rint(divider.getBorderIntersectionX()));
+			assertEquals(100.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(120.0);
-		assertEquals(d30sub, rint(divider.getBorderIntersectionX()));
-		assertEquals(100.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(150.0);
+			assertEquals(0.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(d30add, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(150.0);
-		assertEquals(0.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(d30add, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(180.0);
+			assertEquals(0.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(50.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(180.0);
-		assertEquals(0.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(50.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(210.0);
+			assertEquals(0.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(d30sub, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(210.0);
-		assertEquals(0.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(d30sub, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(240.0);
+			assertEquals(d30sub, rint(divider.getBorderIntersectionX()));
+			assertEquals(0.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(240.0);
-		assertEquals(d30sub, rint(divider.getBorderIntersectionX()));
-		assertEquals(0.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(270.0);
+			assertEquals(50.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(0.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(270.0);
-		assertEquals(50.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(0.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(300.0);
+			assertEquals(d30add, rint(divider.getBorderIntersectionX()));
+			assertEquals(0.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(300.0);
-		assertEquals(d30add, rint(divider.getBorderIntersectionX()));
-		assertEquals(0.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(330.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(d30sub, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(330.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(d30sub, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(360.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(50.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(360.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(50.0, rint(divider.getBorderIntersectionY()));
+			// changing the viewport width:
+			width.set(200.0);
+			divider.setAngle(0.0);
+			assertEquals(200.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(50.0, rint(divider.getBorderIntersectionY()));
 
-		// changing the viewport width:
-		width.set(200.0);
-		divider.setAngle(0.0);
-		assertEquals(200.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(50.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(90.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(100.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(90.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(100.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(180.0);
+			assertEquals(0.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(50.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(180.0);
-		assertEquals(0.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(50.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(270.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(0.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(270.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(0.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(360.0);
+			assertEquals(200.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(50.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(360.0);
-		assertEquals(200.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(50.0, rint(divider.getBorderIntersectionY()));
+			// changing the viewport height:
+			height.set(300.0);
+			divider.setAngle(0.0);
+			assertEquals(200.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(150.0, rint(divider.getBorderIntersectionY()));
 
-		// changing the viewport height:
-		height.set(300.0);
-		divider.setAngle(0.0);
-		assertEquals(200.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(150.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(90.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(300.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(90.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(300.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(180.0);
+			assertEquals(0.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(150.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(180.0);
-		assertEquals(0.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(150.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(270.0);
+			assertEquals(100.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(0.0, rint(divider.getBorderIntersectionY()));
 
-		divider.setAngle(270.0);
-		assertEquals(100.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(0.0, rint(divider.getBorderIntersectionY()));
-
-		divider.setAngle(360.0);
-		assertEquals(200.0, rint(divider.getBorderIntersectionX()));
-		assertEquals(150.0, rint(divider.getBorderIntersectionY()));
+			divider.setAngle(360.0);
+			assertEquals(200.0, rint(divider.getBorderIntersectionX()));
+			assertEquals(150.0, rint(divider.getBorderIntersectionY()));
+		}
 	}
 }

@@ -57,7 +57,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayer
+final class ImageLayer implements AutoCloseable
 {
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
@@ -87,6 +87,8 @@ final class ImageLayer
 	/// ImageLayer types.
 	enum Type
 	{
+		/// grid mode layer with rectangular selection shape
+		GRID,
 		/// split mode layer with polygonal selection shape
 		SPLIT,
 		/// base layer of spot mode with rectangular selection shape
@@ -99,6 +101,8 @@ final class ImageLayer
 	{
 		this.imageLayerShape = switch (type)
 		{
+			case GRID ->
+				ImageLayerShapeGrid.createInstance();
 			case SPLIT, BASE ->
 				ImageLayerShapeSplit.createInstance();
 			case SPOT ->
@@ -106,7 +110,9 @@ final class ImageLayer
 		};
 		this.clippingShape = switch (type)
 		{
-			case SPLIT, BASE ->
+			case GRID, BASE ->
+				new Rectangle();
+			case SPLIT ->
 				new Polygon();
 			case SPOT ->
 				new Ellipse();
@@ -132,10 +138,7 @@ final class ImageLayer
 		this.zoomFit = new SimpleDoubleProperty();
 		this.zoomFill = new SimpleDoubleProperty();
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
-		this.divider = new Divider(viewport.getCornerAngles(),
-			viewport.widthProperty(), viewport.heightProperty(),
-			viewport.getSplitCenter().xProperty(), viewport.getSplitCenter().yProperty(),
-			viewport.getSplitCenter().dxProperty(), viewport.getSplitCenter().dyProperty());
+		this.divider = new Divider(viewport);
 		imageIsNull.bind(isNull(imageView.imageProperty()));
 		this.zoomModeIsFit = new SimpleBooleanProperty();
 		zoomModeIsFit.bind(imageTransforms.zoomModeProperty().isEqualTo(FIT));
@@ -380,9 +383,10 @@ final class ImageLayer
 		return imageTitle;
 	}
 
-	void clear()
+	@Override
+	public void close()
 	{
 		clearClip();
-		getDivider().clear();
+		getDivider().close();
 	}
 }
