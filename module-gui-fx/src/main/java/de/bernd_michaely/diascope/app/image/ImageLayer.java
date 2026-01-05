@@ -53,11 +53,11 @@ import static javafx.beans.binding.Bindings.min;
 import static javafx.beans.binding.Bindings.negate;
 import static javafx.beans.binding.Bindings.when;
 
-/// Class to describe ImageView transformations.
+/// Class to describe a single image layer.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class ImageLayer
+final class ImageLayer
 {
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();

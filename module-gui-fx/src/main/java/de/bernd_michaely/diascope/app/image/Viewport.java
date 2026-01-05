@@ -37,12 +37,13 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 import static java.lang.Math.clamp;
 import static javafx.collections.FXCollections.observableArrayList;
 import static javafx.collections.FXCollections.singletonObservableList;
+import static javafx.collections.FXCollections.unmodifiableObservableList;
 
 /// Class to describe the viewport of a MultiImageView containing all images.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class Viewport
+class Viewport implements AutoCloseable
 {
 	private final Pane paneImageLayers = new Pane();
 	private final Pane paneDividerLines = new Pane();
@@ -102,14 +103,24 @@ class Viewport
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
 		topLayerNodeListSplitCenter = singletonObservableList(splitCenter.getShape());
 		this.mapTopLayerNodeLists = new EnumMap<>(Mode.class);
-		mapTopLayerNodeLists.put(SINGLE, singletonObservableList(topLayerNodeListScrollBars));
-		mapTopLayerNodeLists.put(GRID, observableArrayList(
-			List.of(topLayerNodeListGridLines, topLayerNodeListScrollBars)));
-		mapTopLayerNodeLists.put(SPLIT, observableArrayList(
-			List.of(topLayerNodeListSplitShapes, topLayerNodeListSplitLines,
-				topLayerNodeListScrollBars, topLayerNodeListSplitCenter)));
-		mapTopLayerNodeLists.put(SPOT, observableArrayList(
-			List.of(topLayerNodeListSpotShapes, topLayerNodeListScrollBars)));
+		for (var mode : Mode.values())
+		{
+			mapTopLayerNodeLists.put(mode,
+				unmodifiableObservableList(observableArrayList(switch (mode)
+				{
+					case SINGLE ->
+						List.of(topLayerNodeListScrollBars);
+					case GRID ->
+						List.of(topLayerNodeListGridLines, topLayerNodeListScrollBars);
+					case SPLIT ->
+						List.of(
+						topLayerNodeListSplitShapes, topLayerNodeListSplitLines,
+						topLayerNodeListScrollBars, topLayerNodeListSplitCenter);
+					case SPOT ->
+						List.of(topLayerNodeListSpotShapes, topLayerNodeListScrollBars);
+					default -> throw new AssertionError(getClass().getName() + ": unhandled Mode: " + mode);
+			})));
+		}
 		paneTopLayer.setBackground(Background.EMPTY);
 		paneDividerLines.setBackground(Background.EMPTY);
 		paneSpotLayers.setBackground(Background.EMPTY);
@@ -124,7 +135,7 @@ class Viewport
 			else
 			{
 				throw new IllegalStateException(getClass().getName() +
-					": mapTopLayerNodeLists not initialized for " + newMode);
+					": mapTopLayerNodeLists not initialized for Mode: " + newMode);
 			}
 			if (oldMode == SPOT)
 			{
@@ -393,5 +404,11 @@ class Viewport
 	Region getRegion()
 	{
 		return stackPane;
+	}
+
+	@Override
+	public void close()
+	{
+		topLayerNodes.close();
 	}
 }
