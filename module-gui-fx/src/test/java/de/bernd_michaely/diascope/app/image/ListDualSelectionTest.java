@@ -81,6 +81,11 @@ public class ListDualSelectionTest
 		final String w1 = first != null ? "»%s«".formatted(first) : "–––";
 		final String w2 = second != null ? "»%s«".formatted(second) : "–––";
 		final Collection<Integer> selectedIndices = selection.getSelectedIndices();
+		for (int selectedIndex : selectedIndices)
+		{
+			assertTrue(selectedIndex >= 0);
+			assertTrue(selectedIndex < list.size());
+		}
 		if (action != null)
 		{
 			if (action == Action.SEL)
