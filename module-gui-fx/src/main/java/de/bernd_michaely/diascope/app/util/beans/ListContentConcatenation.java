@@ -18,8 +18,7 @@ package de.bernd_michaely.diascope.app.util.beans;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -38,6 +37,12 @@ public class ListContentConcatenation<T> implements AutoCloseable
 	private final List<T> targetList;
 	private final ListChangeListener<T> listenerSrcList;
 	private final @Nullable ListChangeListener<ObservableList<T>> listenerLists;
+
+	@FunctionalInterface
+	interface IntToIntFunction
+	{
+		int apply(int value);
+	}
 
 	/// Creates a new instance taking a list of observable source lists.
 	/// A new target list will be created.
@@ -81,16 +86,16 @@ public class ListContentConcatenation<T> implements AutoCloseable
 		{
 			this.targetList = new ArrayList<>();
 		}
-		final IntFunction<Integer> getPrefixSizeByIndex =
+		final IntToIntFunction getPrefixSizeByIndex =
 			index -> sourceLists.stream().limit(index).mapToInt(List::size).sum();
-		final Function<List, Integer> getPrefixSizeByList =
+		final ToIntFunction<List> getPrefixSizeByList =
 			list -> getPrefixSizeByIndex.apply(sourceLists.indexOf(list));
 		this.listenerSrcList = new ListChangeListenerBuilder<T>()
 			.onAdd(change -> this.targetList.addAll(
-				getPrefixSizeByList.apply(change.getList()) + change.getFrom(), change.getAddedSubList()))
+				getPrefixSizeByList.applyAsInt(change.getList()) + change.getFrom(), change.getAddedSubList()))
 			.onRemove(change ->
 			{
-				final int from = getPrefixSizeByList.apply(change.getList()) + change.getFrom();
+				final int from = getPrefixSizeByList.applyAsInt(change.getList()) + change.getFrom();
 				final int to = from + change.getRemovedSize();
 				this.targetList.subList(from, to).clear();
 			})
@@ -104,7 +109,7 @@ public class ListContentConcatenation<T> implements AutoCloseable
 				{
 					change.getAddedSubList().forEach(list ->
 					{
-						this.targetList.addAll(getPrefixSizeByList.apply(list), list);
+						this.targetList.addAll(getPrefixSizeByList.applyAsInt(list), list);
 						list.addListener(listenerSrcList);
 					});
 				})
