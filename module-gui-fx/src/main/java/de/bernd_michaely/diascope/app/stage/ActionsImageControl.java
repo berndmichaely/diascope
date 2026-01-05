@@ -87,7 +87,7 @@ class ActionsImageControl
 			SPOT, new ActionItemDescriptor(Icons.ModeSpot, "Spot", "Spot Mode", strTooltipModeSpot)));
 		actionMode.disableProperty().bind(emptyProperty);
 		actionMode.getDisableProperty(SPOT).bind(multiImageView.spotModeDisabledProperty());
-		actionMode.selectedIdProperty().bindBidirectional(multiImageView.modeProperty());
+		init(multiImageView, actionMode);
 		// ShowDividers
 		this.actionShowDividers = new CheckedAction(new ActionItemDescriptor(
 			Icons.ShowDividers, "\\/", "Show/Hide dividers", "Show/Hide dividers"));
@@ -134,5 +134,11 @@ class ActionsImageControl
 		this.actionFullScreen = new CheckedAction(ACTION_ITEM_DESCRIPTOR_FULLSCREEN);
 		actionFullScreen.selectedProperty().bindBidirectional(imageControlProperties.getFullScreen().enabledProperty());
 		actionFullScreen.disableProperty().bind(emptyProperty);
+	}
+
+	@SuppressWarnings("argument")
+	private static void init(MultiImageView multiImageView, ToggleAction<MultiImageView.Mode> actionMode)
+	{
+		actionMode.selectedIdProperty().bindBidirectional(multiImageView.modeProperty().rawValueProperty());
 	}
 }

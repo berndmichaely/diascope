@@ -42,10 +42,11 @@ import static javafx.beans.binding.Bindings.when;
 ///
 public class EnumProperties<V extends Enum<V>>
 {
-	private final Enum<V> defaultValue;
-	private final ObjectProperty<@Nullable Enum<V>> rawValueProperty;
-	private final ReadOnlyObjectWrapper<Enum<V>> valueOrDefaultProperty;
+	private final V defaultValue;
+	private final ObjectProperty<@Nullable V> rawValueProperty;
+	private final ReadOnlyObjectWrapper<V> valueOrDefaultProperty;
 	private @MonotonicNonNull EnumMap<V, ReadOnlyBooleanProperty> map;
+	private boolean initialized;
 
 	/// Creates a new instance with the given default value.
 	///
@@ -55,12 +56,12 @@ public class EnumProperties<V extends Enum<V>>
 	private EnumProperties(V defaultValue)
 	{
 		this.defaultValue = requireNonNull(defaultValue);
-		this.rawValueProperty = new SimpleObjectProperty<>();
+		this.rawValueProperty = new SimpleObjectProperty<>(defaultValue);
 		this.valueOrDefaultProperty = new ReadOnlyObjectWrapper<>();
 	}
 
 	@SuppressWarnings("argument")
-	private void init()
+	private void _post_init()
 	{
 		valueOrDefaultProperty.bind(
 			when(isNotNull(rawValueProperty)).then(rawValueProperty).otherwise(defaultValue));
@@ -75,7 +76,7 @@ public class EnumProperties<V extends Enum<V>>
 	public static <E extends Enum<E>> EnumProperties<E> createInstance(E defaultValue)
 	{
 		final var enumProperties = new EnumProperties<E>(defaultValue);
-		enumProperties.init();
+		enumProperties._post_init();
 		return enumProperties;
 	}
 
@@ -83,7 +84,7 @@ public class EnumProperties<V extends Enum<V>>
 	///
 	/// @return the default value (which is never `null`)
 	///
-	public Enum<V> getDefaultValue()
+	public V getDefaultValue()
 	{
 		return defaultValue;
 	}
@@ -92,7 +93,7 @@ public class EnumProperties<V extends Enum<V>>
 	///
 	/// @return an ObjectProperty holding the raw value (which may be `null`)
 	///
-	public ObjectProperty<@Nullable Enum<V>> rawValueProperty()
+	public ObjectProperty<@Nullable V> rawValueProperty()
 	{
 		return rawValueProperty;
 	}
@@ -111,7 +112,7 @@ public class EnumProperties<V extends Enum<V>>
 	///
 	/// @param value the raw value to set
 	///
-	public void setRawValue(@Nullable Enum<V> value)
+	public void setRawValue(@Nullable V value)
 	{
 		rawValueProperty().set(value);
 	}
@@ -122,7 +123,7 @@ public class EnumProperties<V extends Enum<V>>
 	/// @return a read only property to hold the raw value or the default value
 	///         (that is, the return value is never `null`)
 	///
-	public ReadOnlyObjectProperty<Enum<V>> valueOrDefaultProperty()
+	public ReadOnlyObjectProperty<V> valueOrDefaultProperty()
 	{
 		return valueOrDefaultProperty.getReadOnlyProperty();
 	}
@@ -132,7 +133,7 @@ public class EnumProperties<V extends Enum<V>>
 	/// @return the raw value, if it is not null, or the default value otherwise
 	///         (that is, the return value is never `null`)
 	///
-	public Enum<V> getValueOrDefault()
+	public V getValueOrDefault()
 	{
 		return valueOrDefaultProperty().get();
 	}

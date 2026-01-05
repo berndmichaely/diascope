@@ -128,7 +128,7 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 				removeSpotInitListener(viewport);
 			}
 		});
-		viewport.modeProperty().addListener(spotInitListener);
+		viewport.modeProperty().valueOrDefaultProperty().addListener(spotInitListener);
 		viewport.widthProperty().addListener(onChange((oldWidth, newWidth) ->
 		{
 			final double w = newWidth.doubleValue();
@@ -252,7 +252,7 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	{
 		if (viewport != null && spotInitListener != null)
 		{
-			viewport.modeProperty().removeListener(spotInitListener);
+			viewport.modeProperty().valueOrDefaultProperty().removeListener(spotInitListener);
 		}
 	}
 

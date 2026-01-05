@@ -16,12 +16,12 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
@@ -70,11 +70,6 @@ public class MultiImageView
 		{
 			return SPLIT;
 		}
-
-		public boolean isSpotMode()
-		{
-			return this == SPOT;
-		}
 	}
 
 	public MultiImageView()
@@ -94,7 +89,7 @@ public class MultiImageView
 			.then(imageLayersSpot.layersMaxWidth).otherwise(imageLayersSplit.layersMaxWidth));
 		viewport.layersMaxHeightProperty().bind(when(viewport.spotProperty())
 			.then(imageLayersSpot.layersMaxHeight).otherwise(imageLayersSplit.layersMaxHeight));
-		viewport.modeProperty().addListener(onChange(mode ->
+		viewport.modeProperty().valueOrDefaultProperty().addListener(onChange(mode ->
 		{
 			if (mode == null || mode == SINGLE)
 			{
@@ -257,7 +252,7 @@ public class MultiImageView
 	///
 	/// @return property to indicate the multi image mode
 	///
-	public ObjectProperty<Mode> modeProperty()
+	public EnumProperties<Mode> modeProperty()
 	{
 		return viewport.modeProperty();
 	}
@@ -268,7 +263,7 @@ public class MultiImageView
 	///
 	public Mode getMode()
 	{
-		return modeProperty().get();
+		return modeProperty().getValueOrDefault();
 	}
 
 	/// Sets the multi image mode.
@@ -277,7 +272,7 @@ public class MultiImageView
 	///
 	public void setMode(Mode mode)
 	{
-		modeProperty().set(mode);
+		modeProperty().setRawValue(mode);
 	}
 
 	public ReadOnlyBooleanProperty spotModeDisabledProperty()

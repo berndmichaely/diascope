@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListContentConcatenation;
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +63,7 @@ class Viewport implements AutoCloseable
 	private final EnumMap<Mode, ObservableList<ObservableList<Node>>> mapTopLayerNodeLists;
 	private final ObservableList<ObservableList<Node>> topLayerNodeLists = observableArrayList();
 	private final ListContentConcatenation<Node> topLayerNodes;
-	private final ObjectProperty<Mode> modeProperty;
+	private final EnumProperties<Mode> modeProperty;
 	private final ReadOnlyBooleanWrapper spotProperty;
 	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
@@ -83,15 +84,15 @@ class Viewport implements AutoCloseable
 	Viewport(Map<ImageLayer, SplitDivider> splitDividersUnmodifiable, ReadOnlyIntegerProperty numLayersProperty)
 	{
 		this.splitDividersUnmodifiable = splitDividersUnmodifiable;
-		this.modeProperty = new SimpleObjectProperty<>();
+		this.modeProperty = EnumProperties.createInstance(getInitialMode());
 		this.spotProperty = new ReadOnlyBooleanWrapper();
-		spotProperty.bind(modeProperty.isEqualTo(SPOT));
+		spotProperty.bind(modeProperty.isValueProperty(SPOT));
 		this.multiLayerMode = new ReadOnlyBooleanWrapper();
 		multiLayerMode.bind(numLayersProperty.greaterThanOrEqualTo(2));
 		this.dividersVisible = new SimpleBooleanProperty();
 		this.dividersEnabled = new ReadOnlyBooleanWrapper();
 		dividersEnabled.bind(multiLayerMode.getReadOnlyProperty()
-			.and(dividersVisible).and(modeProperty.isEqualTo(SPLIT)));
+			.and(dividersVisible).and(modeProperty.isValueProperty(SPLIT)));
 		this.focusPointX = new SimpleDoubleProperty(0.5);
 		this.focusPointY = new SimpleDoubleProperty(0.5);
 		this.layersMaxWidth = new SimpleDoubleProperty();
@@ -128,7 +129,7 @@ class Viewport implements AutoCloseable
 		paneDividerLines.setBackground(Background.EMPTY);
 		paneSpotLayers.setBackground(Background.EMPTY);
 		this.topLayerNodes = new ListContentConcatenation<>(topLayerNodeLists, paneTopLayer.getChildren());
-		modeProperty.addListener(onChange((oldMode, newMode) ->
+		modeProperty.valueOrDefaultProperty().addListener(onChange((oldMode, newMode) ->
 		{
 			final var subLists = mapTopLayerNodeLists.get(newMode);
 			if (subLists != null)
@@ -185,7 +186,6 @@ class Viewport implements AutoCloseable
 				}
 			}
 		}));
-		modeProperty.set(Mode.getInitialMode());
 		stackPane.setBackground(Background.fill(Color.BLACK));
 		stackPane.setMinSize(0, 0);
 		stackPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -322,14 +322,14 @@ class Viewport implements AutoCloseable
 		return splitCenter;
 	}
 
-	ObjectProperty<Mode> modeProperty()
+	EnumProperties<Mode> modeProperty()
 	{
 		return modeProperty;
 	}
 
 	boolean isSpotMode()
 	{
-		return modeProperty.get().isSpotMode();
+		return modeProperty.isValue(SPOT);
 	}
 
 	ReadOnlyBooleanProperty multiLayerModeProperty()
