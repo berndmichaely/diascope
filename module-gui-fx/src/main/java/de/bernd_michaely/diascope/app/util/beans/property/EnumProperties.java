@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.util.beans.property;
 
+import java.util.Collection;
 import java.util.EnumMap;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -23,6 +24,7 @@ import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -46,7 +48,6 @@ public class EnumProperties<V extends Enum<V>>
 	private final ObjectProperty<@Nullable V> rawValueProperty;
 	private final ReadOnlyObjectWrapper<V> valueOrDefaultProperty;
 	private @MonotonicNonNull EnumMap<V, ReadOnlyBooleanProperty> map;
-	private boolean initialized;
 
 	/// Creates a new instance with the given default value.
 	///
@@ -56,7 +57,7 @@ public class EnumProperties<V extends Enum<V>>
 	private EnumProperties(V defaultValue)
 	{
 		this.defaultValue = requireNonNull(defaultValue);
-		this.rawValueProperty = new SimpleObjectProperty<>(defaultValue);
+		this.rawValueProperty = new SimpleObjectProperty<>();
 		this.valueOrDefaultProperty = new ReadOnlyObjectWrapper<>();
 	}
 
@@ -69,13 +70,36 @@ public class EnumProperties<V extends Enum<V>>
 
 	/// Creates a new instance with the given default value.
 	///
+	/// @param <E> the enum type
 	/// @param defaultValue a default value, which must not be `null`
 	/// @return a new instance
 	/// @throws NullPointerException if the default value is `null`
 	///
 	public static <E extends Enum<E>> EnumProperties<E> createInstance(E defaultValue)
 	{
+		return createInstance(defaultValue, null);
+	}
+
+	/// Creates a new instance with the given default value.
+	///
+	/// @param <E> the enum type
+	/// @param defaultValue a default value, which must not be `null`
+	/// @param changeListeners to be applied before setting the default value
+	/// @return a new instance
+	/// @throws NullPointerException if the default value is `null`
+	///
+	public static <E extends Enum<E>> EnumProperties<E> createInstance(
+		E defaultValue, @Nullable Collection<ChangeListener<E>> changeListeners)
+	{
 		final var enumProperties = new EnumProperties<E>(defaultValue);
+		if (changeListeners != null)
+		{
+			for (ChangeListener<E> changeListener : changeListeners)
+			{
+				enumProperties.valueOrDefaultProperty().addListener(changeListener);
+			}
+		}
+		enumProperties.setRawValue(defaultValue);
 		enumProperties._post_init();
 		return enumProperties;
 	}

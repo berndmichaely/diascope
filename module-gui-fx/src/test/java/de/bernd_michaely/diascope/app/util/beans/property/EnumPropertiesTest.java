@@ -16,6 +16,9 @@
  */
 package de.bernd_michaely.diascope.app.util.beans.property;
 
+import java.util.List;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import org.junit.jupiter.api.Test;
 
 import static de.bernd_michaely.diascope.app.util.beans.property.EnumPropertiesTest.TestEnum.*;
@@ -83,5 +86,29 @@ public class EnumPropertiesTest
 			test_values(ep, testEnum);
 		}
 		test_values(ep, null);
+	}
+
+	@Test
+	public void test_ChangeListener()
+	{
+		System.out.println("test_ChangeListener");
+		final var changeListener = new ChangeListener<TestEnum>()
+		{
+			TestEnum oldValue = THREE;
+			TestEnum newValue = THREE;
+
+			@Override
+			public void changed(ObservableValue<? extends TestEnum> observable, TestEnum oldValue, TestEnum newValue)
+			{
+				this.oldValue = oldValue;
+				this.newValue = newValue;
+			}
+		};
+		assertEquals(THREE, changeListener.oldValue);
+		assertEquals(THREE, changeListener.newValue);
+		final EnumProperties<TestEnum> ep = EnumProperties.createInstance(
+			getTestEnumDefault(), List.of(changeListener));
+		assertNull(changeListener.oldValue);
+		assertEquals(TWO, changeListener.newValue);
 	}
 }
