@@ -92,10 +92,16 @@ public class EnumPropertiesTest
 	public void test_ChangeListener()
 	{
 		System.out.println("test_ChangeListener");
-		final var changeListener = new ChangeListener<TestEnum>()
+		class _ChangeListener implements ChangeListener<TestEnum>
 		{
-			TestEnum oldValue = THREE;
-			TestEnum newValue = THREE;
+			TestEnum oldValue;
+			TestEnum newValue;
+
+			_ChangeListener(TestEnum initalValue)
+			{
+				this.oldValue = initalValue;
+				this.newValue = initalValue;
+			}
 
 			@Override
 			public void changed(ObservableValue<? extends TestEnum> observable, TestEnum oldValue, TestEnum newValue)
@@ -103,12 +109,17 @@ public class EnumPropertiesTest
 				this.oldValue = oldValue;
 				this.newValue = newValue;
 			}
-		};
-		assertEquals(THREE, changeListener.oldValue);
-		assertEquals(THREE, changeListener.newValue);
-		final EnumProperties<TestEnum> ep = EnumProperties.createInstance(
-			getTestEnumDefault(), List.of(changeListener));
-		assertNull(changeListener.oldValue);
-		assertEquals(TWO, changeListener.newValue);
+		}
+		final var changeListener1 = new _ChangeListener(ONE);
+		final var changeListener2 = new _ChangeListener(THREE);
+		assertEquals(ONE, changeListener1.oldValue);
+		assertEquals(ONE, changeListener1.newValue);
+		assertEquals(THREE, changeListener2.oldValue);
+		assertEquals(THREE, changeListener2.newValue);
+		EnumProperties.createInstance(getTestEnumDefault(), List.of(changeListener1, changeListener2));
+		assertNull(changeListener1.oldValue);
+		assertEquals(TWO, changeListener1.newValue);
+		assertNull(changeListener2.oldValue);
+		assertEquals(TWO, changeListener2.newValue);
 	}
 }
