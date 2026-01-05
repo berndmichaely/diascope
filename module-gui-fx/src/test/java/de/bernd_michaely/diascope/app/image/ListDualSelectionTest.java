@@ -18,7 +18,10 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener;
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +50,41 @@ public class ListDualSelectionTest
 	{
 		selection = null;
 		list = null;
+	}
+
+	@Test
+	public void recap_SelectableList()
+	{
+		final var selectableList = SelectableListFactory.selectableList(List.of(3, 4, 5));
+		final var listSelectionHandler = SelectableListFactory.listSelectionHandler(selectableList);
+		final var selectionChangeListener = new SelectionChangeListener<Integer>()
+		{
+			int counterRemoveSelected;
+
+			@Override
+			public void onSelectionChanged(SelectionChangeListener.SelectionChange<? extends Integer> change)
+			{
+				final var selectionChangeType = change.getSelectionChangeType();
+				System.out.println("→ onSelectionChanged : " + change);
+				switch (selectionChangeType)
+				{
+					case SINGLE_DECREMENT -> counterRemoveSelected++;
+					default ->
+					{
+					}
+				}
+			}
+		};
+		selectableList.addSelectionListener(selectionChangeListener);
+		assertEquals(0, listSelectionHandler.getNumSelected());
+		selectableList.selectAll();
+		assertEquals(3, listSelectionHandler.getNumSelected());
+		assertEquals(3, selectableList.size());
+		assertTrue(selectableList.isSelected(1));
+		assertEquals(0, selectionChangeListener.counterRemoveSelected);
+		assertEquals(4, selectableList.remove(1));
+		assertEquals(2, selectableList.size());
+		assertEquals(1, selectionChangeListener.counterRemoveSelected);
 	}
 
 	private enum Action
@@ -81,10 +119,22 @@ public class ListDualSelectionTest
 		final String w1 = first != null ? "»%s«".formatted(first) : "–––";
 		final String w2 = second != null ? "»%s«".formatted(second) : "–––";
 		final Collection<Integer> selectedIndices = selection.getSelectedIndices();
+		final int n = list.size();
+		final var msg = new Supplier<String>()
+		{
+			int selectedIndex;
+
+			@Override
+			public String get()
+			{
+				return "(selectedIndex is: %d of %d)".formatted(selectedIndex, n);
+			}
+		};
 		for (int selectedIndex : selectedIndices)
 		{
-			assertTrue(selectedIndex >= 0);
-			assertTrue(selectedIndex < list.size());
+			msg.selectedIndex = selectedIndex;
+			assertTrue(selectedIndex >= 0, msg);
+			assertTrue(selectedIndex < n, msg);
 		}
 		if (action != null)
 		{

@@ -18,9 +18,8 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
-import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Deque;
+import java.util.LinkedList;
 import java.util.Optional;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -56,8 +55,14 @@ class ListDualSelection<T>
 	private final ReadOnlyObjectWrapper<Optional<T>> singleSelectionItem;
 	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionFirstItem;
 	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionSecondItem;
-	private final Deque<Integer> queueSelected;
+	private final LinkedList<Integer> queueSelected = new LinkedList<>();
 	private final Collection<Integer> selectedIndices;
+
+	@FunctionalInterface
+	interface BiIntConsumer
+	{
+		void accept(int value1, int value2);
+	}
 
 	ListDualSelection(SelectableList<T> list)
 	{
@@ -66,7 +71,6 @@ class ListDualSelection<T>
 		this.dualItemsSelected = new ReadOnlyBooleanWrapper();
 		this.dualSelectionFirstItem = new ReadOnlyObjectWrapper<>(Optional.empty());
 		this.dualSelectionSecondItem = new ReadOnlyObjectWrapper<>(Optional.empty());
-		this.queueSelected = new ArrayDeque<>();
 		this.selectedIndices = unmodifiableCollection(queueSelected);
 		singleItemSelected.bind(singleSelectionItem.map(Optional::isPresent));
 		dualItemsSelected.bind(createBooleanBinding(
@@ -136,18 +140,22 @@ class ListDualSelection<T>
 				dualSelectionSecondItem.set(Optional.empty());
 			}
 		};
-		list.addListener(new ListChangeListenerBuilder<T>()
-			.onAdd(_ -> checkSelection.run())
-			.onRemove(change ->
+		final BiIntConsumer shiftIndices = (from, delta) ->
+		{
+			final int n = queueSelected.size();
+			for (int i = 0; i < n; i++)
 			{
-				final int from = change.getFrom();
-				final int to = from + change.getRemovedSize();
-				for (int i = from; i < to; i++)
+				final int index = queueSelected.get(i);
+				if (index >= from)
 				{
-					queueSelected.remove(i);
+					queueSelected.set(i, index + delta);
 				}
-				checkSelection.run();
-			})
+			}
+			checkSelection.run();
+		};
+		list.addListener(new ListChangeListenerBuilder<T>()
+			.onAdd(change -> shiftIndices.accept(change.getFrom(), change.getAddedSize()))
+			.onRemove(change -> shiftIndices.accept(change.getFrom(), -change.getRemovedSize()))
 			.build());
 		list.addSelectionListener(change ->
 		{
@@ -162,7 +170,7 @@ class ListDualSelection<T>
 					}
 					case SINGLE_DECREMENT ->
 					{
-						queueSelected.remove(change.getFrom());
+						queueSelected.remove((Integer) change.getFrom());
 					}
 					case COMPLEX_CHANGE ->
 					{
@@ -174,7 +182,7 @@ class ListDualSelection<T>
 							}
 							else
 							{
-								queueSelected.remove(i);
+								queueSelected.remove((Integer) i);
 							}
 						}
 					}
