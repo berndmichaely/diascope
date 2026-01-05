@@ -59,8 +59,8 @@ public final class BinaryNode<I> extends InnerNode<I>
 	}
 
 	@Override
-	@NonNull
-	TreeNode getFirst()
+	public @NonNull
+	TreeNode getFirstSubNode()
 	{
 		final var node = getSubNodes().getFirst();
 		if (node != null)
@@ -74,8 +74,8 @@ public final class BinaryNode<I> extends InnerNode<I>
 	}
 
 	@Override
-	@NonNull
-	TreeNode getLast()
+	public @NonNull
+	TreeNode getLastSubNode()
 	{
 		final var node = getSubNodes().getLast();
 		if (node != null)

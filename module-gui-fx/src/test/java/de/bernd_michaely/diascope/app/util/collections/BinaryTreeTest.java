@@ -44,8 +44,8 @@ public class BinaryTreeTest
 			result.add(node);
 			if (node instanceof InnerNode innerNode)
 			{
-				_toList(result, innerNode.getSubNode(0));
-				_toList(result, innerNode.getSubNode(1));
+				_toList(result, innerNode.getFirstSubNode());
+				_toList(result, innerNode.getLastSubNode());
 			}
 		}
 	}

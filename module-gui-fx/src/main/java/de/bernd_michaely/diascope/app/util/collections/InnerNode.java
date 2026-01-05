@@ -81,7 +81,7 @@ public sealed class InnerNode<I> extends TreeNode permits BinaryNode
 	/// @return the first subnode
 	///
 	@Nullable
-	TreeNode getFirst()
+	TreeNode getFirstSubNode()
 	{
 		return getSubNodes().getFirst();
 	}
@@ -91,7 +91,7 @@ public sealed class InnerNode<I> extends TreeNode permits BinaryNode
 	/// @return the last subnode
 	///
 	@Nullable
-	TreeNode getLast()
+	TreeNode getLastSubNode()
 	{
 		return getSubNodes().getLast();
 	}
