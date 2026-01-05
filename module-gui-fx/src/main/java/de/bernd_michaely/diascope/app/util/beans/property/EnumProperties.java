@@ -79,37 +79,70 @@ public class EnumProperties<V extends Enum<V>>
 		return enumProperties;
 	}
 
+	/// Returns the default value.
+	///
+	/// @return the default value (which is never `null`)
+	///
 	public Enum<V> getDefaultValue()
 	{
 		return defaultValue;
 	}
 
+	/// A property holding the raw value.
+	///
+	/// @return an ObjectProperty holding the raw value (which may be `null`)
+	///
 	public ObjectProperty<@Nullable Enum<V>> rawValueProperty()
 	{
 		return rawValueProperty;
 	}
 
+	/// Returns the raw value.
+	///
+	/// @return the raw value
+	///
 	public @Nullable
 	Enum<V> getRawValue()
 	{
 		return rawValueProperty().get();
 	}
 
+	/// Sets the new value.
+	///
+	/// @param value the raw value to set
+	///
 	public void setRawValue(@Nullable Enum<V> value)
 	{
 		rawValueProperty().set(value);
 	}
 
+	/// A read only property to hold the raw value, if it is not null,
+	/// or the default value otherwise.
+	///
+	/// @return a read only property to hold the raw value or the default value
+	///         (that is, the return value is never `null`)
+	///
 	public ReadOnlyObjectProperty<Enum<V>> valueOrDefaultProperty()
 	{
 		return valueOrDefaultProperty.getReadOnlyProperty();
 	}
 
+	/// Returns the raw value, if it is not null, or the default value otherwise.
+	///
+	/// @return the raw value, if it is not null, or the default value otherwise
+	///         (that is, the return value is never `null`)
+	///
 	public Enum<V> getValueOrDefault()
 	{
 		return valueOrDefaultProperty().get();
 	}
 
+	/// A read only boolean property to indicate, whether the current value
+	/// equals the given enum value.
+	///
+	/// @param enumValue the given enum value
+	/// @return a read only boolean property
+	///
 	public ReadOnlyBooleanProperty isValueProperty(V enumValue)
 	{
 		if (map == null)
@@ -124,9 +157,14 @@ public class EnumProperties<V extends Enum<V>>
 		});
 	}
 
-	public boolean isValue(V value)
+	/// Returns true, iff the current value equals the given enum value.
+	///
+	/// @param enumValue the given enum value
+	/// @return true, iff the current value equals the given enum value
+	///
+	public boolean isValue(V enumValue)
 	{
-		return isValueProperty(value).get();
+		return isValueProperty(enumValue).get();
 	}
 
 	@Override
