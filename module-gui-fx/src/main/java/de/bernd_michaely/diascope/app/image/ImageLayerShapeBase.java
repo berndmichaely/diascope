@@ -34,7 +34,6 @@ import javafx.scene.shape.StrokeType;
 import javafx.scene.text.Font;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 import static java.lang.Math.max;
 import static java.lang.Math.round;
 import static javafx.beans.binding.Bindings.when;
@@ -43,7 +42,8 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayerShapeBase permits ImageLayerShapeBaseStroke, ImageLayerShapeSpot
+abstract sealed class ImageLayerShapeBase
+	permits ImageLayerShapeSpotBase, ImageLayerShapeBaseStroke, ImageLayerShapeSpot
 {
 	static final List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
 	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
@@ -111,7 +111,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeBaseStroke, Ima
 			finally
 			{
 				mouseDragged.set(false);
-				if (getType() == SPOT)
+				if (this instanceof ImageLayerShapeSpot)
 				{
 					event.consume();
 				}
@@ -137,8 +137,6 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeBaseStroke, Ima
 	abstract ObservableObjectValue<Paint> getStrokeSelectedPaint();
 
 	abstract double getStrokeWidthSelected();
-
-	abstract ImageLayer.Type getType();
 
 	abstract Shape getShape();
 }

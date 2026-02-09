@@ -18,7 +18,7 @@ wrapper {
 	gradleVersion = '9.2.1'
 }
 
-final def javaLangVersion = JavaLanguageVersion.of(23)
+final def javaLangVersion = JavaLanguageVersion.of(25)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
 

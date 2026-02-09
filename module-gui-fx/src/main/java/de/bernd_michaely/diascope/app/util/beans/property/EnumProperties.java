@@ -16,8 +16,8 @@
  */
 package de.bernd_michaely.diascope.app.util.beans.property;
 
-import java.util.Collection;
 import java.util.EnumMap;
+import java.util.List;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -34,6 +34,7 @@ import static javafx.beans.binding.Bindings.isNotNull;
 import static javafx.beans.binding.Bindings.when;
 
 /// Factory class to create properties related to enums.
+///
 /// Properties include:
 ///   * the raw enum value
 ///   * a raw-or-default value, which returns the default value instead of a `null` raw value
@@ -42,9 +43,10 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class EnumProperties<V extends Enum<V>>
+public class EnumProperties<V extends Enum<V>> implements AutoCloseable
 {
 	private final V defaultValue;
+	private final Iterable<ChangeListener<V>> changeListeners;
 	private final ObjectProperty<@Nullable V> rawValueProperty;
 	private final ReadOnlyObjectWrapper<V> valueOrDefaultProperty;
 	private @MonotonicNonNull EnumMap<V, ReadOnlyBooleanProperty> map;
@@ -54,9 +56,11 @@ public class EnumProperties<V extends Enum<V>>
 	/// @param defaultValue the given default value
 	/// @throws NullPointerException if the default value is `null`
 	///
-	private EnumProperties(V defaultValue)
+	private EnumProperties(V defaultValue, Iterable<ChangeListener<V>> changeListeners)
 	{
-		this.defaultValue = requireNonNull(defaultValue);
+		this.defaultValue = requireNonNull(defaultValue, () ->
+			"%s : default value must not be null".formatted(getClass().getName()));
+		this.changeListeners = changeListeners;
 		this.rawValueProperty = new SimpleObjectProperty<>();
 		this.valueOrDefaultProperty = new ReadOnlyObjectWrapper<>();
 	}
@@ -73,11 +77,23 @@ public class EnumProperties<V extends Enum<V>>
 	/// @param <E> the enum type
 	/// @param defaultValue a default value, which must not be `null`
 	/// @return a new instance
-	/// @throws NullPointerException if the default value is `null`
 	///
 	public static <E extends Enum<E>> EnumProperties<E> createInstance(E defaultValue)
 	{
-		return createInstance(defaultValue, null);
+		return createInstance(defaultValue, List.of());
+	}
+
+	/// Creates a new instance with the given default value.
+	///
+	/// @param <E> the enum type
+	/// @param defaultValue a default value, which must not be `null`
+	/// @param changeListener to be applied before setting the default value
+	/// @return a new instance
+	///
+	public static <E extends Enum<E>> EnumProperties<E> createInstance(
+		E defaultValue, ChangeListener<E> changeListener)
+	{
+		return createInstance(defaultValue, List.of(changeListener));
 	}
 
 	/// Creates a new instance with the given default value.
@@ -86,19 +102,12 @@ public class EnumProperties<V extends Enum<V>>
 	/// @param defaultValue a default value, which must not be `null`
 	/// @param changeListeners to be applied before setting the default value
 	/// @return a new instance
-	/// @throws NullPointerException if the default value is `null`
 	///
 	public static <E extends Enum<E>> EnumProperties<E> createInstance(
-		E defaultValue, @Nullable Collection<ChangeListener<E>> changeListeners)
+		E defaultValue, Iterable<ChangeListener<E>> changeListeners)
 	{
-		final var enumProperties = new EnumProperties<E>(defaultValue);
-		if (changeListeners != null)
-		{
-			for (ChangeListener<E> changeListener : changeListeners)
-			{
-				enumProperties.valueOrDefaultProperty().addListener(changeListener);
-			}
-		}
+		final var enumProperties = new EnumProperties<E>(defaultValue, changeListeners);
+		changeListeners.forEach(enumProperties.valueOrDefaultProperty::addListener);
 		enumProperties.setRawValue(defaultValue);
 		enumProperties._post_init();
 		return enumProperties;
@@ -127,7 +136,7 @@ public class EnumProperties<V extends Enum<V>>
 	/// @return the raw value
 	///
 	public @Nullable
-	Enum<V> getRawValue()
+	V getRawValue()
 	{
 		return rawValueProperty().get();
 	}
@@ -182,14 +191,24 @@ public class EnumProperties<V extends Enum<V>>
 		});
 	}
 
+	/// Returns true, iff the current raw value equals the given enum value.
+	///
+	/// @param enumValue the given enum value
+	/// @return true, iff the current value equals the given enum value
+	///
+	public boolean isRawValue(@Nullable V enumValue)
+	{
+		return getRawValue() == enumValue;
+	}
+
 	/// Returns true, iff the current value equals the given enum value.
 	///
 	/// @param enumValue the given enum value
 	/// @return true, iff the current value equals the given enum value
 	///
-	public boolean isValue(V enumValue)
+	public boolean isValue(@Nullable V enumValue)
 	{
-		return isValueProperty(enumValue).get();
+		return getValueOrDefault() == enumValue;
 	}
 
 	@Override
@@ -197,5 +216,15 @@ public class EnumProperties<V extends Enum<V>>
 	{
 		return "%s: »%s« [raw: »%s«]".formatted(
 			getDefaultValue().getDeclaringClass().getName(), getValueOrDefault(), "" + getRawValue());
+	}
+
+	/// {@inheritDoc}
+	///
+	/// This implementation removes all listeners.
+	///
+	@Override
+	public void close()
+	{
+		changeListeners.forEach(valueOrDefaultProperty::removeListener);
 	}
 }

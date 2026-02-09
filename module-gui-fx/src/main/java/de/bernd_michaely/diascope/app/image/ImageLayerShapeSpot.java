@@ -288,12 +288,6 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	}
 
 	@Override
-	ImageLayer.Type getType()
-	{
-		return ImageLayer.Type.SPOT;
-	}
-
-	@Override
 	Ellipse getShape()
 	{
 		return ellipse;

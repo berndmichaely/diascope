@@ -16,7 +16,11 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 
 /// Class to describe an ImageLayer selection shape for SPLIT mode.
 ///
@@ -25,15 +29,18 @@ import javafx.scene.shape.Polygon;
 final class ImageLayerShapeSplit extends ImageLayerShapeBaseStroke
 {
 	private final Polygon polygon = new Polygon();
+	private final Rectangle rectangle = new Rectangle();
+	private final ReadOnlyObjectProperty<Mode> modeProperty;
 
-	private ImageLayerShapeSplit()
+	private ImageLayerShapeSplit(ReadOnlyObjectProperty<Mode> modeProperty)
 	{
 		super(false, null, null);
+		this.modeProperty = modeProperty;
 	}
 
-	static ImageLayerShapeSplit createInstance()
+	static ImageLayerShapeSplit createInstance(ReadOnlyObjectProperty<Mode> modeProperty)
 	{
-		final var imageLayerShape = new ImageLayerShapeSplit();
+		final var imageLayerShape = new ImageLayerShapeSplit(modeProperty);
 		imageLayerShape._postInit();
 		return imageLayerShape;
 	}
@@ -49,14 +56,8 @@ final class ImageLayerShapeSplit extends ImageLayerShapeBaseStroke
 	}
 
 	@Override
-	ImageLayer.Type getType()
+	Shape getShape()
 	{
-		return ImageLayer.Type.SPLIT;
-	}
-
-	@Override
-	Polygon getShape()
-	{
-		return polygon;
+		return modeProperty.get().equals(Mode.SPLIT) ? polygon : rectangle;
 	}
 }

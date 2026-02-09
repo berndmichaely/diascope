@@ -21,6 +21,7 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListF
 import de.bernd_michaely.diascope.app.util.math.Operators;
 import java.lang.System.Logger;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -32,13 +33,15 @@ import static javafx.collections.FXCollections.unmodifiableObservableList;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
+abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLayers, ImageLayersSpot
 {
 	private static final Logger logger = System.getLogger(ImageLayersBase.class.getName());
 	final ReadOnlyDoubleWrapper layersMaxWidth, layersMaxHeight;
 	final SelectableList<ImageLayer> layers;
 	final ObservableList<ImageLayer> unmodifiableLayers;
 	final LayerSelectionModel layerSelectionModel;
+	private final ChangeListener<Number> onMaxWidthChange;
+	private final ChangeListener<Number> onMaxHeightChange;
 
 	ImageLayersBase()
 	{
@@ -52,11 +55,27 @@ abstract sealed class ImageLayersBase permits ImageLayers, ImageLayersSpot
 			ImageLayer::layerWidthProperty, Operators::max_positive, 0.0));
 		layersMaxHeight.bind(cumulatedOperations(unmodifiableLayers,
 			ImageLayer::layerHeightProperty, Operators::max_positive, 0.0));
-		layersMaxWidth.addListener(onChange(newValue ->
+		onMaxWidthChange = onChange(newValue ->
 			logger.log(TRACE, () -> "→ %s → maxWidth = %.1f".formatted(
-				getClass().getSimpleName(), newValue.doubleValue()))));
-		layersMaxHeight.addListener(onChange(newValue ->
+				getClass().getSimpleName(), newValue.doubleValue())));
+		onMaxHeightChange = onChange(newValue ->
 			logger.log(TRACE, () -> "→ %s → maxHeight = %.1f".formatted(
-				getClass().getSimpleName(), newValue.doubleValue()))));
+				getClass().getSimpleName(), newValue.doubleValue())));
+		layersMaxWidth.addListener(onMaxWidthChange);
+		layersMaxHeight.addListener(onMaxHeightChange);
+	}
+
+	/// {@inheritDoc}
+	///
+	/// This implementation closes all layers.
+	///
+	@Override
+	public void close()
+	{
+		layersMaxWidth.removeListener(onMaxWidthChange);
+		layersMaxHeight.removeListener(onMaxHeightChange);
+		layersMaxWidth.unbind();
+		layersMaxHeight.unbind();
+		layers.clear();
 	}
 }

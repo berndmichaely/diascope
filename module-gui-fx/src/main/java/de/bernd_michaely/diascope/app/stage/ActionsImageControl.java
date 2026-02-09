@@ -34,7 +34,7 @@ import static javafx.beans.binding.Bindings.not;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class ActionsImageControl
+class ActionsImageControl implements AutoCloseable
 {
 	static final ActionItemDescriptor ACTION_ITEM_DESCRIPTOR_FULLSCREEN = new ActionItemDescriptor(
 		Icons.ViewFullscreen, "[←→]", "FullScreen mode", "Enter fullScreen mode");
@@ -69,6 +69,12 @@ class ActionsImageControl
 			new ActionItemDescriptor(Icons.LayerRemove, "-", "Remove selected layers", "Remove selected layers"));
 		actionLayerRemove.disableProperty().bind(imageControlProperties.removeLayerDisableProperty());
 		// multi layer modes
+		final String strTooltipModeGrid = """
+			Set multi image GRID mode.
+
+			To enable SPOT mode, open at least 2 layers,
+			single-select the base layer and then
+			<Ctrl>-select the spot layer.""";
 		final String strTooltipModeSplit = """
 			Set multi image SPLIT mode.
 
@@ -82,7 +88,7 @@ class ActionsImageControl
 			single-select the base layer and then
 			<Ctrl>-select the spot layer.""";
 		this.actionMode = new ToggleAction<>(SINGLE, Map.of(
-			GRID, new ActionItemDescriptor(Icons.ModeGrid, "Grid", "Grid Mode", "Set multi image GRID mode."),
+			GRID, new ActionItemDescriptor(Icons.ModeGrid, "Grid", "Grid Mode", strTooltipModeGrid),
 			SPLIT, new ActionItemDescriptor(Icons.ModeSplit, "Split", "Split Mode", strTooltipModeSplit),
 			SPOT, new ActionItemDescriptor(Icons.ModeSpot, "Spot", "Spot Mode", strTooltipModeSpot)));
 		actionMode.disableProperty().bind(emptyProperty);
@@ -101,7 +107,7 @@ class ActionsImageControl
 			FILL, new ActionItemDescriptor(Icons.ZoomFillWindow, "Fill", "Zoom to fill window", "Zoom image to fill window")));
 		actionZoom.disableProperty().bind(emptyProperty);
 		actionZoom.selectedIdRawProperty().bindBidirectional(
-			multiImageView.getImageTransforms().zoomModeProperties().rawValueProperty());
+			multiImageView.getImageTransforms().zoomModeRawValueProperty());
 		// Mirror
 		this.actionMirrorX = new CheckedAction(new ActionItemDescriptor(
 			Icons.MirrorX, "<––>", "Mirror horizontally", "Mirror image horizontally"));
@@ -136,5 +142,12 @@ class ActionsImageControl
 		this.actionFullScreen = new CheckedAction(ACTION_ITEM_DESCRIPTOR_FULLSCREEN);
 		actionFullScreen.selectedProperty().bindBidirectional(imageControlProperties.getFullScreen().enabledProperty());
 		actionFullScreen.disableProperty().bind(emptyProperty);
+	}
+
+	@Override
+	public void close()
+	{
+		actionMode.close();
+		actionZoom.close();
 	}
 }

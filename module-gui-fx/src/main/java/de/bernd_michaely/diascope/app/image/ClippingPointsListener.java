@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import java.util.List;
+import java.util.function.Function;
 
 import static de.bernd_michaely.diascope.app.image.Border.*;
 
@@ -29,11 +30,14 @@ class ClippingPointsListener implements Runnable
 	private static final Double ZERO = 0.0;
 	private final Viewport viewport;
 	private final List<ImageLayer> unmodifiableLayers;
+	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
 
-	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers)
+	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers,
+		Function<ImageLayer, SplitDivider> dividerByImageLayer)
 	{
 		this.viewport = viewport;
 		this.unmodifiableLayers = unmodifiableLayers;
+		this.dividerByImageLayer = dividerByImageLayer;
 	}
 
 	@Override
@@ -45,10 +49,10 @@ class ClippingPointsListener implements Runnable
 			for (int i = 0; i < n; i++)
 			{
 				final var layer = unmodifiableLayers.get(i);
-				final var divider = viewport.getSplitDivider(layer);
+				final var divider = dividerByImageLayer.apply(layer);
 				final var corner = divider.getBorder();
 				final var layerNext = unmodifiableLayers.get(i == n - 1 ? 0 : i + 1);
-				final var dividerNext = viewport.getSplitDivider(layerNext);
+				final var dividerNext = dividerByImageLayer.apply(layerNext);
 				final var cornerNext = dividerNext.getBorder();
 				final int numIntermediateCorners = numberOfCornerPointsBetween(
 					corner, divider.getAngle(), cornerNext, dividerNext.getAngle());

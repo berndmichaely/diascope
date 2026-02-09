@@ -45,7 +45,7 @@ import static java.lang.System.Logger.Level.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class ToggleAction<E extends Enum<E>> extends ActionBase
+public class ToggleAction<E extends Enum<E>> extends ActionBase implements AutoCloseable
 {
 	private static final Logger logger = System.getLogger(ToggleAction.class.getName());
 	private final E unselectedId;
@@ -91,7 +91,7 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 				}
 			}
 		});
-		this.selectedIdProperties = EnumProperties.createInstance(unselectedId, List.of(changeListener));
+		this.selectedIdProperties = EnumProperties.createInstance(unselectedId, changeListener);
 	}
 
 	/// Add toggles.
@@ -239,5 +239,11 @@ public class ToggleAction<E extends Enum<E>> extends ActionBase
 	public BooleanProperty getDisableProperty(E id)
 	{
 		return disableProperties.computeIfAbsent(id, _ -> new SimpleBooleanProperty());
+	}
+
+	@Override
+	public void close()
+	{
+		selectedIdProperties.close();
 	}
 }

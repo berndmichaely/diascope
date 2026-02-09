@@ -22,6 +22,7 @@ import javafx.scene.shape.Rectangle;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
+@Deprecated
 final class ImageLayerShapeGrid extends ImageLayerShapeBaseStroke
 {
 	private final Rectangle rectangle = new Rectangle();
@@ -36,12 +37,6 @@ final class ImageLayerShapeGrid extends ImageLayerShapeBaseStroke
 		final var imageLayerShape = new ImageLayerShapeGrid();
 		imageLayerShape._postInit();
 		return imageLayerShape;
-	}
-
-	@Override
-	ImageLayer.Type getType()
-	{
-		return ImageLayer.Type.BASE;
 	}
 
 	@Override

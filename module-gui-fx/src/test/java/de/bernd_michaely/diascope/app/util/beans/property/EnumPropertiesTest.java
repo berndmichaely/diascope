@@ -47,7 +47,7 @@ public class EnumPropertiesTest
 		assertThrows(NullPointerException.class, () -> EnumProperties.createInstance(null));
 	}
 
-	private void test_characteristics(EnumProperties<TestEnum> ep, TestEnum value)
+	private static void test_characteristics(EnumProperties<TestEnum> ep, TestEnum value)
 	{
 		for (TestEnum testEnum : TestEnum.values())
 		{
@@ -58,7 +58,7 @@ public class EnumPropertiesTest
 		}
 	}
 
-	private void test_values(EnumProperties<TestEnum> ep, TestEnum testEnum)
+	private static void test_values(EnumProperties<TestEnum> ep, TestEnum testEnum)
 	{
 		System.out.println("· test value »%s«".formatted(testEnum));
 		ep.setRawValue(testEnum);
@@ -67,6 +67,7 @@ public class EnumPropertiesTest
 		final TestEnum expected = testEnum != null ? testEnum : getTestEnumDefault();
 		assertEquals(expectedRaw, ep.rawValueProperty().get());
 		assertEquals(expectedRaw, ep.getRawValue());
+		assertTrue(ep.isRawValue(expectedRaw));
 		assertEquals(expected, ep.valueOrDefaultProperty().get());
 		assertEquals(expected, ep.getValueOrDefault());
 		test_characteristics(ep, expected);
@@ -76,50 +77,82 @@ public class EnumPropertiesTest
 	public void test_EnumProperties()
 	{
 		System.out.println("test_EnumProperties");
-		final EnumProperties<TestEnum> ep = EnumProperties.createInstance(getTestEnumDefault());
-		test_values(ep, null);
-		assertEquals(TWO, ep.getDefaultValue());
-		assertNull(ep.getRawValue());
-		assertEquals(TWO, ep.getValueOrDefault());
-		for (var testEnum : TestEnum.values())
+		try (EnumProperties<TestEnum> ep = EnumProperties.createInstance(getTestEnumDefault()))
 		{
-			test_values(ep, testEnum);
+			test_values(ep, null);
+			assertEquals(TWO, ep.getDefaultValue());
+			assertNull(ep.getRawValue());
+			assertEquals(TWO, ep.getValueOrDefault());
+			for (var testEnum : TestEnum.values())
+			{
+				test_values(ep, testEnum);
+			}
+			test_values(ep, null);
 		}
-		test_values(ep, null);
+	}
+
+	private static class _ChangeListener implements ChangeListener<TestEnum>
+	{
+		TestEnum oldValue;
+		TestEnum newValue;
+
+		_ChangeListener(TestEnum initalValue)
+		{
+			this.oldValue = initalValue;
+			this.newValue = initalValue;
+		}
+
+		@Override
+		public void changed(ObservableValue<? extends TestEnum> observable, TestEnum oldValue, TestEnum newValue)
+		{
+			this.oldValue = oldValue;
+			this.newValue = newValue;
+		}
 	}
 
 	@Test
 	public void test_ChangeListener()
 	{
 		System.out.println("test_ChangeListener");
-		class _ChangeListener implements ChangeListener<TestEnum>
+		final var changeListener = new _ChangeListener(ONE);
+		assertEquals(ONE, changeListener.oldValue);
+		assertEquals(ONE, changeListener.newValue);
+		try (var  _ = EnumProperties.createInstance(getTestEnumDefault(), changeListener))
 		{
-			TestEnum oldValue;
-			TestEnum newValue;
-
-			_ChangeListener(TestEnum initalValue)
-			{
-				this.oldValue = initalValue;
-				this.newValue = initalValue;
-			}
-
-			@Override
-			public void changed(ObservableValue<? extends TestEnum> observable, TestEnum oldValue, TestEnum newValue)
-			{
-				this.oldValue = oldValue;
-				this.newValue = newValue;
-			}
+			assertNull(changeListener.oldValue);
+			assertEquals(TWO, changeListener.newValue);
 		}
+	}
+
+	@Test
+	public void test_ChangeListeners()
+	{
+		System.out.println("test_ChangeListeners");
 		final var changeListener1 = new _ChangeListener(ONE);
 		final var changeListener2 = new _ChangeListener(THREE);
 		assertEquals(ONE, changeListener1.oldValue);
 		assertEquals(ONE, changeListener1.newValue);
 		assertEquals(THREE, changeListener2.oldValue);
 		assertEquals(THREE, changeListener2.newValue);
-		EnumProperties.createInstance(getTestEnumDefault(), List.of(changeListener1, changeListener2));
-		assertNull(changeListener1.oldValue);
-		assertEquals(TWO, changeListener1.newValue);
-		assertNull(changeListener2.oldValue);
-		assertEquals(TWO, changeListener2.newValue);
+		final var enumProperties = EnumProperties.createInstance(
+			getTestEnumDefault(), List.of(changeListener1, changeListener2));
+		try (enumProperties)
+		{
+			assertNull(changeListener1.oldValue);
+			assertEquals(TWO, changeListener1.newValue);
+			assertNull(changeListener2.oldValue);
+			assertEquals(TWO, changeListener2.newValue);
+			enumProperties.setRawValue(ONE);
+			assertEquals(TWO, changeListener1.oldValue);
+			assertEquals(TWO, changeListener2.oldValue);
+			assertEquals(ONE, changeListener1.newValue);
+			assertEquals(ONE, changeListener2.newValue);
+		}
+		// check listener cleanup:
+		enumProperties.setRawValue(THREE);
+		assertEquals(TWO, changeListener1.oldValue);
+		assertEquals(TWO, changeListener2.oldValue);
+		assertEquals(ONE, changeListener1.newValue);
+		assertEquals(ONE, changeListener2.newValue);
 	}
 }

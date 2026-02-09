@@ -57,7 +57,7 @@ import static javafx.geometry.Pos.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class MainContent
+public class MainContent implements AutoCloseable
 {
 	private static final Logger logger = System.getLogger(MainContent.class.getName());
 	private static final int INDEX_NO_SELECTION = -1;
@@ -330,14 +330,6 @@ public class MainContent
 		components.setFullScreenIcon(iconStage);
 	}
 
-	void onApplicationClose()
-	{
-		try (imageDirectoryReader)
-		{
-			removeSelectedPathProperty();
-		}
-	}
-
 	/**
 	 * Returns the main component to be included in surrounding environment.
 	 *
@@ -351,5 +343,19 @@ public class MainContent
 	CheckedAction getActionFullScreen()
 	{
 		return components.getActionFullScreen();
+	}
+
+	void onApplicationClose()
+	{
+		try (this; multiImageView; imageDirectoryReader)
+		{
+			removeSelectedPathProperty();
+		}
+	}
+
+	@Override
+	public void close()
+	{
+		components.close();
 	}
 }

@@ -88,25 +88,25 @@ final class SplitDivider extends AbstractDivider implements AutoCloseable
 		this.mouseDragState = new MouseDragState(splitCenterX, splitCenterY);
 	}
 
-	static SplitDivider createInstance(Viewport viewport)
+	SplitDivider(Viewport viewport)
 	{
 		final var splitCenter = viewport.getSplitCenter();
-		final var divider = new SplitDivider(viewport.getCornerAngles(),
-			viewport.widthProperty(), viewport.heightProperty(),
-			splitCenter.xProperty(), splitCenter.yProperty(),
+		final var xProperty = splitCenter.xProperty();
+		final var yProperty = splitCenter.yProperty();
+		this(viewport.getCornerAngles(),
+			viewport.widthProperty(), viewport.heightProperty(), xProperty, yProperty,
 			splitCenter.dxProperty(), splitCenter.dyProperty());
-		final Line lineShape = divider.getLineShape();
-		lineShape.startXProperty().bind(splitCenter.xProperty());
-		lineShape.startYProperty().bind(splitCenter.yProperty());
-		lineShape.endXProperty().bind(divider.borderIntersectionX);
-		lineShape.endYProperty().bind(divider.borderIntersectionY);
-		final Line lineEvent = divider.getLineEvent();
+		final Line lineShape = getLineShape();
+		lineShape.startXProperty().bind(xProperty);
+		lineShape.startYProperty().bind(yProperty);
+		lineShape.endXProperty().bind(borderIntersectionX);
+		lineShape.endYProperty().bind(borderIntersectionY);
+		final Line lineEvent = getLineEvent();
 		lineEvent.startXProperty().bind(lineShape.startXProperty());
 		lineEvent.startYProperty().bind(lineShape.startYProperty());
 		lineEvent.endXProperty().bind(lineShape.endXProperty());
 		lineEvent.endYProperty().bind(lineShape.endYProperty());
-		divider.mouseDragState.setListenersFor(lineEvent);
-		return divider;
+		mouseDragState.setListenersFor(lineEvent);
 	}
 
 	MouseDragState getMouseDragState()
@@ -144,6 +144,10 @@ final class SplitDivider extends AbstractDivider implements AutoCloseable
 		return borderIntersectionY.getValue();
 	}
 
+	/// {@inheritDoc}
+	///
+	/// This implementation unbinds all properties and listeners.
+	///
 	@Override
 	public void close()
 	{

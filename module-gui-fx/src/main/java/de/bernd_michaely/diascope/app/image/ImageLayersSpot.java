@@ -19,7 +19,6 @@ package de.bernd_michaely.diascope.app.image;
 import java.util.function.BiConsumer;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 
 /// Class to handle the image layers for spot mode.
 ///
@@ -29,16 +28,15 @@ final class ImageLayersSpot extends ImageLayersBase
 {
 	private final BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
 
-	ImageLayersSpot(Viewport viewport, ImageTransforms imageTransforms)
+	ImageLayersSpot(Viewport viewport)
 	{
 		layerSelectionHandler = (imageLayer, _) ->
 			layers.selectAll(i -> layers.get(i) == imageLayer ? SELECTION_TOGGLE : SELECTION_UNSET);
-		final var baseLayer = ImageLayer.createInstance(BASE, viewport, layerSelectionHandler);
-		final var spotLayer = ImageLayer.createInstance(SPOT, viewport, layerSelectionHandler);
+		final var baseLayer = ImageLayer.createSpotBaseLayer(viewport, layerSelectionHandler);
+		final var spotLayer = ImageLayer.createSpotLayer(viewport, layerSelectionHandler);
 		layers.addAll(baseLayer, spotLayer);
 		viewport.addSpotBaseLayer(baseLayer);
 		viewport.addSpotLayer(spotLayer);
-		layers.forEach(l -> l.getImageTransforms().bindProperties(imageTransforms));
 	}
 
 	private ImageLayer getSpotLayer()

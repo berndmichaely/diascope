@@ -28,7 +28,7 @@ import static de.bernd_michaely.diascope.app.image.Bindings.*;
 import static java.lang.Math.max;
 import static java.lang.System.Logger.Level.*;
 
-/// Class to handle divider rotations.
+/// Class to handle split divider rotations.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///

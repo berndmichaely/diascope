@@ -45,7 +45,7 @@ import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProper
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class MainContentComponents
+class MainContentComponents implements AutoCloseable
 {
 	private static final double DEFAULT_SPLIT_WIDTH = 0.8;
 	private final BorderPane paneOuter;
@@ -79,7 +79,7 @@ class MainContentComponents
 		this.properties = new MainContentProperties();
 		this.imageControlProperties = new ImageControlProperties(multiImageView, fullScreen, properties);
 		this.actions = new ActionsImageControl(multiImageView, imageControlProperties);
-		this.toolBarImage = new ToolBarImage(actions, multiImageView);
+		this.toolBarImage = new ToolBarImage(actions, multiImageView.getImageTransforms());
 		final var contextMenu = toolBarImage.getContextMenu();
 		paneContent.setOnContextMenuRequested(contextMenuEvent ->
 		{
@@ -202,5 +202,11 @@ class MainContentComponents
 	Region getRegion()
 	{
 		return paneOuter;
+	}
+
+	@Override
+	public void close()
+	{
+		actions.close();
 	}
 }
