@@ -131,7 +131,7 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = '25.0.1'
+			version = '25.0.2'
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}

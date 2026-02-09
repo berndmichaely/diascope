@@ -31,15 +31,11 @@ to run the application immediately or
 
     ./gradlew installDist
 
-to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 23 (it is tested with Eclipse Adoptium JDK on Linux).
+to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 25 (it is tested with Eclipse Adoptium JDK on Linux).
 
 Since this version uses preview features of JavaFX25, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
-    export JAVA_OPTS='-Djavafx.enablePreview=true -Djavafx.suppressPreviewWarning=true'
-
-and when running on Java 24 or 25, additionally:
-
-    export JAVA_OPTS='… --enable-native-access=javafx.graphics'
+    export JAVA_OPTS='-Djavafx.enablePreview=true -Djavafx.suppressPreviewWarning=true --enable-native-access=javafx.graphics'
 
 ### Full Screen Mode
 
