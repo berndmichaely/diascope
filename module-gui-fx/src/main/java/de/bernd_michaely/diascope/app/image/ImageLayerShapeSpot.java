@@ -58,7 +58,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeSpot extends ImageLayerShapeBase
+final class ImageLayerShapeSpot extends AbstractImageLayerShape
 {
 	private static final Logger logger = System.getLogger(ImageLayerShapeSpot.class.getName());
 	private static final LinearGradient STROKE_GRADIENT = new LinearGradient(
@@ -288,7 +288,7 @@ final class ImageLayerShapeSpot extends ImageLayerShapeBase
 	}
 
 	@Override
-	Ellipse getShape()
+	public Ellipse getShape()
 	{
 		return ellipse;
 	}

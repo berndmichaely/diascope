@@ -42,8 +42,8 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayerShapeBase
-	permits ImageLayerShapeSpotBase, ImageLayerShapeBaseStroke, ImageLayerShapeSpot
+abstract sealed class AbstractImageLayerShape implements ImageLayerShape
+	permits ImageLayerShapeSpotBase, AbstractImageLayerShapeStroke, ImageLayerShapeSpot
 {
 	static final List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
 	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
@@ -55,7 +55,7 @@ abstract sealed class ImageLayerShapeBase
 	private final @Nullable Consumer<MouseEvent> onMouseDragged;
 	private final ReadOnlyBooleanWrapper mouseDragged = new ReadOnlyBooleanWrapper();
 
-	ImageLayerShapeBase(boolean unselectedVisible,
+	AbstractImageLayerShape(boolean unselectedVisible,
 		@Nullable Consumer<MouseEvent> onMouseDragInit,
 		@Nullable Consumer<MouseEvent> onMouseDragged)
 	{
@@ -119,12 +119,14 @@ abstract sealed class ImageLayerShapeBase
 		});
 	}
 
-	void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler)
+	@Override
+	public void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler)
 	{
 		this.layerSelectionHandler = layerSelectionHandler;
 	}
 
-	BooleanProperty selectedProperty()
+	@Override
+	public BooleanProperty selectedProperty()
 	{
 		return selected;
 	}
@@ -138,5 +140,6 @@ abstract sealed class ImageLayerShapeBase
 
 	abstract double getStrokeWidthSelected();
 
-	abstract Shape getShape();
+	@Override
+	public abstract Shape getShape();
 }

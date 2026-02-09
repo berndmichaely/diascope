@@ -32,14 +32,14 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayerShapeBaseStroke extends ImageLayerShapeBase
+abstract sealed class AbstractImageLayerShapeStroke extends AbstractImageLayerShape
 	permits ImageLayerShapeSplit, ImageLayerShapeGrid
 {
 	private static final double STROKE_WIDTH_SELECTED = 4 * STROKE_WIDTH_UNSELECTED;
 	private final BooleanProperty dualSpotSelected;
 	private final ReadOnlyObjectWrapper<Paint> strokeSelectedPaint;
 
-	ImageLayerShapeBaseStroke(boolean unselectedVisible,
+	AbstractImageLayerShapeStroke(boolean unselectedVisible,
 		@Nullable Consumer<MouseEvent> onMouseDragInit,
 		@Nullable Consumer<MouseEvent> onMouseDragged)
 	{

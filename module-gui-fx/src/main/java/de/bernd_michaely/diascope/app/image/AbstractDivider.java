@@ -23,8 +23,8 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
 
-import static de.bernd_michaely.diascope.app.image.ImageLayerShapeBase.COLOR_UNSELECTED;
-import static de.bernd_michaely.diascope.app.image.ImageLayerShapeBase.STROKE_WIDTH_UNSELECTED;
+import static de.bernd_michaely.diascope.app.image.AbstractImageLayerShape.COLOR_UNSELECTED;
+import static de.bernd_michaely.diascope.app.image.AbstractImageLayerShape.STROKE_WIDTH_UNSELECTED;
 import static java.lang.Math.ceil;
 
 /// Base class for image layer dividers.

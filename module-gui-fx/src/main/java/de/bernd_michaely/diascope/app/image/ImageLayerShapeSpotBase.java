@@ -27,12 +27,12 @@ import javafx.scene.shape.Shape;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeSpotBase extends ImageLayerShapeBase
+final class ImageLayerShapeSpotBase extends AbstractImageLayerShape
 {
 	private final ReadOnlyObjectWrapper<Paint> strokeSelectedPaint;
 	private final Rectangle shape;
 
-	ImageLayerShapeSpotBase()
+	private ImageLayerShapeSpotBase()
 	{
 		super(false, null, null);
 		this.strokeSelectedPaint = new ReadOnlyObjectWrapper<>(Color.TRANSPARENT);
@@ -40,8 +40,13 @@ final class ImageLayerShapeSpotBase extends ImageLayerShapeBase
 		shape.setVisible(false);
 	}
 
+	static ImageLayerShapeSpotBase createInstance()
+	{
+		return new ImageLayerShapeSpotBase();
+	}
+
 	@Override
-	Shape getShape()
+	public Shape getShape()
 	{
 		return shape;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Bernd Michaely (info@bernd-michaely.de)
+ * Copyright (C) 2026 Bernd Michaely (info@bernd-michaely.de)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,31 +16,19 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import javafx.scene.shape.Rectangle;
+import java.util.function.Consumer;
+import javafx.beans.property.BooleanProperty;
+import javafx.scene.shape.Shape;
 
-/// Class to describe an ImageLayer selection shape for GRID mode.
+/// Interface to describe an ImageLayer selection shape.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeGrid extends AbstractImageLayerShapeStroke
+sealed interface ImageLayerShape permits AbstractImageLayerShape
 {
-	private final Rectangle rectangle = new Rectangle();
+	void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler);
 
-	private ImageLayerShapeGrid()
-	{
-		super(false, null, null);
-	}
+	BooleanProperty selectedProperty();
 
-	static ImageLayerShapeGrid createInstance()
-	{
-		final var imageLayerShape = new ImageLayerShapeGrid();
-		imageLayerShape._postInit();
-		return imageLayerShape;
-	}
-
-	@Override
-	public Rectangle getShape()
-	{
-		return rectangle;
-	}
+	Shape getShape();
 }

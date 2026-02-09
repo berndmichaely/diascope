@@ -71,7 +71,7 @@ final class ImageLayer implements AutoCloseable
 	private final Ellipse clipEllipse = new Ellipse();
 	private @Nullable Shape clipShape;
 	private final BooleanProperty clippingEnabled = new SimpleBooleanProperty();
-	private final ImageLayerShapeBase imageLayerShape;
+	private final ImageLayerShape imageLayerShape;
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeight = new ReadOnlyDoubleWrapper();
@@ -91,17 +91,6 @@ final class ImageLayer implements AutoCloseable
 	private final ViewportBoundsLocal viewportBounds;
 	private @Nullable ImageDescriptor imageDescriptor;
 	private String imageTitle = "";
-
-	/// ImageLayer types.
-	private enum Type
-	{
-		/// grid/split mode layer with polygonal selection shape
-		GRID_SPLIT,
-		/// base layer of spot mode with rectangular selection shape
-		BASE,
-		/// spot layers of spot mode with rounded selection shape
-		SPOT
-	}
 
 	private static sealed class ViewportBoundsGlobal permits ViewportBoundsLocal
 	{
@@ -220,10 +209,12 @@ final class ImageLayer implements AutoCloseable
 		}
 	}
 
-	private ImageLayer(Viewport viewport, Type type)
+	private ImageLayer(Viewport viewport, ImageLayerShape imageLayerShape)
 	{
+		this.imageLayerShape = imageLayerShape;
 		logger.log(TRACE, () -> "CREATE ImageLayer with mode »%s« and type »%s«"
-			.formatted(viewport.modeProperties().getValueOrDefault(), type));
+			.formatted(viewport.modeProperties().getValueOrDefault(),
+				imageLayerShape.getClass().getSimpleName()));
 		this.viewportBoundsLocal = new ViewportBoundsLocal(
 			imageWidthTransformed.getReadOnlyProperty(),
 			imageHeightTransformed.getReadOnlyProperty());
@@ -234,15 +225,6 @@ final class ImageLayer implements AutoCloseable
 		clipRectangle.yProperty().bind(viewportBoundsLocal._y.getReadOnlyProperty());
 		clipRectangle.widthProperty().bind(viewportBoundsLocal.width);
 		clipRectangle.heightProperty().bind(viewportBoundsLocal.height);
-		this.imageLayerShape = switch (type)
-		{
-			case GRID_SPLIT ->
-				ImageLayerShapeSplit.createInstance(viewport.modeProperties().valueOrDefaultProperty());
-			case BASE ->
-				new ImageLayerShapeSpotBase();
-			case SPOT ->
-				ImageLayerShapeSpot.createInstance(viewport);
-		};
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -318,19 +300,21 @@ final class ImageLayer implements AutoCloseable
 	static ImageLayer createSpotLayer(Viewport viewport,
 		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
-		return createInstance(Type.SPOT, viewport, layerSelectionHandler);
+		return createInstance(ImageLayerShapeSpot.createInstance(viewport), viewport, layerSelectionHandler);
 	}
 
 	static ImageLayer createSpotBaseLayer(Viewport viewport,
 		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
-		return createInstance(Type.BASE, viewport, layerSelectionHandler);
+		return createInstance(ImageLayerShapeSpotBase.createInstance(), viewport, layerSelectionHandler);
 	}
 
 	private static ImageLayer createInstance(Viewport viewport,
 		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
-		final var imageLayer = createInstance(Type.GRID_SPLIT, viewport, layerSelectionHandler);
+		final var imageLayer = createInstance(
+			ImageLayerShapeSplit.createInstance(viewport.modeProperties().valueOrDefaultProperty()),
+			viewport, layerSelectionHandler);
 		// post init:
 		if (imageLayer.getImageLayerShape() instanceof ImageLayerShapeSplit imageLayerShapeSplit)
 		{
@@ -353,10 +337,10 @@ final class ImageLayer implements AutoCloseable
 		return imageLayer;
 	}
 
-	private static ImageLayer createInstance(Type type, Viewport viewport,
-		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
+	private static ImageLayer createInstance(ImageLayerShape imageLayerShape,
+		Viewport viewport, BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
 	{
-		final var imageLayer = new ImageLayer(viewport, type);
+		final var imageLayer = new ImageLayer(viewport, imageLayerShape);
 		// post init:
 		imageLayer.getImageLayerShape().setLayerSelectionHandler(new Consumer<Boolean>()
 		{
@@ -376,11 +360,9 @@ final class ImageLayer implements AutoCloseable
 				}
 			}
 		});
-		switch (type)
+		switch (imageLayerShape)
 		{
-			case BASE -> imageLayer.setClip(null);
-			case SPOT -> imageLayer.setClip(imageLayer.clipEllipse);
-			case GRID_SPLIT ->
+			case ImageLayerShapeSplit _ ->
 			{
 				viewport.modeProperties().valueOrDefaultProperty().addListener(onChange(mode ->
 				{
@@ -392,6 +374,10 @@ final class ImageLayer implements AutoCloseable
 					}
 				}));
 			}
+			case ImageLayerShapeSpotBase _ -> imageLayer.setClip(null);
+			case ImageLayerShapeSpot _ -> imageLayer.setClip(imageLayer.clipEllipse);
+			default -> throw new IllegalStateException(ImageLayer.class.getName() +
+					"::createInstance : Unexpected ImageLayerShape subtype");
 		}
 		imageLayer.clippingEnabled.addListener(onChange(() -> imageLayer.setClip(imageLayer.clipShape)));
 		imageLayer.clippingEnabled.bind(viewport.multiLayerModeProperty());
@@ -474,7 +460,7 @@ final class ImageLayer implements AutoCloseable
 		getImageLayerShape().selectedProperty().set(selected);
 	}
 
-	ImageLayerShapeBase getImageLayerShape()
+	ImageLayerShape getImageLayerShape()
 	{
 		return imageLayerShape;
 	}

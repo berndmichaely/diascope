@@ -26,7 +26,7 @@ import javafx.scene.shape.Shape;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeSplit extends ImageLayerShapeBaseStroke
+final class ImageLayerShapeSplit extends AbstractImageLayerShapeStroke
 {
 	private final Polygon polygon = new Polygon();
 	private final Rectangle rectangle = new Rectangle();
@@ -56,7 +56,7 @@ final class ImageLayerShapeSplit extends ImageLayerShapeBaseStroke
 	}
 
 	@Override
-	Shape getShape()
+	public Shape getShape()
 	{
 		return modeProperty.get().equals(Mode.SPLIT) ? polygon : rectangle;
 	}
