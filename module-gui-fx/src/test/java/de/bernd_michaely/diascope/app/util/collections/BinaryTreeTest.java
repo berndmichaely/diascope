@@ -30,14 +30,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class BinaryTreeTest
 {
-	private List<TreeNode> toList(BinaryTree binaryTree)
+	private static List<TreeNode> toList(BinaryTree binaryTree)
 	{
 		final List<TreeNode> result = new ArrayList<>();
 		_toList(result, binaryTree.getRoot());
 		return result;
 	}
 
-	private void _toList(List<TreeNode> result, TreeNode node)
+	private static void _toList(List<TreeNode> result, TreeNode node)
 	{
 		if (node != null)
 		{
@@ -50,12 +50,18 @@ public class BinaryTreeTest
 		}
 	}
 
+	private static void checkSize(int expectedNumLeafNodes, BinaryTree binaryTree)
+	{
+		assertEquals(expectedNumLeafNodes, binaryTree.getNumLeafNodes());
+		assertEquals(binaryTree.stream().count(), binaryTree.size());
+	}
+
 	@Test
 	public void test_add_leaves()
 	{
 		System.out.println(">>> test_add_leaves");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		System.out.println();
 		System.out.println("→ " + binaryTree);
 		assertEquals("BinaryTree:{·}", binaryTree.toString());
@@ -76,12 +82,11 @@ public class BinaryTreeTest
 		assertEquals(
 			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:LeafNode(three)|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
 			binaryTree.toString());
-		assertEquals(listTest.size(), binaryTree.size());
+		checkSize(listTest.size(), binaryTree);
 		assertIterableEquals(toList(binaryTree), binaryTree);
 		System.out.println();
 		binaryTree.formatted(System.out::println);
-		final boolean inserted = binaryTree.insertItemAt("six", 789, "three");
-		assertTrue(inserted);
+		assertTrue(binaryTree.insertItemAt("six", 789, "three", true));
 		System.out.println();
 		System.out.println("→ " + binaryTree);
 		assertEquals(
@@ -89,8 +94,17 @@ public class BinaryTreeTest
 			binaryTree.toString());
 		System.out.println();
 		binaryTree.formatted(System.out::println);
+		assertEquals("six", binaryTree.removeItem("six").getValue());
+		assertTrue(binaryTree.insertItemAt("six", 789, "three", false));
+		System.out.println();
+		System.out.println("→ " + binaryTree);
+		assertEquals(
+			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:BinaryNode[<789>:LeafNode(six)|LeafNode(three)]|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
+			binaryTree.toString());
+		System.out.println();
+		binaryTree.formatted(System.out::println);
 		binaryTree.clear();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		assertEquals("BinaryTree:{·}", binaryTree.toString());
 	}
 
@@ -99,7 +113,7 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_add_inner");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		binaryTree.append("one");
 		assertFalse(binaryTree.containsInnerValue(7));
 		binaryTree.append("two", 7);
@@ -113,9 +127,9 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_remove_0");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		assertNull(binaryTree.removeItem(""));
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		assertEquals("BinaryTree:{·}", binaryTree.toString());
 	}
 
@@ -124,14 +138,14 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_remove_1");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		binaryTree.append("one");
-		assertEquals(1, binaryTree.size());
+		checkSize(1, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		binaryTree.formatted(System.out::println);
 		final LeafNode removedItem = binaryTree.removeItem("one");
 		assertEquals("one", removedItem.getValue());
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		assertFalse(binaryTree.containsLeaf("one"));
 		System.out.println("→");
 		binaryTree.formatted(System.out::println);
@@ -143,16 +157,16 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_remove_2_0");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		binaryTree.append("one");
 		binaryTree.append("two");
-		assertEquals(2, binaryTree.size());
+		checkSize(2, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		assertTrue(binaryTree.containsLeaf("two"));
 		binaryTree.formatted(System.out::println);
 		final LeafNode removedItem = binaryTree.removeItem("one");
 		assertEquals("one", removedItem.getValue());
-		assertEquals(1, binaryTree.size());
+		checkSize(1, binaryTree);
 		assertFalse(binaryTree.containsLeaf("one"));
 		assertTrue(binaryTree.containsLeaf("two"));
 		System.out.println("→");
@@ -165,16 +179,16 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_remove_2_1");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		binaryTree.append("one");
 		binaryTree.append("two");
-		assertEquals(2, binaryTree.size());
+		checkSize(2, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		assertTrue(binaryTree.containsLeaf("two"));
 		binaryTree.formatted(System.out::println);
 		final LeafNode removedItem = binaryTree.removeItem("two");
 		assertEquals("two", removedItem.getValue());
-		assertEquals(1, binaryTree.size());
+		checkSize(1, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		assertFalse(binaryTree.containsLeaf("two"));
 		System.out.println("→");
@@ -187,16 +201,16 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_remove_3_0");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		binaryTree.append(List.of("one", "two", "three"));
-		assertEquals(3, binaryTree.size());
+		checkSize(3, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		assertTrue(binaryTree.containsLeaf("two"));
 		assertTrue(binaryTree.containsLeaf("three"));
 		binaryTree.formatted(System.out::println);
 		final LeafNode removedItem = binaryTree.removeItem("one");
 		assertEquals("one", removedItem.getValue());
-		assertEquals(2, binaryTree.size());
+		checkSize(2, binaryTree);
 		assertFalse(binaryTree.containsLeaf("one"));
 		assertTrue(binaryTree.containsLeaf("two"));
 		assertTrue(binaryTree.containsLeaf("three"));
@@ -212,16 +226,16 @@ public class BinaryTreeTest
 	{
 		System.out.println(">>> test_remove_3_1");
 		final var binaryTree = new BinaryTree<Integer, String>();
-		assertEquals(0, binaryTree.size());
+		checkSize(0, binaryTree);
 		binaryTree.append(List.of("one", "two", "three"));
-		assertEquals(3, binaryTree.size());
+		checkSize(3, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		assertTrue(binaryTree.containsLeaf("two"));
 		assertTrue(binaryTree.containsLeaf("three"));
 		binaryTree.formatted(System.out::println);
 		final LeafNode removedItem = binaryTree.removeItem("two");
 		assertEquals("two", removedItem.getValue());
-		assertEquals(2, binaryTree.size());
+		checkSize(2, binaryTree);
 		assertTrue(binaryTree.containsLeaf("one"));
 		assertFalse(binaryTree.containsLeaf("two"));
 		assertTrue(binaryTree.containsLeaf("three"));

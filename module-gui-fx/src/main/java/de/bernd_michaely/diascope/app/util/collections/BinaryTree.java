@@ -43,7 +43,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 {
 	private @Nullable TreeNode root;
-	private int size;
+	private int numLeafNodes;
 
 	/// Returns the root node.
 	///
@@ -61,10 +61,20 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		return new TreeNodeIterator(getRoot());
 	}
 
+	public int getNumInnerNodes()
+	{
+		return numLeafNodes > 1 ? numLeafNodes - 1 : 0;
+	}
+
+	public int getNumLeafNodes()
+	{
+		return numLeafNodes;
+	}
+
 	@Override
 	public int size()
 	{
-		return size;
+		return getNumLeafNodes() + getNumInnerNodes();
 	}
 
 	/// Finds an inner node by its value.
@@ -155,7 +165,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 			if (value == null)
 			{
 				root = new LeafNode<>(item);
-				size = 1;
+				numLeafNodes = 1;
 			}
 			else
 			{
@@ -178,7 +188,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 			}
 			if (lastLeaf != null)
 			{
-				insertLeafNode(item, value, lastLeaf);
+				insertLeafNode(item, value, lastLeaf, true);
 			}
 			else
 			{
@@ -188,31 +198,21 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		}
 	}
 
-	/// Inserts a new leaf node after the leaf node given by the insertion point.
-	///
-	/// @param item the given leaf node value
-	/// @param insertionPoint the insertion point indicated by its leaf value
-	/// @return true, iff the insertion point was found and a new node was inserted
-	///
-	public boolean insertItemAt(L item, L insertionPoint)
-	{
-		return insertItemAt(item, null, insertionPoint);
-	}
-
-	/// Inserts a new leaf node after the leaf node given by the insertion point.
+	/// Inserts a new leaf node before or after the leaf node given by the insertion point.
 	/// Also sets a value for the generated inner parent node.
 	///
 	/// @param item the given leaf node value
-	/// @param value the associated inner node value
+	/// @param value the associated inner node value (may be `null`)
 	/// @param insertionPoint the insertion point indicated by its leaf value
+	/// @param append true to append, false to prepend
 	/// @return true, iff the insertion point was found and a new node was inserted
 	///
-	public boolean insertItemAt(L item, @Nullable I value, L insertionPoint)
+	public boolean insertItemAt(L item, @Nullable I value, L insertionPoint, boolean append)
 	{
 		final LeafNode insertionNode = findLeafNode(insertionPoint);
 		if (insertionNode != null)
 		{
-			insertLeafNode(item, value, insertionNode);
+			insertLeafNode(item, value, insertionNode, append);
 			return true;
 		}
 		else
@@ -221,10 +221,14 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		}
 	}
 
-	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode)
+	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode, boolean append)
 	{
 		final var parentNode = insertionNode.getParentNode();
-		final var newInnerNode = new BinaryNode<I>(insertionNode, new LeafNode<>(item), value);
+		final var n1 = insertionNode;
+		final var n2 = new LeafNode<>(item);
+		final var newInnerNode = append ?
+			new BinaryNode<>(n1, n2, value) :
+			new BinaryNode<>(n2, n1, value);
 		if (parentNode != null)
 		{
 			int childIndex = parentNode.getSize() - 1;
@@ -238,7 +242,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		{
 			root = newInnerNode;
 		}
-		size++;
+		numLeafNodes++;
 	}
 
 	/// Removes the leaf node indicated by the given value.
@@ -279,7 +283,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 			{
 				root = otherChild;
 			}
-			size--;
+			numLeafNodes--;
 		}
 		else
 		{
@@ -291,7 +295,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	public void clear()
 	{
 		root = null;
-		size = 0;
+		numLeafNodes = 0;
 	}
 
 	void formatted(Consumer<String> consumer)
