@@ -149,6 +149,7 @@ logger.lifecycle "Java toolchain              : ${java.toolchain.displayName}"
 logger.lifecycle "Compile      -> Debug-Level : ${compileJava.options.debug}"
 logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}"
 logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"
+logger.lifecycle "Using Checker Framework     : ${checkerFramework.version.get()}"
 logger.lifecycle "==> Root project »$name ($version)«"
 logger.lifecycle " -> Base dir is »${file('.')}«"
 if (ext.has('versionJUnitVintage')) {
