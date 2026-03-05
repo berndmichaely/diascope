@@ -273,15 +273,6 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 		return clip.getReadOnlyProperty();
 	}
 
-	void bindClipToShape(Ellipse clip)
-	{
-		clip.centerXProperty().bind(ellipse.centerXProperty());
-		clip.centerYProperty().bind(ellipse.centerYProperty());
-		clip.radiusXProperty().bind(ellipse.radiusXProperty());
-		clip.radiusYProperty().bind(ellipse.radiusYProperty());
-		clip.rotateProperty().bind(ellipse.rotateProperty());
-	}
-
 	SpotCenter getSpotCenter()
 	{
 		return spotCenter;

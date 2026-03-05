@@ -76,13 +76,6 @@ final class ImageLayerShapeSplit extends AbstractImageLayerShapeStroke
 		polygonClip.getPoints().setAll(points);
 	}
 
-	@Deprecated
-	void clearPoints()
-	{
-		polygon.getPoints().clear();
-		polygonClip.getPoints().clear();
-	}
-
 	Rectangle getRectangle()
 	{
 		return rectangle;

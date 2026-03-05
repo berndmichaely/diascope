@@ -20,7 +20,6 @@ import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
-import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableObjectValue;
 import javafx.scene.input.MouseButton;
@@ -133,6 +132,4 @@ abstract sealed class AbstractImageLayerShape implements ImageLayerShape
 	abstract ObservableObjectValue<Paint> getStrokeSelectedPaint();
 
 	abstract double getStrokeWidthSelected();
-
-	abstract ReadOnlyObjectProperty<@Nullable Shape> clipProperty();
 }
