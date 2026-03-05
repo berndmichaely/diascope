@@ -197,9 +197,6 @@ class Viewport implements AutoCloseable
 					ils.getRectangle(), components.gridShapes,
 					ils.getPolygon(), components.splitShapes
 				));
-			case ImageLayerShapeSpotBase ils ->
-			{
-			}
 			case ImageLayerShapeSpot ils ->
 				components.addGridSplitLayer(index, imageLayer, Map.of(
 					ils.getShape(), components.spotShapes,

@@ -40,7 +40,7 @@ import static javafx.beans.binding.Bindings.when;
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
 abstract sealed class AbstractImageLayerShape implements ImageLayerShape
-	permits ImageLayerShapeSpotBase, AbstractImageLayerShapeStroke, ImageLayerShapeSpot
+	permits AbstractImageLayerShapeStroke, ImageLayerShapeSpot
 {
 	private final BooleanProperty selected;
 	private final BooleanProperty unselectedVisible;
