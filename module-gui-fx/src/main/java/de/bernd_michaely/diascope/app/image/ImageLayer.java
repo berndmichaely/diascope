@@ -20,21 +20,17 @@ import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
 import java.util.Optional;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.shape.Ellipse;
-import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
@@ -60,12 +56,6 @@ final class ImageLayer implements AutoCloseable
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
-	@Deprecated private final Rectangle clipRectangle = new Rectangle();
-	private final Polygon clipPolygon = new Polygon();
-	private final Ellipse clipEllipse = new Ellipse();
-//	private @Nullable Shape clipShape;
-	private final BooleanProperty clippingEnabled = new SimpleBooleanProperty();
-//	private final ImageLayerShape imageLayerShape;
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeight = new ReadOnlyDoubleWrapper();
@@ -87,25 +77,15 @@ final class ImageLayer implements AutoCloseable
 
 	ImageLayer(Viewport viewport)
 	{
-//		this.imageLayerShape = imageLayerShape;
 		logger.log(TRACE, () -> "CREATE ImageLayer with mode »%s«"
 			.formatted(viewport.modeProperties().getValueOrDefault()));
 		this.viewportBoundsLocal = new ViewportBoundsLocal();
 		this.viewportBounds = new ViewportBoundsSwitch(
 			viewport.modeProperties().isValueProperty(Mode.GRID),
 			viewport.getViewportBounds(), viewportBoundsLocal);
-		clipRectangle.xProperty().bind(viewportBoundsLocal.xProperty());
-		clipRectangle.yProperty().bind(viewportBoundsLocal.yProperty());
-		clipRectangle.widthProperty().bind(viewportBoundsLocal.widthProperty());
-		clipRectangle.heightProperty().bind(viewportBoundsLocal.heightProperty());
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-//		if (imageLayerShape instanceof ImageLayerShapeSpot shapeSpot &&
-//			clipShape instanceof Ellipse ellipse)
-//		{
-//			shapeSpot.bindClipToShape(ellipse);
-//		}
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.zoomFitWidth = new SimpleDoubleProperty();
 		this.zoomFitHeight = new SimpleDoubleProperty();
