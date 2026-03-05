@@ -20,7 +20,7 @@ package de.bernd_michaely.diascope.app.image;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class GridDivider extends AbstractDivider
+final class GridDivider extends AbstractDivider implements AutoCloseable
 {
 	private Orientation orientation = Orientation.values()[0];
 
@@ -41,5 +41,11 @@ final class GridDivider extends AbstractDivider
 	Orientation getOrientation()
 	{
 		return orientation;
+	}
+
+	@Override
+	public void close()
+	{
+		// TODO
 	}
 }

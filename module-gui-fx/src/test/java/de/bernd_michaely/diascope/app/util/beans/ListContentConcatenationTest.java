@@ -22,6 +22,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.junit.jupiter.api.Test;
 
+import static javafx.collections.FXCollections.singletonObservableList;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -42,16 +43,39 @@ public class ListContentConcatenationTest
 	}
 
 	@Test
+	public void test_default_constructor()
+	{
+		System.out.println("test_default_constructor");
+		try (var lcc = new ListContentConcatenation<String>())
+		{
+			lcc.getSourceLists().add(singletonObservableList("a"));
+			lcc.getSourceLists().add(singletonObservableList("b"));
+			assertEquals(List.of("a", "b"), lcc.getTargetList());
+		}
+	}
+
+	@Test
+	public void test_null_pattern()
+	{
+		System.out.println("test_null_pattern");
+		assertDoesNotThrow(() -> ListContentConcatenation.emptyListContentConcatenation());
+		final var ex = UnsupportedOperationException.class;
+		assertThrows(ex, () -> ListContentConcatenation.emptyListContentConcatenation().getSourceLists().clear());
+		assertThrows(ex, () -> ListContentConcatenation.emptyListContentConcatenation().getTargetList().clear());
+	}
+
+	@Test
 	public void test_source_lists_not_observable()
 	{
 		System.out.println("test_source_lists_not_observable");
 		final var src1 = createList('a', 'e');
 		final var src2 = createList('g', 'i');
 		final var src3 = createList('m', 'p');
-		try (var lcc = new ListContentConcatenation<String>(List.of(src1, src2, src3)))
+		try (var lcc = new ListContentConcatenation<String>(List.of(src1, src2, src3), null))
 		{
-			assertFalse(lcc.isSourceListsObservable());
+			assertFalse(lcc.getSourceLists() instanceof ObservableList);
 			final List<String> result = lcc.getTargetList();
+			assertThrows(UnsupportedOperationException.class, () -> result.add("UnsupportedOperation"));
 			assertEquals(List.of("a", "b", "c", "d", "e", "g", "h", "i", "m", "n", "o", "p"), result);
 			src1.remove("c");
 			assertEquals(List.of("a", "b", "d", "e", "g", "h", "i", "m", "n", "o", "p"), result);
@@ -76,7 +100,7 @@ public class ListContentConcatenationTest
 		final List<String> targetList = new ArrayList<>(List.of("Test", "TargetList", "not", "empty"));
 		try (var lcc = new ListContentConcatenation<String>(List.of(src1), targetList))
 		{
-			assertFalse(lcc.isSourceListsObservable());
+			assertFalse(lcc.getSourceLists() instanceof ObservableList);
 			assertEquals(List.of("a", "b", "c", "d", "e"), targetList);
 		}
 	}
@@ -91,9 +115,10 @@ public class ListContentConcatenationTest
 		final ObservableList<ObservableList<String>> observableLists =
 			FXCollections.observableArrayList();
 		final List<String> result;
-		try (var lcc = new ListContentConcatenation<String>(observableLists))
+		final var lcc = new ListContentConcatenation<String>(observableLists, null);
+		try (lcc)
 		{
-			assertTrue(lcc.isSourceListsObservable());
+			assertInstanceOf(ObservableList.class, lcc.getSourceLists());
 			result = lcc.getTargetList();
 			assertEquals(List.of(), result);
 			observableLists.add(src1);
@@ -122,7 +147,9 @@ public class ListContentConcatenationTest
 			assertEquals(List.of("a", "b", "c", "d", "e", "a", "b", "c", "d", "e"), result);
 			observableLists.set(0, src2);
 			assertEquals(List.of("g", "h", "i", "a", "b", "c", "d", "e"), result);
+			assertFalse(lcc.isClosed());
 		}
+		assertTrue(lcc.isClosed());
 		// check listener cleanup:
 		observableLists.getFirst().removeFirst();
 		assertEquals(List.of("g", "h", "i", "a", "b", "c", "d", "e"), result);

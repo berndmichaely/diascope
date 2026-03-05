@@ -19,28 +19,23 @@ package de.bernd_michaely.diascope.app.image;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
-import java.lang.ref.WeakReference;
 import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import javafx.application.ConditionalFeature;
-import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.value.ObservableBooleanValue;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Shape;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
@@ -49,7 +44,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static java.lang.System.Logger.Level.*;
-import static javafx.beans.binding.Bindings.createBooleanBinding;
 import static javafx.beans.binding.Bindings.isNull;
 import static javafx.beans.binding.Bindings.max;
 import static javafx.beans.binding.Bindings.min;
@@ -66,12 +60,12 @@ final class ImageLayer implements AutoCloseable
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
-	private final Rectangle clipRectangle = new Rectangle();
+	@Deprecated private final Rectangle clipRectangle = new Rectangle();
 	private final Polygon clipPolygon = new Polygon();
 	private final Ellipse clipEllipse = new Ellipse();
-	private @Nullable Shape clipShape;
+//	private @Nullable Shape clipShape;
 	private final BooleanProperty clippingEnabled = new SimpleBooleanProperty();
-	private final ImageLayerShape imageLayerShape;
+//	private final ImageLayerShape imageLayerShape;
 	private final DoubleProperty aspectRatio;
 	private final ReadOnlyDoubleWrapper imageWidth = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeight = new ReadOnlyDoubleWrapper();
@@ -88,151 +82,30 @@ final class ImageLayer implements AutoCloseable
 	private final Rotate rotate;
 	private final Translate translateScroll;
 	private final ViewportBoundsLocal viewportBoundsLocal;
-	private final ViewportBoundsLocal viewportBounds;
-	private @Nullable ImageDescriptor imageDescriptor;
-	private String imageTitle = "";
+	private final ViewportBounds viewportBounds;
+	private final ObjectProperty<Optional<ImageDescriptor>> imageDescriptor;
 
-	private static sealed class ViewportBoundsGlobal permits ViewportBoundsLocal
+	ImageLayer(Viewport viewport)
 	{
-		final ReadOnlyDoubleProperty width;
-		final ReadOnlyDoubleProperty height;
-		final ReadOnlyBooleanProperty scrollingEnabledHorizontal;
-		final ReadOnlyBooleanProperty scrollingEnabledVertical;
-		final ReadOnlyDoubleProperty scrollPosX;
-		final ReadOnlyDoubleProperty scrollPosY;
-
-		private ViewportBoundsGlobal(Viewport viewport)
-		{
-			this(viewport.widthProperty(), viewport.heightProperty(),
-				viewport.scrollBarEnabledHorizontalProperty(),
-				viewport.scrollBarEnabledVerticalProperty(),
-				viewport.scrollPosXProperty(), viewport.scrollPosYProperty());
-		}
-
-		private ViewportBoundsGlobal(ReadOnlyDoubleProperty width, ReadOnlyDoubleProperty height,
-			ReadOnlyBooleanProperty scrollBarEnabledHorizontal,
-			ReadOnlyBooleanProperty scrollBarEnabledVertical,
-			ReadOnlyDoubleProperty scrollPosX, ReadOnlyDoubleProperty scrollPosY)
-		{
-			this.width = width;
-			this.height = height;
-			this.scrollingEnabledHorizontal = scrollBarEnabledHorizontal;
-			this.scrollingEnabledVertical = scrollBarEnabledVertical;
-			this.scrollPosX = scrollPosX;
-			this.scrollPosY = scrollPosY;
-		}
-	}
-
-	static final class ViewportBoundsLocal extends ViewportBoundsGlobal
-	{
-		// naming convention:
-		// the names of writable properties equal the names of corresponding
-		// read-only property names prefixed with an underscore
-		private final ReadOnlyDoubleWrapper _x;
-		private final ReadOnlyDoubleWrapper _y;
-		private final ReadOnlyDoubleWrapper _width;
-		private final ReadOnlyDoubleWrapper _height;
-		private final ReadOnlyBooleanWrapper _scrollingEnabledHorizontal;
-		private final ReadOnlyBooleanWrapper _scrollingEnabledVertical;
-		private final ReadOnlyDoubleWrapper _scrollPosX;
-		private final ReadOnlyDoubleWrapper _scrollPosY;
-
-		/// Constructor for common initialization.
-		private ViewportBoundsLocal()
-		{
-			final var x = new ReadOnlyDoubleWrapper();
-			final var y = new ReadOnlyDoubleWrapper();
-			final var w = new ReadOnlyDoubleWrapper();
-			final var h = new ReadOnlyDoubleWrapper();
-			final var seh = new ReadOnlyBooleanWrapper();
-			final var sev = new ReadOnlyBooleanWrapper();
-			final var spx = new ReadOnlyDoubleWrapper();
-			final var spy = new ReadOnlyDoubleWrapper();
-			super(w.getReadOnlyProperty(), h.getReadOnlyProperty(),
-				seh.getReadOnlyProperty(), sev.getReadOnlyProperty(),
-				spx.getReadOnlyProperty(), spy.getReadOnlyProperty());
-			this._x = x;
-			this._y = y;
-			this._width = w;
-			this._height = h;
-			this._scrollingEnabledHorizontal = seh;
-			this._scrollingEnabledVertical = sev;
-			this._scrollPosX = spx;
-			this._scrollPosY = spy;
-		}
-
-		/// Constructor for local viewport.
-		private ViewportBoundsLocal(
-			ReadOnlyDoubleProperty imageWidthTransformed,
-			ReadOnlyDoubleProperty imageHeightTransformed)
-		{
-			this();
-			_scrollingEnabledHorizontal.bind(imageWidthTransformed.greaterThan(width));
-			_scrollingEnabledVertical.bind(imageHeightTransformed.greaterThan(height));
-		}
-
-		/// Constructor for switch between global and local viewport.
-		private ViewportBoundsLocal(ObservableBooleanValue isLocal,
-			ViewportBoundsGlobal global, ViewportBoundsLocal local)
-		{
-			this();
-			_x.bind(when(isLocal).then(local._x).otherwise(0d));
-			_y.bind(when(isLocal).then(local._y).otherwise(0d));
-			_width.bind(when(isLocal).then(local.width).otherwise(global.width));
-			_height.bind(when(isLocal).then(local.height).otherwise(global.height));
-			_scrollingEnabledHorizontal.bind(when(isLocal)
-				.then(local.scrollingEnabledHorizontal).otherwise(global.scrollingEnabledHorizontal));
-			_scrollingEnabledVertical.bind(when(isLocal)
-				.then(local.scrollingEnabledVertical).otherwise(global.scrollingEnabledVertical));
-			_scrollPosX.bind(when(isLocal).then(local.scrollPosX).otherwise(global.scrollPosX));
-			_scrollPosY.bind(when(isLocal).then(local.scrollPosY).otherwise(global.scrollPosY));
-		}
-
-		DoubleProperty getX()
-		{
-			return _x;
-		}
-
-		DoubleProperty getY()
-		{
-			return _y;
-		}
-
-		DoubleProperty getWidth()
-		{
-			return _width;
-		}
-
-		DoubleProperty getHeight()
-		{
-			return _height;
-		}
-	}
-
-	private ImageLayer(Viewport viewport, ImageLayerShape imageLayerShape)
-	{
-		this.imageLayerShape = imageLayerShape;
-		logger.log(TRACE, () -> "CREATE ImageLayer with mode »%s« and type »%s«"
-			.formatted(viewport.modeProperties().getValueOrDefault(),
-				imageLayerShape.getClass().getSimpleName()));
-		this.viewportBoundsLocal = new ViewportBoundsLocal(
-			imageWidthTransformed.getReadOnlyProperty(),
-			imageHeightTransformed.getReadOnlyProperty());
-		this.viewportBounds = new ViewportBoundsLocal(
+//		this.imageLayerShape = imageLayerShape;
+		logger.log(TRACE, () -> "CREATE ImageLayer with mode »%s«"
+			.formatted(viewport.modeProperties().getValueOrDefault()));
+		this.viewportBoundsLocal = new ViewportBoundsLocal();
+		this.viewportBounds = new ViewportBoundsSwitch(
 			viewport.modeProperties().isValueProperty(Mode.GRID),
-			new ViewportBoundsGlobal(viewport), viewportBoundsLocal);
-		clipRectangle.xProperty().bind(viewportBoundsLocal._x.getReadOnlyProperty());
-		clipRectangle.yProperty().bind(viewportBoundsLocal._y.getReadOnlyProperty());
-		clipRectangle.widthProperty().bind(viewportBoundsLocal.width);
-		clipRectangle.heightProperty().bind(viewportBoundsLocal.height);
+			viewport.getViewportBounds(), viewportBoundsLocal);
+		clipRectangle.xProperty().bind(viewportBoundsLocal.xProperty());
+		clipRectangle.yProperty().bind(viewportBoundsLocal.yProperty());
+		clipRectangle.widthProperty().bind(viewportBoundsLocal.widthProperty());
+		clipRectangle.heightProperty().bind(viewportBoundsLocal.heightProperty());
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		if (imageLayerShape instanceof ImageLayerShapeSpot shapeSpot &&
-			clipShape instanceof Ellipse ellipse)
-		{
-			shapeSpot.bindClipToShape(ellipse);
-		}
+//		if (imageLayerShape instanceof ImageLayerShapeSpot shapeSpot &&
+//			clipShape instanceof Ellipse ellipse)
+//		{
+//			shapeSpot.bindClipToShape(ellipse);
+//		}
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.zoomFitWidth = new SimpleDoubleProperty();
 		this.zoomFitHeight = new SimpleDoubleProperty();
@@ -246,12 +119,12 @@ final class ImageLayer implements AutoCloseable
 			imageHeightRotated.set(bounds.getHeight());
 		}));
 		aspectRatio.bind(imageWidthRotated.divide(imageHeightRotated));
-		zoomFitWidth.bind(viewportBounds.width.divide(imageWidthRotated));
-		zoomFitHeight.bind(viewportBounds.height.divide(imageHeightRotated));
+		zoomFitWidth.bind(viewportBounds.widthProperty().divide(imageWidthRotated));
+		zoomFitHeight.bind(viewportBounds.heightProperty().divide(imageHeightRotated));
 		zoomFit.bind(min(zoomFitWidth, zoomFitHeight));
 		zoomFill.bind(max(zoomFitWidth, zoomFitHeight));
 		final EnumProperties<ZoomMode> zoomModeProperties = imageTransforms.zoomModeProperties();
-		imageTransforms.zoomFactorWrapperProperty().bind(when(imageIsNull).then(0.0)
+		imageTransforms.resultingZoomFactorProperty().bind(when(imageIsNull).then(0.0)
 			.otherwise(when(zoomModeProperties.isValueProperty(FIT)).then(zoomFit)
 				.otherwise(when(zoomModeProperties.isValueProperty(FILL)).then(zoomFill)
 					.otherwise(when(zoomModeProperties.isValueProperty(ORIGINAL)).then(1.0)
@@ -279,109 +152,40 @@ final class ImageLayer implements AutoCloseable
 		this.focusPointY = new SimpleDoubleProperty();
 		focusPointY.bind(viewport.focusPointY());
 		this.translateScroll = new Translate();
-		translateScroll.xProperty().bind(viewportBounds._x.add(
+		translateScroll.xProperty().bind(viewportBounds.xProperty().add(
 			when(viewport.scrollBarEnabledHorizontalProperty())
-				.then(negate(viewportBounds.scrollPosX))
-				.otherwise(viewportBounds.width.subtract(imageWidthTransformed).divide(2.0))));
-		translateScroll.yProperty().bind(viewportBounds._y.add(
+				.then(negate(viewportBounds.scrollPosXProperty()))
+				.otherwise(viewportBounds.widthProperty().subtract(imageWidthTransformed).divide(2.0))));
+		translateScroll.yProperty().bind(viewportBounds.yProperty().add(
 			when(viewport.scrollBarEnabledVerticalProperty())
-				.then(negate(viewportBounds.scrollPosY))
-				.otherwise(viewportBounds.height.subtract(imageHeightTransformed).divide(2.0))));
+				.then(negate(viewportBounds.scrollPosYProperty()))
+				.otherwise(viewportBounds.heightProperty().subtract(imageHeightTransformed).divide(2.0))));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, mirror, rotate, translateCenter);
-	}
-
-	static ImageLayer createGridSplitLayer(Viewport viewport,
-		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
-	{
-		return createInstance(viewport, layerSelectionHandler);
-	}
-
-	static ImageLayer createSpotLayer(Viewport viewport,
-		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
-	{
-		return createInstance(ImageLayerShapeSpot.createInstance(viewport), viewport, layerSelectionHandler);
-	}
-
-	static ImageLayer createSpotBaseLayer(Viewport viewport,
-		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
-	{
-		return createInstance(ImageLayerShapeSpotBase.createInstance(), viewport, layerSelectionHandler);
-	}
-
-	private static ImageLayer createInstance(Viewport viewport,
-		BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
-	{
-		final var imageLayer = createInstance(
-			ImageLayerShapeSplit.createInstance(viewport.modeProperties().valueOrDefaultProperty()),
-			viewport, layerSelectionHandler);
-		// post init:
-		if (imageLayer.getImageLayerShape() instanceof ImageLayerShapeSplit imageLayerShapeSplit)
+		this.imageDescriptor = new SimpleObjectProperty<>(Optional.empty());
+		imageDescriptor.addListener(onChange(optional ->
 		{
-			final var layerSelectionModel = viewport.getLayerSelectionModel();
-			if (layerSelectionModel != null)
+			optional.ifPresentOrElse(descriptor ->
 			{
-				final var dualProperty = layerSelectionModel.dualSelectedLayerSecondProperty();
-				imageLayerShapeSplit.dualSpotSelectedProperty().bind(createBooleanBinding(() ->
-				{
-					final Optional<ImageLayer> optional = dualProperty.get();
-					return optional.isPresent() ?
-						layerSelectionModel.getSize() > 2 && optional.get() == imageLayer : false;
-				}, dualProperty));
-			}
-			else
+				final var image = descriptor.getImage();
+				imageView.setImage(image);
+				final double width = Math.max(image.getWidth(), 0.0);
+				final double height = Math.max(image.getHeight(), 0.0);
+				imageWidth.set(width);
+				imageHeight.set(height);
+				imageRotated.setWidth(width);
+				imageRotated.setHeight(height);
+			}, () ->
 			{
-				throw new IllegalStateException("viewport LayerSelectionModel not initialized");
-			}
-		}
-		return imageLayer;
-	}
-
-	private static ImageLayer createInstance(ImageLayerShape imageLayerShape,
-		Viewport viewport, BiConsumer<ImageLayer, Boolean> layerSelectionHandler)
-	{
-		final var imageLayer = new ImageLayer(viewport, imageLayerShape);
-		// post init:
-		imageLayer.getImageLayerShape().setLayerSelectionHandler(new Consumer<Boolean>()
-		{
-			private final WeakReference<ImageLayer> wImageLayer = new WeakReference<>(imageLayer);
-
-			@Override
-			public void accept(Boolean value)
-			{
-				ImageLayer imageLayer = null;
-				if (wImageLayer != null)
-				{
-					imageLayer = wImageLayer.get();
-				}
-				if (imageLayer != null)
-				{
-					layerSelectionHandler.accept(imageLayer, value);
-				}
-			}
-		});
-		switch (imageLayerShape)
-		{
-			case ImageLayerShapeSplit _ ->
-			{
-				viewport.modeProperties().valueOrDefaultProperty().addListener(onChange(mode ->
-				{
-					switch (mode)
-					{
-						case SINGLE -> imageLayer.setClip(null);
-						case GRID -> imageLayer.setClip(imageLayer.clipRectangle);
-						case SPLIT -> imageLayer.setClip(imageLayer.clipPolygon);
-					}
-				}));
-			}
-			case ImageLayerShapeSpotBase _ -> imageLayer.setClip(null);
-			case ImageLayerShapeSpot _ -> imageLayer.setClip(imageLayer.clipEllipse);
-			default -> throw new IllegalStateException(ImageLayer.class.getName() +
-					"::createInstance : Unexpected ImageLayerShape subtype");
-		}
-		imageLayer.clippingEnabled.addListener(onChange(() -> imageLayer.setClip(imageLayer.clipShape)));
-		imageLayer.clippingEnabled.bind(viewport.multiLayerModeProperty());
-		return imageLayer;
+				@SuppressWarnings("argument")
+				final Runnable clearImage = () -> imageView.setImage(null);
+				clearImage.run();
+				imageWidth.set(0d);
+				imageHeight.set(0d);
+				imageRotated.setWidth(0d);
+				imageRotated.setHeight(0d);
+			});
+		}));
 	}
 
 	ImageTransformsImpl getImageTransforms()
@@ -404,74 +208,25 @@ final class ImageLayer implements AutoCloseable
 		return paneLayer;
 	}
 
-	@Nullable
-	ImageDescriptor getImageDescriptor()
+	@SuppressWarnings("return")
+	ObjectProperty<@Nullable Node> clipProperty()
+	{
+		return getRegion().clipProperty();
+	}
+
+	ObjectProperty<Optional<ImageDescriptor>> imageDescriptorProperty()
 	{
 		return imageDescriptor;
 	}
 
-	/// Set the image to display.
-	///
-	/// @param imageDescriptor the given image, may be null to clear the display
-	///
-	void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
+	Optional<ImageDescriptor> getImageDescriptor()
 	{
-		this.imageDescriptor = imageDescriptor;
-		final var image = imageDescriptor != null ? imageDescriptor.getImage() : null;
-		@SuppressWarnings("argument")
-		final Runnable setNullableImage = () -> imageView.setImage(image);
-		setNullableImage.run();
-		imageTitle = imageDescriptor != null ? imageDescriptor.getTitle() : "";
-		final double width = image != null ? Math.max(image.getWidth(), 0.0) : 0.0;
-		final double height = image != null ? Math.max(image.getHeight(), 0.0) : 0.0;
-		imageWidth.set(width);
-		imageHeight.set(height);
-		imageRotated.setWidth(width);
-		imageRotated.setHeight(height);
+		return imageDescriptorProperty().get();
 	}
 
-	private void setClip(@Nullable Shape clip)
+	void setImageDescriptor(Optional<ImageDescriptor> imageDescriptor)
 	{
-		if (Platform.isSupported(ConditionalFeature.SHAPE_CLIP))
-		{
-			this.clipShape = clippingEnabled.get() ? clip : null;
-			@SuppressWarnings("argument")
-			final Runnable setNullableClip = () -> paneLayer.setClip(clipShape);
-			setNullableClip.run();
-			if (clipShape == null)
-			{
-				// clear shape points:
-				clipPolygon.getPoints().clear();
-				if (imageLayerShape instanceof ImageLayerShapeSplit shapeSplit)
-				{
-					shapeSplit.clearPoints();
-				}
-			}
-		}
-	}
-
-	boolean isSelected()
-	{
-		return getImageLayerShape().selectedProperty().get();
-	}
-
-	void setSelected(boolean selected)
-	{
-		getImageLayerShape().selectedProperty().set(selected);
-	}
-
-	ImageLayerShape getImageLayerShape()
-	{
-		return imageLayerShape;
-	}
-
-	void setShapePoints(Double... points)
-	{
-		clipPolygon.getPoints().setAll(points);
-		if (getImageLayerShape() instanceof ImageLayerShapeSplit shapeSplit)
-		{
-			shapeSplit.setShapePoints(points);
-		}
+		imageDescriptorProperty().set(imageDescriptor);
 	}
 
 	ViewportBoundsLocal getViewportBoundsLocal()
@@ -479,24 +234,16 @@ final class ImageLayer implements AutoCloseable
 		return viewportBoundsLocal;
 	}
 
-	@Deprecated
-	void setGridBounds(double x, double y, double w, double h)
-	{
-		viewportBoundsLocal._x.set(x);
-		viewportBoundsLocal._y.set(y);
-		viewportBoundsLocal._width.set(w);
-		viewportBoundsLocal._height.set(h);
-	}
-
 	@Override
 	public String toString()
 	{
-		return imageTitle;
+		return getImageDescriptor().map(ImageDescriptor::getTitle).orElse("");
 	}
 
 	@Override
 	public void close()
 	{
-		setClip(null);
+		imageDescriptorProperty().unbind();
+		setImageDescriptor(Optional.empty());
 	}
 }

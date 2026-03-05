@@ -18,8 +18,6 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -29,7 +27,6 @@ import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.layout.Region;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
@@ -51,7 +48,6 @@ public class MultiImageView implements AutoCloseable
 	private final ImageLayers imageLayers;
 	private final ImageLayersSpot spotImageLayers;
 	private final BooleanProperty scrollBarsEnabled;
-	private final ReadOnlyIntegerWrapper numLayers;
 	private final ReadOnlyIntegerWrapper maximumNumberOfLayers;
 	private final ReadOnlyBooleanWrapper spotModeDisabled;
 
@@ -68,26 +64,23 @@ public class MultiImageView implements AutoCloseable
 
 		public static Mode getDefaultMultiImageMode()
 		{
+//			return GRID;
 			return SPLIT;
 		}
 	}
 
 	public MultiImageView()
 	{
-		final Map<ImageLayer, SplitDivider> splitDividers = new IdentityHashMap<>();
-		this.numLayers = new ReadOnlyIntegerWrapper();
-		this.viewport = new Viewport(numLayers.greaterThanOrEqualTo(2));
-		this.imageLayers = new ImageLayers(viewport, splitDividers);
+		this.viewport = new Viewport();
+		this.imageLayers = new ImageLayers(viewport);
 		final var layerSelectionModel = imageLayers.layerSelectionModel;
 		viewport.setLayerSelectionModel(layerSelectionModel);
 		this.spotImageLayers = new ImageLayersSpot(viewport);
-		spotImageLayers.layerSelectionModel.setSelected(1, true);
 		this.imageTransformsSwitch = new ImageTransformsSwitch(
-			imageLayers.unmodifiableLayers, spotImageLayers.unmodifiableLayers,
-			layerSelectionModel.singleSelectedLayerProperty(),
-			this.viewport.modeProperties().isValueProperty(GRID));
+			viewport.modeProperties(), layerSelectionModel.singleSelectedLayerProperty(),
+			imageLayers.unmodifiableLayers, spotImageLayers.unmodifiableLayers);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
-			(int) (C / imageLayers.getDividerRotationControl().getDividerMinGap()));
+			(int) (C / imageLayers.getSplitDividerRotationControl().getDividerMinGap()));
 		viewport.layersMaxWidthProperty().bind(when(viewport.modeProperties().isValueProperty(SPOT))
 			.then(spotImageLayers.layersMaxWidth).otherwise(imageLayers.layersMaxWidth));
 		viewport.layersMaxHeightProperty().bind(when(viewport.modeProperties().isValueProperty(SPOT))
@@ -100,9 +93,8 @@ public class MultiImageView implements AutoCloseable
 				imageLayers.layers.setSelected(0, true);
 			}
 		}));
-		numLayers.bind(layerSelectionModel.sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
-		viewport.getScrollBars().enabledProperty().bind(
+		viewport.scrollBarsEnabledProperty().bind(
 			scrollBarsEnabled.and(imageTransformsSwitch.getFacadeImageTransforms()
 				.zoomModeOrDefaultProperty().isNotEqualTo(FIT)));
 		this.spotModeDisabled = new ReadOnlyBooleanWrapper();
@@ -138,12 +130,12 @@ public class MultiImageView implements AutoCloseable
 		{
 			case GRID ->
 			{
-				imageLayers.getDividerDragControl().initializeDividerPositions();
+				imageLayers.getGridDividerDragControl().initializeDividerPositions();
 			}
 			case SPLIT ->
 			{
 				viewport.getSplitCenter().center();
-				imageLayers.getDividerRotationControl().initializeDividerAngles();
+				imageLayers.getSplitDividerRotationControl().initializeDividerAngles();
 			}
 			case SPOT ->
 			{
@@ -165,10 +157,9 @@ public class MultiImageView implements AutoCloseable
 		{
 			setMode(getDefaultMultiImageMode());
 		}
-		final Optional<ImageLayer> singleSelectedLayer =
-			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get();
-		imageLayers.createImageLayer(singleSelectedLayer.isPresent() ?
-			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
+		imageLayers.createImageLayer(
+			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get()
+				.map(layer -> layers.indexOf(layer) + 1).orElse(layers.size()));
 	}
 
 	/// Returns a property indicating the number of layers.
@@ -177,7 +168,7 @@ public class MultiImageView implements AutoCloseable
 	///
 	public ReadOnlyIntegerProperty numLayersProperty()
 	{
-		return numLayers.getReadOnlyProperty();
+		return imageLayers.layerSelectionModel.sizeProperty();
 	}
 
 	/// Returns the number of layers.
@@ -225,7 +216,7 @@ public class MultiImageView implements AutoCloseable
 	 *
 	 * @param imageDescriptor the given image, may be null to clear the display
 	 */
-	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
+	public void setImageDescriptor(Optional<ImageDescriptor> imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
 		if (!viewport.modeProperties().isValue(SPOT))

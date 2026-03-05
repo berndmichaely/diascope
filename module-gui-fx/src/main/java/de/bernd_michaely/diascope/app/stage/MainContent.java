@@ -24,6 +24,7 @@ import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameter
 import de.bernd_michaely.diascope.app.util.action.CheckedAction;
 import java.lang.System.Logger;
 import java.nio.file.Path;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -233,8 +234,8 @@ public class MainContent implements AutoCloseable
 	{
 		final var image = taskResult.image();
 		final var path = taskResult.path();
-		multiImageView.setImageDescriptor(image != null && path != null ?
-			new ImageDescriptor(image, path) : null);
+		final var imageDescriptor = image != null && path != null ? new ImageDescriptor(image, path) : null;
+		multiImageView.setImageDescriptor(Optional.ofNullable(imageDescriptor));
 	}
 
 	private Paint getDefaultTextPaint()

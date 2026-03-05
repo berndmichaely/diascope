@@ -16,11 +16,11 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableObjectValue;
 import javafx.scene.input.MouseButton;
@@ -31,11 +31,8 @@ import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.shape.StrokeType;
-import javafx.scene.text.Font;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static java.lang.Math.max;
-import static java.lang.Math.round;
 import static javafx.beans.binding.Bindings.when;
 
 /// Base class to describe an ImageLayer selection shape.
@@ -45,9 +42,6 @@ import static javafx.beans.binding.Bindings.when;
 abstract sealed class AbstractImageLayerShape implements ImageLayerShape
 	permits ImageLayerShapeSpotBase, AbstractImageLayerShapeStroke, ImageLayerShapeSpot
 {
-	static final List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
-	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
-	static final double STROKE_WIDTH_UNSELECTED = max(1, round(Font.getDefault().getSize() / 15));
 	private final BooleanProperty selected;
 	private final BooleanProperty unselectedVisible;
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
@@ -65,17 +59,17 @@ abstract sealed class AbstractImageLayerShape implements ImageLayerShape
 		this.onMouseDragged = onMouseDragged;
 	}
 
-	void _postInit()
+	void initShape(Shape shape)
 	{
-		getShape().setFill(Color.TRANSPARENT);
-		getShape().setStrokeLineCap(StrokeLineCap.ROUND);
-		getShape().setStrokeLineJoin(StrokeLineJoin.ROUND);
-		getShape().setStrokeType(StrokeType.INSIDE);
-		getShape().strokeProperty().bind(when(selected).then(getStrokeSelectedPaint()).otherwise(
+		shape.setFill(Color.TRANSPARENT);
+		shape.setStrokeLineCap(StrokeLineCap.ROUND);
+		shape.setStrokeLineJoin(StrokeLineJoin.ROUND);
+		shape.setStrokeType(StrokeType.INSIDE);
+		shape.strokeProperty().bind(when(selected).then(getStrokeSelectedPaint()).otherwise(
 			when(unselectedVisible).then(COLOR_UNSELECTED).otherwise(Color.TRANSPARENT)));
-		getShape().strokeWidthProperty().bind(when(selected).then(getStrokeWidthSelected()).otherwise(
+		shape.strokeWidthProperty().bind(when(selected).then(getStrokeWidthSelected()).otherwise(
 			when(unselectedVisible).then(STROKE_WIDTH_UNSELECTED).otherwise(0.0)));
-		getShape().setOnMouseDragged(event ->
+		shape.setOnMouseDragged(event ->
 		{
 			if (!mouseDragged.get())
 			{
@@ -96,7 +90,7 @@ abstract sealed class AbstractImageLayerShape implements ImageLayerShape
 				onMouseDragged.accept(event);
 			}
 		});
-		getShape().setOnMouseReleased(event ->
+		shape.setOnMouseReleased(event ->
 		{
 			try
 			{
@@ -140,6 +134,5 @@ abstract sealed class AbstractImageLayerShape implements ImageLayerShape
 
 	abstract double getStrokeWidthSelected();
 
-	@Override
-	public abstract Shape getShape();
+	abstract ReadOnlyObjectProperty<@Nullable Shape> clipProperty();
 }

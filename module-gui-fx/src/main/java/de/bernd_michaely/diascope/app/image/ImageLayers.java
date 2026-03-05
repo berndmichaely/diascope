@@ -18,13 +18,16 @@ package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import de.bernd_michaely.diascope.app.util.collections.BinaryTree;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javafx.beans.value.ChangeListener;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static javafx.beans.binding.Bindings.createBooleanBinding;
 
 /// Class to handle the image layers for split mode.
 ///
@@ -32,16 +35,29 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 final class ImageLayers extends ImageLayersBase
 {
+	final LayerSelectionModel layerSelectionModel;
 	private final Viewport viewport;
-	private final BinaryTree<GridDivider, ImageLayer> gridTree;
-	private final DividerRotationControl dividerRotationControl;
-	private final DividerDragControl dividerDragControl;
+	private final SplitDividerRotationControl splitDividerRotationControl;
+	private final GridDividerDragControl gridDividerDragControl;
 	private final ChangeListener<Number> clippingPointsListener;
 
-	ImageLayers(Viewport viewport, Map<ImageLayer, SplitDivider> splitDividers)
+	ImageLayers(Viewport viewport)
 	{
 		this.viewport = viewport;
-		final Function<ImageLayer, SplitDivider> dividerByImageLayer = imageLayer ->
+		final BinaryTree<GridDivider, ImageLayer> gridTree = new BinaryTree<>();
+		final Map<ImageLayer, SplitDivider> splitDividers = new IdentityHashMap<>();
+		final Map<ImageLayer, ImageLayerShapeSplit> imageLayerShapes = new IdentityHashMap<>();
+		final Function<ImageLayer, @Nullable GridDivider> gridDividerByImageLayer = imageLayer ->
+		{
+			GridDivider result = null;
+			final var leafNode = gridTree.findLeafNode(imageLayer);
+			if (leafNode != null && leafNode.getValue() instanceof GridDivider gridDivider)
+			{
+				result = gridDivider;
+			}
+			return result;
+		};
+		final Function<ImageLayer, SplitDivider> splitDividerByImageLayer = imageLayer ->
 		{
 			final var splitDivider = splitDividers.get(imageLayer);
 			if (splitDivider != null)
@@ -53,12 +69,24 @@ final class ImageLayers extends ImageLayersBase
 				throw new IllegalStateException(getClass().getName() + ": Invalid SplitDivider");
 			}
 		};
-		this.dividerRotationControl = new DividerRotationControl(unmodifiableLayers, dividerByImageLayer);
-		this.gridTree = new BinaryTree<>();
-		this.dividerDragControl = new DividerDragControl(gridTree,
+		final Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer = imageLayer ->
+		{
+			final var imageLayerShape = imageLayerShapes.get(imageLayer);
+			if (imageLayerShape != null)
+			{
+				return imageLayerShape;
+			}
+			else
+			{
+				throw new IllegalStateException(getClass().getName() + ": Invalid ImageLayerShape");
+			}
+		};
+		this.layerSelectionModel = new LayerSelectionModel(layers, shapeByImageLayer);
+		this.splitDividerRotationControl = new SplitDividerRotationControl(unmodifiableLayers, splitDividerByImageLayer);
+		this.gridDividerDragControl = new GridDividerDragControl(gridTree,
 			viewport.widthProperty(), viewport.heightProperty());
 		this.clippingPointsListener = onChange(new ClippingPointsListener(
-			this.viewport, unmodifiableLayers, dividerByImageLayer));
+			this.viewport, unmodifiableLayers, splitDividerByImageLayer, shapeByImageLayer));
 		viewport.multiLayerModeProperty().addListener(onChange(enabled ->
 		{
 			if (enabled)
@@ -76,122 +104,111 @@ final class ImageLayers extends ImageLayersBase
 				viewport.getSplitCenter().yProperty().removeListener(clippingPointsListener);
 			}
 		}));
-		// listener for imageLayer:
 		unmodifiableLayers.addListener(new ListChangeListenerBuilder<ImageLayer>()
 			.onAdd(change ->
 			{
 				final var list = change.getList();
-				final boolean wasEmpty = change.getAddedSize() == list.size();
 				for (int i = change.getFrom(); i < change.getTo(); i++)
 				{
 					final var imageLayer = list.get(i);
 					if (imageLayer != null)
 					{
+						// create GridDivider:
+						final GridDivider gridDivider;
+						if (gridTree.isEmpty())
+						{
+							gridDivider = null;
+							gridTree.append(imageLayer);
+						}
+						else
+						{
+							gridDivider = new GridDivider();
+							final ImageLayer layerPrev = list.get(i > 0 ? i - 1 : 0);
+							if (!gridTree.insertItemAt(imageLayer, gridDivider, layerPrev, i > 0))
+							{
+								throw new IllegalStateException(getClass().getName() +
+									" : grid insertion point not found");
+							}
+						}
+						// create SplitDivider:
 						final var splitDivider = new SplitDivider(viewport);
 						splitDividers.put(imageLayer, splitDivider);
-						viewport.addImageLayer(i, imageLayer);
-						viewport.addSplitDivider(i, splitDivider);
 						splitDivider.angleProperty().addListener(clippingPointsListener);
 						splitDivider.getMouseDragState().setOnRotate(
-							() -> dividerRotationControl.accept(splitDivider));
-					}
-					if (wasEmpty && i == 0)
-					{
-						gridTree.append(imageLayer);
-					}
-					else
-					{
-						final ImageLayer layerPrev = list.get(i > 0 ? i - 1 : 0);
-						if (!gridTree.insertItemAt(imageLayer, new GridDivider(), layerPrev, i > 0))
-						{
-							throw new IllegalStateException(getClass().getName() +
-								" : grid insertion point not found");
-						}
+							() -> splitDividerRotationControl.accept(splitDivider));
+						// create ImageLayerShape:
+						final var imageLayerShape = new ImageLayerShapeSplit(viewport.modeProperties());
+						imageLayerShape.setLayerSelectionHandler(
+							multiSelect -> selectImageLayer(imageLayer, multiSelect));
+						imageLayerShapes.put(imageLayer, imageLayerShape);
+						imageLayer.clipProperty().bind(imageLayerShape.clipProperty());
+						imageLayerShape.bindViewportBounds(imageLayer.getViewportBoundsLocal());
+						final var dualProperty = layerSelectionModel.dualSelectedLayerSecondProperty();
+						imageLayerShape.dualSpotSelectedProperty().bind(
+							createBooleanBinding(() ->
+								dualProperty.get().map(l -> l == imageLayer && layerSelectionModel.getSize() > 2).orElse(false),
+								dualProperty));
+						// add components to viewport:
+						viewport.addImageLayer(i, imageLayer, gridDivider, splitDivider, imageLayerShape);
 					}
 				}
-				dividerRotationControl.initializeDividerAngles();
-				dividerDragControl.initializeDividerPositions();
+				gridDividerDragControl.initializeDividerPositions();
+				splitDividerRotationControl.initializeDividerAngles();
 			})
 			.onRemove(change ->
 			{
 				for (var imageLayer : change.getRemoved())
 				{
-					if (imageLayer != null)
+					final var leafNode = gridTree.findLeafNode(imageLayer);
+					if (leafNode != null && leafNode.getValue() instanceof GridDivider gridDivider)
+					{
+						try (gridDivider)
+						{
+							gridTree.removeNode(leafNode);
+						}
+					}
+					else
+					{
+						if (change.getList().size() > 1)
+						{
+							throw new IllegalStateException(getClass().getName() +
+								" : on remove layer : Invalid GridDivider");
+						}
+					}
+					final var splitDivider = splitDividers.remove(imageLayer);
+					try (imageLayer; splitDivider)
 					{
 						viewport.removeLayer(imageLayer);
-						try (var splitDivider = splitDividers.get(imageLayer))
+						if (splitDivider != null)
 						{
-							if (splitDivider != null)
-							{
-								viewport.removeSplitDivider(splitDivider);
-								splitDivider.angleProperty().removeListener(clippingPointsListener);
-							}
-							else
-							{
-								throw new IllegalStateException(getClass().getName() +
-									" : on remove layer : no divider associated with this ImageLayer");
-							}
+							splitDivider.angleProperty().removeListener(clippingPointsListener);
 						}
-						imageLayer.close();
+						else
+						{
+							throw new IllegalStateException(getClass().getName() +
+								" : on remove layer : no SplitDivider associated with this ImageLayer");
+						}
 					}
 				}
-				change.getRemoved().forEach(splitDividers::remove);
-				dividerRotationControl.initializeDividerAngles();
+				gridDividerDragControl.initializeDividerPositions();
+				splitDividerRotationControl.initializeDividerAngles();
 			}).build());
-		// listener for imageTransforms:
-//		final Consumer<List<? extends ImageLayer>> bindZoomFactor = list ->
-//		{
-//			if (list.isEmpty())
-//			{
-//				facadeImageTransforms.zoomFactorWrapperProperty().unbind();
-//			}
-//			else
-//			{
-//				facadeImageTransforms.zoomFactorWrapperProperty().bind(
-//					list.getFirst().getImageTransforms().zoomFactorProperty());
-//			}
-//		};
-//		unmodifiableLayers.addListener(new ListChangeListenerBuilder<ImageLayer>()
-//			.onAdd(change ->
-//			{
-//				if (viewport.modeProperties().isValue(GRID))
-//				{
-//				}
-//				else
-//				{
-//					change.getAddedSubList().forEach(l ->
-//						l.getImageTransforms().bindProperties(facadeImageTransforms));
-//					bindZoomFactor.accept(change.getList());
-//				}
-//			})
-//			.onRemove(change ->
-//			{
-//				if (viewport.modeProperties().isValue(GRID))
-//				{
-//				}
-//				else
-//				{
-//					change.getRemoved().forEach(l ->
-//						l.getImageTransforms().unbindProperties(facadeImageTransforms));
-//					bindZoomFactor.accept(change.getList());
-//				}
-//			}).build());
 	}
 
-	DividerRotationControl getDividerRotationControl()
+	SplitDividerRotationControl getSplitDividerRotationControl()
 	{
-		return dividerRotationControl;
+		return splitDividerRotationControl;
 	}
 
-	DividerDragControl getDividerDragControl()
+	GridDividerDragControl getGridDividerDragControl()
 	{
-		return dividerDragControl;
+		return gridDividerDragControl;
 	}
 
 	ImageLayer createImageLayer(int index)
 	{
-		final var imageLayer = ImageLayer.createGridSplitLayer(viewport, this::selectImageLayer);
-		layers.add(index, imageLayer);
+		final var imageLayer = new ImageLayer(viewport);
+		layers.add(index < 0 ? layers.size() : index, imageLayer);
 		selectImageLayer(imageLayer);
 		return imageLayer;
 	}
@@ -213,13 +230,19 @@ final class ImageLayers extends ImageLayersBase
 		}
 	}
 
+	private boolean isImageLayerSelected(ImageLayer imageLayer)
+	{
+		final int index = unmodifiableLayers.indexOf(imageLayer);
+		return index >= 0 ? layerSelectionModel.isSelected(index) : false;
+	}
+
 	/// Removes the selected layers.
 	///
 	/// @return true, iff anything has been changed
 	///
 	boolean removeSelectedLayers()
 	{
-		return _removeLayersIf(ImageLayer::isSelected);
+		return _removeLayersIf(this::isImageLayerSelected);
 	}
 
 	/// Removes all but one layer.
@@ -232,7 +255,7 @@ final class ImageLayers extends ImageLayersBase
 		if (layers.size() > 1)
 		{
 			final var imageLayerRetained = layers.stream()
-				.filter(ImageLayer::isSelected).findAny().orElse(layers.getFirst());
+				.filter(this::isImageLayerSelected).findAny().orElse(layers.getFirst());
 			return _removeLayersIf(l -> l != imageLayerRetained);
 		}
 		else

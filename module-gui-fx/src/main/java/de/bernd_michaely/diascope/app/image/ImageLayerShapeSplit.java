@@ -17,10 +17,15 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static javafx.beans.binding.Bindings.when;
 
 /// Class to describe an ImageLayer selection shape for SPLIT mode.
 ///
@@ -28,36 +33,63 @@ import javafx.scene.shape.Shape;
 ///
 final class ImageLayerShapeSplit extends AbstractImageLayerShapeStroke
 {
-	private final Polygon polygon = new Polygon();
 	private final Rectangle rectangle = new Rectangle();
-	private final ReadOnlyObjectProperty<Mode> modeProperty;
+	private final Rectangle rectangleClip = new Rectangle();
+	private final Polygon polygon = new Polygon();
+	private final Polygon polygonClip = new Polygon();
+	private final ReadOnlyObjectWrapper<@Nullable Shape> clip;
 
-	private ImageLayerShapeSplit(ReadOnlyObjectProperty<Mode> modeProperty)
+	ImageLayerShapeSplit(EnumProperties<Mode> modeProperties)
 	{
 		super(false, null, null);
-		this.modeProperty = modeProperty;
+		this.clip = new ReadOnlyObjectWrapper<>();
+		clip.bind(when(modeProperties.isValueProperty(Mode.SPLIT))
+			.<@Nullable Shape>then(polygonClip).otherwise(
+			when(modeProperties.isValueProperty(Mode.GRID))
+				.<@Nullable Shape>then(rectangleClip).otherwise((@Nullable Shape) null)));
+		rectangleClip.xProperty().bind(rectangle.xProperty());
+		rectangleClip.yProperty().bind(rectangle.yProperty());
+		rectangleClip.widthProperty().bind(rectangle.widthProperty());
+		rectangleClip.heightProperty().bind(rectangle.heightProperty());
+		rectangleClip.arcWidthProperty().bind(rectangle.arcWidthProperty());
+		rectangleClip.arcHeightProperty().bind(rectangle.arcHeightProperty());
+		initShape(rectangle);
+		initShape(polygon);
 	}
 
-	static ImageLayerShapeSplit createInstance(ReadOnlyObjectProperty<Mode> modeProperty)
+	ReadOnlyObjectProperty<@Nullable Shape> clipProperty()
 	{
-		final var imageLayerShape = new ImageLayerShapeSplit(modeProperty);
-		imageLayerShape._postInit();
-		return imageLayerShape;
+		return clip.getReadOnlyProperty();
 	}
 
-	void setShapePoints(Double... points)
+	void bindViewportBounds(ViewportBoundsLocal viewportBounds)
+	{
+		rectangle.xProperty().bind(viewportBounds.xProperty());
+		rectangle.yProperty().bind(viewportBounds.yProperty());
+		rectangle.widthProperty().bind(viewportBounds.widthProperty());
+		rectangle.heightProperty().bind(viewportBounds.heightProperty());
+	}
+
+	void setPolygonPoints(Double... points)
 	{
 		polygon.getPoints().setAll(points);
+		polygonClip.getPoints().setAll(points);
 	}
 
+	@Deprecated
 	void clearPoints()
 	{
 		polygon.getPoints().clear();
+		polygonClip.getPoints().clear();
 	}
 
-	@Override
-	public Shape getShape()
+	Rectangle getRectangle()
 	{
-		return modeProperty.get().equals(Mode.SPLIT) ? polygon : rectangle;
+		return rectangle;
+	}
+
+	Polygon getPolygon()
+	{
+		return polygon;
 	}
 }

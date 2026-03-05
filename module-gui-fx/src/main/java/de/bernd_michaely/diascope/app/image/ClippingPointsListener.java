@@ -31,13 +31,16 @@ class ClippingPointsListener implements Runnable
 	private final Viewport viewport;
 	private final List<ImageLayer> unmodifiableLayers;
 	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
+	private final Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer;
 
 	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers,
-		Function<ImageLayer, SplitDivider> dividerByImageLayer)
+		Function<ImageLayer, SplitDivider> dividerByImageLayer,
+		Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer)
 	{
 		this.viewport = viewport;
 		this.unmodifiableLayers = unmodifiableLayers;
 		this.dividerByImageLayer = dividerByImageLayer;
+		this.shapeByImageLayer = shapeByImageLayer;
 	}
 
 	@Override
@@ -49,29 +52,29 @@ class ClippingPointsListener implements Runnable
 			for (int i = 0; i < n; i++)
 			{
 				final var layer = unmodifiableLayers.get(i);
+				final var layerNext = unmodifiableLayers.get((i + 1) % n);
 				final var divider = dividerByImageLayer.apply(layer);
-				final var corner = divider.getBorder();
-				final var layerNext = unmodifiableLayers.get(i == n - 1 ? 0 : i + 1);
 				final var dividerNext = dividerByImageLayer.apply(layerNext);
+				var corner = divider.getBorder();
 				final var cornerNext = dividerNext.getBorder();
 				final int numIntermediateCorners = numberOfCornerPointsBetween(
 					corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
 				final int numPoints = 2 * (3 + numIntermediateCorners);
 				final Double[] points = new Double[numPoints];
 				int index = 0;
-				points[index++] = viewport.getSplitCenter().xProperty().getValue();
-				points[index++] = viewport.getSplitCenter().yProperty().getValue();
+				final var splitCenter = viewport.getSplitCenter();
+				points[index++] = splitCenter.xProperty().getValue();
+				points[index++] = splitCenter.yProperty().getValue();
 				points[index++] = divider.getBorderIntersectionX();
 				points[index++] = divider.getBorderIntersectionY();
-				var c = corner;
-				for (int k = 0; k < numIntermediateCorners; k++, c = c.next())
+				for (int k = 0; k < numIntermediateCorners; k++, corner = corner.next())
 				{
-					points[index++] = switch (c)
+					points[index++] = switch (corner)
 					{
 						case TOP, RIGHT -> viewport.widthProperty().getValue();
 						case BOTTOM, LEFT -> ZERO;
 					};
-					points[index++] = switch (c)
+					points[index++] = switch (corner)
 					{
 						case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
 						case LEFT, TOP -> ZERO;
@@ -79,7 +82,7 @@ class ClippingPointsListener implements Runnable
 				}
 				points[index++] = dividerNext.getBorderIntersectionX();
 				points[index++] = dividerNext.getBorderIntersectionY();
-				layer.setShapePoints(points);
+				shapeByImageLayer.apply(layer).setPolygonPoints(points);
 			}
 		}
 	}

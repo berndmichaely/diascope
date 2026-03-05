@@ -16,9 +16,15 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
-import javafx.scene.shape.Shape;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.text.Font;
+
+import static java.lang.Math.max;
+import static java.lang.Math.round;
 
 /// Interface to describe an ImageLayer selection shape.
 ///
@@ -26,9 +32,11 @@ import javafx.scene.shape.Shape;
 ///
 sealed interface ImageLayerShape permits AbstractImageLayerShape
 {
+	List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
+	Paint COLOR_UNSELECTED = Color.ALICEBLUE;
+	double STROKE_WIDTH_UNSELECTED = max(1, round(Font.getDefault().getSize() / 15));
+
 	void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler);
 
 	BooleanProperty selectedProperty();
-
-	Shape getShape();
 }

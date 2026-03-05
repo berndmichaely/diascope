@@ -16,18 +16,14 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.Collection;
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.collections.ObservableList;
 import javafx.geometry.Orientation;
-import javafx.scene.Node;
 import javafx.scene.control.ScrollBar;
-
-import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
-import static javafx.collections.FXCollections.observableArrayList;
-import static javafx.collections.FXCollections.unmodifiableObservableList;
 
 /// Class to handle viewport scrollbars.
 ///
@@ -36,7 +32,7 @@ import static javafx.collections.FXCollections.unmodifiableObservableList;
 class ScrollBars
 {
 	private final ScrollBar scrollBarH, scrollBarV;
-	private final ObservableList<Node> scrollBars;
+	private final Collection<ScrollBar> scrollBars;
 	private final BooleanProperty enabled = new SimpleBooleanProperty();
 
 	ScrollBars(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
@@ -49,24 +45,16 @@ class ScrollBars
 		scrollBarV.setOrientation(Orientation.VERTICAL);
 		scrollBarH.visibleProperty().bind(enabled);
 		scrollBarV.visibleProperty().bind(enabled);
-		this.scrollBars = unmodifiableObservableList(observableArrayList(scrollBarH, scrollBarV));
-		// anchor:
-		final Runnable adjustWidth = () ->
-		{
-			final double w = viewportWidth.get() - scrollBarV.getWidth();
-			scrollBarH.setPrefWidth(w);
-			scrollBarV.relocate(w, 0);
-		};
-		final Runnable adjustHeight = () ->
-		{
-			final double h = viewportHeight.get() - scrollBarH.getHeight();
-			scrollBarV.setPrefHeight(h);
-			scrollBarH.relocate(0, h);
-		};
-		scrollBarH.heightProperty().addListener(onChange(adjustHeight));
-		scrollBarV.widthProperty().addListener(onChange(adjustWidth));
-		viewportWidth.addListener(onChange(adjustWidth));
-		viewportHeight.addListener(onChange(adjustHeight));
+		this.scrollBars = List.of(scrollBarH, scrollBarV);
+		// position:
+		final var widthBinding = viewportWidth.subtract(scrollBarV.widthProperty());
+		final var heightBinding = viewportHeight.subtract(scrollBarH.heightProperty());
+		scrollBarH.prefWidthProperty().bind(widthBinding);
+		scrollBarV.prefHeightProperty().bind(heightBinding);
+		scrollBarH.setLayoutX(0);
+		scrollBarV.setLayoutY(0);
+		scrollBarH.layoutYProperty().bind(heightBinding);
+		scrollBarV.layoutXProperty().bind(widthBinding);
 	}
 
 	private static void initScrollBar(ScrollBar scrollBar)
@@ -104,11 +92,11 @@ class ScrollBars
 		return scrollBarV.visibleProperty();
 	}
 
-	/// Returns an unmodifiable list of scrollbars.
+	/// Returns an unmodifiable collection of scrollbars.
 	///
-	/// @return an unmodifiable list of scrollbars
+	/// @return an unmodifiable collection of scrollbars
 	///
-	ObservableList<Node> getScrollBars()
+	Collection<ScrollBar> getScrollBars()
 	{
 		return scrollBars;
 	}

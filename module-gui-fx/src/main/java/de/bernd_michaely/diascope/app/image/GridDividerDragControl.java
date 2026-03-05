@@ -28,13 +28,13 @@ import static java.lang.Math.sqrt;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class DividerDragControl
+class GridDividerDragControl
 {
 	private final BinaryTree<GridDivider, ImageLayer> gridTree;
 	private final ReadOnlyDoubleProperty width;
 	private final ReadOnlyDoubleProperty height;
 
-	DividerDragControl(BinaryTree<GridDivider, ImageLayer> gridTree,
+	GridDividerDragControl(BinaryTree<GridDivider, ImageLayer> gridTree,
 		ReadOnlyDoubleProperty width, ReadOnlyDoubleProperty height)
 	{
 		this.gridTree = gridTree;
@@ -61,10 +61,10 @@ class DividerDragControl
 					final var viewportBoundsLocal = layer.getViewportBoundsLocal();
 					final DoubleBinding w_n = width.divide(cols);
 					final DoubleBinding h_n = height.divide(rows);
-					viewportBoundsLocal.getX().bind(w_n.multiply(col));
-					viewportBoundsLocal.getY().bind(h_n.multiply(row));
-					viewportBoundsLocal.getWidth().bind(w_n);
-					viewportBoundsLocal.getHeight().bind(h_n);
+					viewportBoundsLocal.xProperty().bind(w_n.multiply(col));
+					viewportBoundsLocal.yProperty().bind(h_n.multiply(row));
+					viewportBoundsLocal.widthProperty().bind(w_n);
+					viewportBoundsLocal.heightProperty().bind(h_n);
 					col++;
 					if (col >= cols)
 					{

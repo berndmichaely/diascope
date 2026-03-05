@@ -16,28 +16,27 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableObjectValue;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Class to describe an ImageLayer selection shape for SPOT BASE mode.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
+@Deprecated
 final class ImageLayerShapeSpotBase extends AbstractImageLayerShape
 {
 	private final ReadOnlyObjectWrapper<Paint> strokeSelectedPaint;
-	private final Rectangle shape;
 
 	private ImageLayerShapeSpotBase()
 	{
 		super(false, null, null);
 		this.strokeSelectedPaint = new ReadOnlyObjectWrapper<>(Color.TRANSPARENT);
-		this.shape = new Rectangle();
-		shape.setVisible(false);
 	}
 
 	static ImageLayerShapeSpotBase createInstance()
@@ -46,9 +45,9 @@ final class ImageLayerShapeSpotBase extends AbstractImageLayerShape
 	}
 
 	@Override
-	public Shape getShape()
+	ReadOnlyObjectProperty<@Nullable Shape> clipProperty()
 	{
-		return shape;
+		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
 	}
 
 	@Override

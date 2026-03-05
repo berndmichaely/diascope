@@ -23,6 +23,8 @@ import java.util.function.Consumer;
 import javafx.beans.binding.ObjectBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
@@ -34,6 +36,7 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Paint;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Ellipse;
+import javafx.scene.shape.Shape;
 import javafx.scene.text.Font;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -72,6 +75,8 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 	private static final double ANGLE_STEP = 45.0 / 3;
 	private static final double DELTA_CIRCLE = 0.25;
 	private final Ellipse ellipse;
+	private final Ellipse ellipseClip;
+	private final ReadOnlyObjectWrapper<@Nullable Shape> clip;
 	private final SpotCenter spotCenter;
 	private final Runnable reset;
 	private final DoubleProperty centerX = new SimpleDoubleProperty();
@@ -109,6 +114,8 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 		strokeSelectedPaint = when(circleMode)
 			.then((Paint) COLORS_SELECTED.getFirst()).otherwise(STROKE_GRADIENT);
 		this.ellipse = new Ellipse(SPOT_RADIUS_DEFAULT, SPOT_RADIUS_DEFAULT);
+		this.ellipseClip = new Ellipse(SPOT_RADIUS_DEFAULT, SPOT_RADIUS_DEFAULT);
+		this.clip = new ReadOnlyObjectWrapper<>(ellipseClip);
 		this.spotCenter = new SpotCenter(viewport.widthProperty(), viewport.heightProperty());
 		spotCenter.xProperty().bind(centerX);
 		spotCenter.yProperty().bind(centerY);
@@ -117,6 +124,11 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 		ellipse.centerYProperty().bind(centerY);
 		ellipse.setOnMouseEntered(_ -> mouseInShape.set(true));
 		ellipse.setOnMouseExited(_ -> mouseInShape.set(false));
+		ellipseClip.centerXProperty().bind(ellipse.centerXProperty());
+		ellipseClip.centerYProperty().bind(ellipse.centerYProperty());
+		ellipseClip.radiusXProperty().bind(ellipse.radiusXProperty());
+		ellipseClip.radiusYProperty().bind(ellipse.radiusYProperty());
+		ellipseClip.rotateProperty().bind(ellipse.rotateProperty());
 		spotCenter.getShape().setOnMouseEntered(_ -> mouseInSpot.set(true));
 		spotCenter.getShape().setOnMouseExited(_ -> mouseInSpot.set(false));
 		this.spotInitListener = onChange(newValue ->
@@ -149,6 +161,7 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 			ellipse.setRadiusY(SPOT_RADIUS_DEFAULT);
 			circleMode.set(true);
 		};
+		initShape(ellipse);
 	}
 
 	static ImageLayerShapeSpot createInstance(Viewport viewport)
@@ -161,7 +174,6 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 		adapterDragged.delegate = imageLayerShapeSpot::onMouseDragged;
 		imageLayerShapeSpot.spotCenter.enabledProperty().bind(
 			imageLayerShapeSpot.mouseDraggedProperty());
-		imageLayerShapeSpot._postInit();
 		return imageLayerShapeSpot;
 	}
 
@@ -256,6 +268,11 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 		}
 	}
 
+	ReadOnlyObjectProperty<@Nullable Shape> clipProperty()
+	{
+		return clip.getReadOnlyProperty();
+	}
+
 	void bindClipToShape(Ellipse clip)
 	{
 		clip.centerXProperty().bind(ellipse.centerXProperty());
@@ -287,7 +304,6 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 		reset.run();
 	}
 
-	@Override
 	public Ellipse getShape()
 	{
 		return ellipse;

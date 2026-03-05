@@ -16,14 +16,18 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
-import java.lang.System.Logger;
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.binding.ObjectBinding;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.ObservableList;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -34,106 +38,100 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 class ImageTransformsSwitch implements AutoCloseable
 {
-	private static final Logger logger = System.getLogger(ImageTransformsSwitch.class.getName());
-	private final ObservableList<ImageLayer> unmodifiableLayers;
-	private final ObservableList<ImageLayer> unmodifiableSpotLayers;
-	private final ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty;
-	private final ReadOnlyBooleanProperty gridModeProperty;
-	private final ImageTransformsImpl facadeImageTransforms;
-	private final ImageTransformsImpl globalImageTransforms;
-	private final Map<ImageLayer, ImageTransformsImpl> mapImageTransforms;
+	private final ImageTransformsImpl facadeImageTransforms = new ImageTransformsImpl();
+	private final ImageTransformsImpl globalImageTransforms = new ImageTransformsImpl();
+	private final Map<ImageLayer, ImageTransformsImpl> mapIntermediate = new IdentityHashMap<>();
+	private final ObservableBooleanValue local;
+	private final ObjectProperty<Optional<ImageTransformsImpl>> selectedImageTransforms;
 
-	ImageTransformsSwitch(
-		ObservableList<ImageLayer> unmodifiableLayers,
-		ObservableList<ImageLayer> unmodifiableSpotLayers,
+	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
 		ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty,
-		ReadOnlyBooleanProperty gridModeProperty)
+		ObservableList<ImageLayer> unmodifiableLayers,
+		ObservableList<ImageLayer> unmodifiableSpotLayers)
 	{
-		this.unmodifiableLayers = unmodifiableLayers;
-		this.unmodifiableSpotLayers = unmodifiableSpotLayers;
-		this.singleSelectedLayerProperty = singleSelectedLayerProperty;
-		this.gridModeProperty = gridModeProperty;
-		this.facadeImageTransforms = new ImageTransformsImpl();
-		this.globalImageTransforms = new ImageTransformsImpl();
-		this.mapImageTransforms = new IdentityHashMap<>();
-//		System.out.println("this.globalImageTransforms.bindControlProperties(this.facadeImageTransforms)");
-
-		unmodifiableSpotLayers.forEach(layer ->
-			layer.getImageTransforms().bindControlProperties(globalImageTransforms));
-
-		final Consumer<ImageLayer> bindLayer = imageLayer ->
+		this.local = modeProperties.isValueProperty(Mode.GRID);
+		this.selectedImageTransforms = new SimpleObjectProperty<>();
+		selectedImageTransforms.addListener(onChange(optionalImageTransforms ->
 		{
-		};
-		final Consumer<ImageLayer> unbindLayer = imageLayer ->
-		{
-		};
-		if (!unmodifiableLayers.isEmpty())
-		{
-			throw new IllegalStateException(
-				"%s : Layers not empty before addListener".formatted(getClass().getName()));
-		}
-		unmodifiableLayers.addListener(new ListChangeListenerBuilder<ImageLayer>()
-			.onAdd(change ->
+			mapIntermediate.forEach((layer, intermediateTransforms) ->
 			{
-				final boolean isGridMode = gridModeProperty.get();
-				change.getAddedSubList().forEach(layer ->
+				layer.getImageTransforms().unbindAllProperties();
+				intermediateTransforms.unbindAllProperties();
+			});
+			globalImageTransforms.unbindAllProperties();
+			facadeImageTransforms.unbindAllProperties();
+			optionalImageTransforms.ifPresent(selectedTransforms ->
+			{
+				if (selectedTransforms == globalImageTransforms)
 				{
-					final var imageTransforms = new ImageTransformsImpl();
-					layer.getImageTransforms().bindControlProperties(imageTransforms);
-					mapImageTransforms.put(layer, imageTransforms);
-					if (!isGridMode)
-					{
-						imageTransforms.bindControlProperties(globalImageTransforms);
-					}
-				});
-			})
-			.onRemove(change ->
-			{
-				change.getRemoved().forEach(layer ->
+					unmodifiableLayers.stream().map(ImageLayer::getImageTransforms)
+						.forEach(layerTransforms -> layerTransforms.bindAllProperties(globalImageTransforms));
+					globalImageTransforms.adjustControlProperties(facadeImageTransforms);
+					globalImageTransforms.bindAllProperties(facadeImageTransforms);
+				}
+				else
 				{
-					try (var  _ = mapImageTransforms.remove(layer))
+					final var selectedLayer = singleSelectedLayerProperty.get().get();
+					mapIntermediate.forEach((layer, intermediateTransforms) ->
 					{
-					}
-				});
-			})
-			.build());
-		singleSelectedLayerProperty.addListener(onChange(optionalImageLayer ->
-		{
-			if (optionalImageLayer.isPresent())
-			{
-				final var imageLayer = optionalImageLayer.get();
-			}
-			else
-			{
-			}
+						final var layerTransforms = layer.getImageTransforms();
+						layerTransforms.adjustControlProperties(intermediateTransforms);
+						layerTransforms.bindAllProperties(intermediateTransforms);
+						if (layer == selectedLayer)
+						{
+							intermediateTransforms.adjustControlProperties(facadeImageTransforms);
+							intermediateTransforms.bindAllProperties(facadeImageTransforms);
+						}
+					});
+				}
+			});
 		}));
-		final Consumer<Boolean> onGridModeChange = isGridMode ->
+		selectedImageTransforms.bind(new ObjectBinding<Optional<ImageTransformsImpl>>()
 		{
-			if (isGridMode)
 			{
-				globalImageTransforms.unbindControlProperties();
+				@SuppressWarnings("method.invocation")
+				final Runnable init = () -> super.bind(local, singleSelectedLayerProperty);
+				init.run();
 			}
-			else
+			private final Optional<ImageTransformsImpl> optionalGlobalImageTransforms =
+				Optional.of(globalImageTransforms);
+
+			@Override
+			protected Optional<ImageTransformsImpl> computeValue()
 			{
-				globalImageTransforms.adjustControlProperties(facadeImageTransforms);
-				globalImageTransforms.bindControlProperties(facadeImageTransforms);
+				return local.get() ? singleSelectedLayerProperty.get().map(mapIntermediate::get) :
+					optionalGlobalImageTransforms;
+			}
+		});
+		final Consumer<ImageLayer> addLayer = layer ->
+		{
+			mapIntermediate.put(layer, new ImageTransformsImpl());
+			if (!local.get())
+			{
+				layer.getImageTransforms().bindAllProperties(globalImageTransforms);
 			}
 		};
-		onGridModeChange.accept(gridModeProperty.get());
-		gridModeProperty.addListener(onChange(onGridModeChange));
+		final Consumer<ImageLayer> removeLayer = layer ->
+		{
+			try (layer)
+			{
+				final var removed = mapIntermediate.remove(layer);
+				if (removed != null)
+				{
+					removed.unbindAllProperties();
+				}
+			}
+		};
+		unmodifiableLayers.forEach(addLayer);
+		unmodifiableLayers.addListener(new ListChangeListenerBuilder<ImageLayer>()
+			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
+			.onRemove(change -> change.getRemoved().forEach(removeLayer))
+			.build());
 	}
 
 	ImageTransforms getFacadeImageTransforms()
 	{
 		return facadeImageTransforms;
-	}
-
-	private void bindLayer(ImageLayer imageLayer)
-	{
-	}
-
-	private void unbindLayer(ImageLayer imageLayer)
-	{
 	}
 
 	/// {@inheritDoc}
@@ -145,7 +143,12 @@ class ImageTransformsSwitch implements AutoCloseable
 	{
 		try (facadeImageTransforms; globalImageTransforms)
 		{
-			mapImageTransforms.clear();
+			mapIntermediate.forEach((layer, intermediateTransforms) ->
+			{
+				try (intermediateTransforms; layer)
+				{
+				}
+			});
 		}
 	}
 }

@@ -32,21 +32,22 @@ import static java.lang.System.Logger.Level.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class DividerRotationControl implements Consumer<SplitDivider>
+class SplitDividerRotationControl implements Consumer<SplitDivider>
 {
-	private static final Logger logger = System.getLogger(DividerRotationControl.class.getName());
+	private static final Logger logger = System.getLogger(SplitDividerRotationControl.class.getName());
 	private static final double DIVIDERS_START_ANGLE = 90.0;
 	private static final double DEFAULT_DIVIDER_MIN_GAP = 10.0;
 	private static final double C2 = 2 * C;
 	private final DoubleProperty dividerMinGapProperty;
-	private final List<ImageLayer> layers;
+	private final List<ImageLayer> unmodifiableLayers;
 	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
 	private @Nullable SplitDivider divider;
 	private @Nullable Runnable dividerDragCycle;
 
-	DividerRotationControl(List<ImageLayer> layers, Function<ImageLayer, SplitDivider> dividerByImageLayer)
+	SplitDividerRotationControl(List<ImageLayer> unmodifiableLayers,
+		Function<ImageLayer, SplitDivider> dividerByImageLayer)
 	{
-		this.layers = layers;
+		this.unmodifiableLayers = unmodifiableLayers;
 		this.dividerByImageLayer = dividerByImageLayer;
 		this.dividerMinGapProperty = new SimpleDoubleProperty(DEFAULT_DIVIDER_MIN_GAP);
 	}
@@ -64,14 +65,14 @@ class DividerRotationControl implements Consumer<SplitDivider>
 	/// Initializes all dividers to aequidistant angles.
 	void initializeDividerAngles()
 	{
-		final int numLayers = layers.size();
+		final int numLayers = unmodifiableLayers.size();
 		if (numLayers > 0)
 		{
 			final double da = C / numLayers;
 			double a = DIVIDERS_START_ANGLE;
 			for (int i = 0; i < numLayers; i++, a += da)
 			{
-				dividerByImageLayer.apply(layers.get(i)).setAngle(a);
+				dividerByImageLayer.apply(unmodifiableLayers.get(i)).setAngle(a);
 			}
 		}
 	}
@@ -83,15 +84,15 @@ class DividerRotationControl implements Consumer<SplitDivider>
 	///
 	void normalizeDividerAngles()
 	{
-		if (!layers.isEmpty())
+		if (!unmodifiableLayers.isEmpty())
 		{
 			final double minGap = getDividerMinGap();
-			final double angle = dividerByImageLayer.apply(layers.getFirst()).getAngle();
+			final double angle = dividerByImageLayer.apply(unmodifiableLayers.getFirst()).getAngle();
 			final double da = normalizeAngle(angle) - angle;
 			double anglePrev = 0.0;
-			for (int i = 0; i < layers.size(); i++)
+			for (int i = 0; i < unmodifiableLayers.size(); i++)
 			{
-				final var d = dividerByImageLayer.apply(layers.get(i));
+				final var d = dividerByImageLayer.apply(unmodifiableLayers.get(i));
 				double an = d.getAngle() + da;
 				final double aMin = anglePrev + minGap;
 				if (i > 0)
@@ -124,7 +125,7 @@ class DividerRotationControl implements Consumer<SplitDivider>
 				logger.log(WARNING, () -> "Last divider angle is %f".formatted(a));
 			}
 			logger.log(TRACE, () -> "normalized divider angles → %s".formatted(
-				layers.stream().map(dividerByImageLayer::apply).map(SplitDivider::getAngle).toList()));
+				unmodifiableLayers.stream().map(dividerByImageLayer::apply).map(SplitDivider::getAngle).toList()));
 		}
 	}
 
@@ -141,7 +142,7 @@ class DividerRotationControl implements Consumer<SplitDivider>
 		{
 			logger.log(TRACE, () -> ">>> start drag cycle");
 			this.divider = divider;
-			this.dividerDragCycle = new DividerDragCycle(layers, divider, getDividerMinGap(), dividerByImageLayer);
+			this.dividerDragCycle = new DividerDragCycle(unmodifiableLayers, divider, getDividerMinGap(), dividerByImageLayer);
 		}
 		if (mouseDragState.isDragRelease() || dividerChanged)
 		{

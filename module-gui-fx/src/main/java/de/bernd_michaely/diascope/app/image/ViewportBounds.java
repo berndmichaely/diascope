@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Bernd Michaely (info@bernd-michaely.de)
+ * Copyright (C) 2026 Bernd Michaely (info@bernd-michaely.de)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,31 +16,24 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import javafx.scene.shape.Rectangle;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 
-/// Class to describe an ImageLayer selection shape for GRID mode.
+/// Interface to describe global or image layer local viewport bounds.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeGrid extends AbstractImageLayerShapeStroke
+sealed interface ViewportBounds permits
+	ViewportBoundsGlobal, ViewportBoundsLocal, ViewportBoundsSwitch
 {
-	private final Rectangle rectangle = new Rectangle();
+	ReadOnlyDoubleProperty xProperty();
 
-	private ImageLayerShapeGrid()
-	{
-		super(false, null, null);
-	}
+	ReadOnlyDoubleProperty yProperty();
 
-	static ImageLayerShapeGrid createInstance()
-	{
-		final var imageLayerShape = new ImageLayerShapeGrid();
-		imageLayerShape._postInit();
-		return imageLayerShape;
-	}
+	ReadOnlyDoubleProperty widthProperty();
 
-	@Override
-	public Rectangle getShape()
-	{
-		return rectangle;
-	}
+	ReadOnlyDoubleProperty heightProperty();
+
+	ReadOnlyDoubleProperty scrollPosXProperty();
+
+	ReadOnlyDoubleProperty scrollPosYProperty();
 }

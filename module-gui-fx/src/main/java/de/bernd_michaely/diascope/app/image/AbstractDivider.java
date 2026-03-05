@@ -23,8 +23,8 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Font;
 
-import static de.bernd_michaely.diascope.app.image.AbstractImageLayerShape.COLOR_UNSELECTED;
-import static de.bernd_michaely.diascope.app.image.AbstractImageLayerShape.STROKE_WIDTH_UNSELECTED;
+import static de.bernd_michaely.diascope.app.image.ImageLayerShape.COLOR_UNSELECTED;
+import static de.bernd_michaely.diascope.app.image.ImageLayerShape.STROKE_WIDTH_UNSELECTED;
 import static java.lang.Math.ceil;
 
 /// Base class for image layer dividers.
@@ -40,15 +40,18 @@ abstract sealed class AbstractDivider permits SplitDivider, GridDivider
 
 	AbstractDivider()
 	{
-		final double sizeDefault = Font.getDefault().getSize();
 		lineShape.setStroke(COLOR_DEFAULT);
-		lineShape.setStrokeWidth(ceil(sizeDefault / 10) * STROKE_WIDTH_UNSELECTED);
+		lineShape.setStrokeWidth(ceil(Font.getDefault().getSize() / 10) * STROKE_WIDTH_UNSELECTED);
 		lineEvent.setStroke(Color.TRANSPARENT);
 		lineEvent.setStrokeWidth(lineShape.getStrokeWidth() * 4);
 		lineEvent.visibleProperty().bind(lineShape.visibleProperty());
 		lineEvent.setCursor(Cursor.HAND);
 		lineEvent.setOnMouseEntered(_ -> lineShape.setStroke(COLOR_HOVER));
 		lineEvent.setOnMouseExited(_ -> lineShape.setStroke(COLOR_DEFAULT));
+		lineEvent.startXProperty().bind(lineShape.startXProperty());
+		lineEvent.startYProperty().bind(lineShape.startYProperty());
+		lineEvent.endXProperty().bind(lineShape.endXProperty());
+		lineEvent.endYProperty().bind(lineShape.endYProperty());
 	}
 
 	Line getLineShape()

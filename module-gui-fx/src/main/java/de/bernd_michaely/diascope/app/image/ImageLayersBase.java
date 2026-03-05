@@ -39,7 +39,6 @@ abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLaye
 	final ReadOnlyDoubleWrapper layersMaxWidth, layersMaxHeight;
 	final SelectableList<ImageLayer> layers;
 	final ObservableList<ImageLayer> unmodifiableLayers;
-	final LayerSelectionModel layerSelectionModel;
 	private final ChangeListener<Number> onMaxWidthChange;
 	private final ChangeListener<Number> onMaxHeightChange;
 
@@ -49,7 +48,6 @@ abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLaye
 		this.layersMaxHeight = new ReadOnlyDoubleWrapper();
 		this.layers = SelectableListFactory.selectableList();
 		this.unmodifiableLayers = unmodifiableObservableList(layers);
-		this.layerSelectionModel = new LayerSelectionModel(layers);
 		// viewport.layersMax[Width|Height]Property bindings:
 		layersMaxWidth.bind(cumulatedOperations(unmodifiableLayers,
 			ImageLayer::layerWidthProperty, Operators::max_positive, 0.0));
@@ -76,6 +74,5 @@ abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLaye
 		layersMaxHeight.removeListener(onMaxHeightChange);
 		layersMaxWidth.unbind();
 		layersMaxHeight.unbind();
-		layers.clear();
 	}
 }

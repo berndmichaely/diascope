@@ -40,8 +40,8 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	private final DoubleProperty rotate;
 	private final BooleanProperty mirrorX, mirrorY;
 	// calculated properties:
-	private final ReadOnlyDoubleWrapper zoomFactorWrapper;
-	private @Nullable ReadOnlyDoubleWrapper otherZoomFactorWrapper;
+	private final ReadOnlyDoubleWrapper resultingZoomFactor;
+	private @Nullable ReadOnlyDoubleWrapper otherResultingZoomFactor;
 
 	ImageTransformsImpl()
 	{
@@ -50,7 +50,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 		this.rotate = new SimpleDoubleProperty(0.0);
 		this.mirrorX = new SimpleBooleanProperty();
 		this.mirrorY = new SimpleBooleanProperty();
-		this.zoomFactorWrapper = new ReadOnlyDoubleWrapper();
+		this.resultingZoomFactor = new ReadOnlyDoubleWrapper();
 	}
 
 	/// Bind this image control transforms to the other transforms.
@@ -100,13 +100,15 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	/// Bind this image control transforms to the other transforms.
 	///
 	/// @param other the other transforms
-	/// @see #unbindCalculatedProperties(ImageTransformsImpl)
+	/// @see #unbindCalculatedProperties()
 	///
 	void bindCalculatedProperties(ImageTransformsImpl other)
 	{
-		unbindCalculatedProperties();
-		this.otherZoomFactorWrapper = other.zoomFactorWrapperProperty();
-		this.otherZoomFactorWrapper.bind(this.zoomFactorWrapper);
+		if (otherResultingZoomFactor == null)
+		{
+			otherResultingZoomFactor = other.resultingZoomFactorProperty();
+			otherResultingZoomFactor.bind(this.resultingZoomFactor);
+		}
 	}
 
 	/// Unbind this transforms from the other transforms.
@@ -115,22 +117,44 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	///
 	void unbindCalculatedProperties()
 	{
-		if (otherZoomFactorWrapper != null)
+		if (otherResultingZoomFactor != null)
 		{
-			otherZoomFactorWrapper.unbind();
-			otherZoomFactorWrapper = null;
+			otherResultingZoomFactor.unbind();
+			otherResultingZoomFactor = null;
 		}
 	}
 
-	ReadOnlyDoubleWrapper zoomFactorWrapperProperty()
+	/// Binds all properties.
+	///
+	/// @see #bindControlProperties(ImageTransformsImpl)
+	/// @see #bindCalculatedProperties(ImageTransformsImpl)
+	///
+	void bindAllProperties(ImageTransformsImpl other)
 	{
-		return zoomFactorWrapper;
+		bindControlProperties(other);
+		bindCalculatedProperties(other);
+	}
+
+	/// Unbinds all properties.
+	///
+	/// @see #unbindControlProperties()
+	/// @see #unbindCalculatedProperties()
+	///
+	void unbindAllProperties()
+	{
+		unbindCalculatedProperties();
+		unbindControlProperties();
+	}
+
+	ReadOnlyDoubleWrapper resultingZoomFactorProperty()
+	{
+		return resultingZoomFactor;
 	}
 
 	@Override
 	public ReadOnlyDoubleProperty zoomFactorProperty()
 	{
-		return zoomFactorWrapperProperty().getReadOnlyProperty();
+		return resultingZoomFactorProperty().getReadOnlyProperty();
 	}
 
 	EnumProperties<ZoomMode> zoomModeProperties()
@@ -181,7 +205,6 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	@Override
 	public void close()
 	{
-		unbindCalculatedProperties();
-		unbindControlProperties();
+		unbindAllProperties();
 	}
 }

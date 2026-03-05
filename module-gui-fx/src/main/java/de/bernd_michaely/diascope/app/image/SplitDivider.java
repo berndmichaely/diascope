@@ -102,10 +102,6 @@ final class SplitDivider extends AbstractDivider implements AutoCloseable
 		lineShape.endXProperty().bind(borderIntersectionX);
 		lineShape.endYProperty().bind(borderIntersectionY);
 		final Line lineEvent = getLineEvent();
-		lineEvent.startXProperty().bind(lineShape.startXProperty());
-		lineEvent.startYProperty().bind(lineShape.startYProperty());
-		lineEvent.endXProperty().bind(lineShape.endXProperty());
-		lineEvent.endYProperty().bind(lineShape.endYProperty());
 		mouseDragState.setListenersFor(lineEvent);
 	}
 
