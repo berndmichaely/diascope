@@ -3,18 +3,6 @@ plugins {
 	id 'java-library'
 }
 
-apply plugin: 'org.checkerframework'
-
-final boolean deactivateCheckerFramework = false
-
-logger.lifecycle "   -> Checker Framework is ${deactivateCheckerFramework ? 'DEACTIVATED!' : 'active.'}"
-
-checkerFramework {
-	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
-	skipCheckerFramework = deactivateCheckerFramework
-	excludeTests = true
-}
-
 testing {
 	suites {
 		test {

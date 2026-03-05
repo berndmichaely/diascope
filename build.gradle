@@ -3,7 +3,7 @@ plugins {
 	id 'application'
 	id 'jacoco'
 	id 'org.openjfx.javafxplugin' version '0.1.0'
-	id 'org.checkerframework' version '0.6.61' apply false
+	id 'org.checkerframework' version '1.0.2' apply false
 	
 	// auto create automatic modules:
 	//id 'extra-java-module-info' apply false
@@ -12,7 +12,6 @@ plugins {
 }
 
 //apply plugin: 'extra-java-module-info'
-apply plugin: 'org.checkerframework'
 
 wrapper {
 	gradleVersion = '9.2.1'
@@ -21,8 +20,6 @@ wrapper {
 final def javaLangVersion = JavaLanguageVersion.of(25)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
-
-final def versionCheckerFramework = '3.52.0'
 
 java {
 	toolchain {
@@ -119,6 +116,14 @@ allprojects {
 	group = 'de.bernd_michaely'
 	version = semVer
 	
+	apply plugin: 'org.checkerframework'
+
+	checkerFramework {
+		version = libs.checker.get().version
+		checkers = [ 'org.checkerframework.checker.nullness.NullnessChecker' ]
+		excludeTests = true
+	}
+
 	ext.versionJUnit = '6.0.1'
 	// ext.versionJUnit = '5.14.1'
 	// ext.versionJUnitVintage = '4.13.2'
@@ -189,7 +194,6 @@ dependencies {
 	implementation project (':lib-common-cli-parser')
 	implementation project (':lib-common-semver')
 	implementation project (':module-gui-fx')
-	implementation "org.checkerframework:checker-qual:${versionCheckerFramework}"
 	//implementation 'com.github.weisj:jsvg:1.5.0'
 	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
 	//implementation 'xml-apis:xml-apis:1.4.01'
@@ -197,11 +201,6 @@ dependencies {
 	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
 	
-checkerFramework {
-	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
-	excludeTests = true
-}
-
 task writeSemVer {
 	description = "Write application semantic version to resource file »${fileSemVer}«"
 	group = processResources.group
