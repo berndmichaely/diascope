@@ -96,11 +96,14 @@ public class ImageTransformsSwitchTest
 		return !isLocal();
 	}
 
-	private void setLocal(boolean value)
+	private void setLocal(boolean local)
 	{
-		modeProperties.setRawValue(value ? Mode.GRID : Mode.SPLIT);
+		modeProperties.setRawValue(local ? Mode.GRID : Mode.SPLIT);
 	}
 
+	/// Finds a description of the Transformable associated with the given
+	/// ImageTransforms.
+	///
 	private String findTransformable(ImageTransforms imageTransforms)
 	{
 		return layers.stream()
@@ -134,9 +137,9 @@ public class ImageTransformsSwitchTest
 	}
 
 	@Test
-	public void test_ImageTransformsSwitch()
+	public void test_mode_switch()
 	{
-		System.out.println("test_ImageTransformsSwitch");
+		System.out.println("test_ImageTransformsSwitch_mode_switch");
 		// check initial state
 		assertNotNull(its._getFacadeImageTransforms());
 		assertNotNull(its._getGlobalImageTransforms());
@@ -178,11 +181,77 @@ public class ImageTransformsSwitchTest
 		actual = optional.get();
 		assertEquals(expected, actual,
 			"expected »%s« ←→ actual »%s«".formatted(tc, findTransformable(actual)));
-		// switch globallocal
+		// switch to global
 		setLocal(false);
 		assertFalse(isLocal());
 		optional = its._getSelectedImageTransforms().get();
 		assertTrue(optional.isPresent());
 		assertEquals(its._getGlobalImageTransforms(), optional.get());
+	}
+
+	@Test
+	public void test_facade_properties()
+	{
+		System.out.println("test_ImageTransformsSwitch_facade_properties");
+		final ImageTransforms facade = its.getFacadeImageTransforms();
+		assertTrue(isGlobal());
+		// add layer
+		final Transformable_ ta = new Transformable_("A");
+		final Transformable_ tb = new Transformable_("B");
+		final Transformable_ tc = new Transformable_("C");
+		layers.addAll(ta, tb, tc);
+		final EnumProperties<ZoomMode> zmp_a = ta.getImageTransforms().zoomModeProperties();
+		final EnumProperties<ZoomMode> zmp_b = tb.getImageTransforms().zoomModeProperties();
+		final EnumProperties<ZoomMode> zmp_c = tc.getImageTransforms().zoomModeProperties();
+		zmp_a.isValue(ZoomMode.getDefault());
+		zmp_b.isValue(ZoomMode.getDefault());
+		zmp_c.isValue(ZoomMode.getDefault());
+		// set global mode
+		facade.zoomModeRawValueProperty().set(ZoomMode.FIT);
+		zmp_a.isValue(ZoomMode.FIT);
+		zmp_b.isValue(ZoomMode.FIT);
+		zmp_c.isValue(ZoomMode.FIT);
+		setLocal(true);
+		assertTrue(isLocal());
+		zmp_a.isValue(ZoomMode.getDefault());
+		zmp_b.isValue(ZoomMode.getDefault());
+		zmp_c.isValue(ZoomMode.getDefault());
+		// no single selection
+		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		facade.zoomModeRawValueProperty().set(ZoomMode.ORIGINAL);
+		zmp_a.isValue(ZoomMode.getDefault());
+		zmp_b.isValue(ZoomMode.getDefault());
+		zmp_c.isValue(ZoomMode.getDefault());
+		// select layer b
+		singleSelectedLayerProperty.set(Optional.of(tb));
+		facade.zoomModeRawValueProperty().set(ZoomMode.ORIGINAL);
+		zmp_a.isValue(ZoomMode.getDefault());
+		zmp_b.isValue(ZoomMode.ORIGINAL);
+		zmp_c.isValue(ZoomMode.getDefault());
+		setLocal(false);
+		assertTrue(isGlobal());
+		zmp_a.isValue(ZoomMode.FIT);
+		zmp_b.isValue(ZoomMode.FIT);
+		zmp_c.isValue(ZoomMode.FIT);
+		setLocal(true);
+		assertTrue(isLocal());
+		zmp_a.isValue(ZoomMode.getDefault());
+		zmp_b.isValue(ZoomMode.ORIGINAL);
+		zmp_c.isValue(ZoomMode.getDefault());
+		setLocal(false);
+		assertTrue(isGlobal());
+		zmp_a.isValue(ZoomMode.FIT);
+		zmp_b.isValue(ZoomMode.FIT);
+		zmp_c.isValue(ZoomMode.FIT);
+		// set global mode
+		facade.zoomModeRawValueProperty().set(ZoomMode.FILL);
+		zmp_a.isValue(ZoomMode.FILL);
+		zmp_b.isValue(ZoomMode.FILL);
+		zmp_c.isValue(ZoomMode.FILL);
+		setLocal(true);
+		assertTrue(isLocal());
+		zmp_a.isValue(ZoomMode.getDefault());
+		zmp_b.isValue(ZoomMode.ORIGINAL);
+		zmp_c.isValue(ZoomMode.getDefault());
 	}
 }
