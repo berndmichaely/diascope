@@ -213,22 +213,14 @@ public class ImageTransformsSwitchTest
 	private void _runImageTransformsTestFacade(PropertiesConsumer propertiesConsumer)
 	{
 		final ImageTransforms facade = its._getFacadeImageTransforms();
-		final ObjectProperty<ZoomMode> zoomModeRawValueProperty = facade.zoomModeRawValueProperty();
-		final DoubleProperty zoomFixedProperty = facade.zoomFixedProperty();
-		final DoubleProperty rotateProperty = facade.rotateProperty();
-		final BooleanProperty mirrorXProperty = facade.mirrorXProperty();
-		final BooleanProperty mirrorYProperty = facade.mirrorYProperty();
-		final ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty =
-			facade.zoomModeOrDefaultProperty();
-		final ReadOnlyDoubleProperty zoomFactorProperty = facade.zoomFactorProperty();
 		propertiesConsumer.accept(
-			zoomModeRawValueProperty,
-			zoomFixedProperty,
-			rotateProperty,
-			mirrorXProperty,
-			mirrorYProperty,
-			zoomModeOrDefaultProperty,
-			zoomFactorProperty);
+			facade.zoomModeRawValueProperty(),
+			facade.zoomFixedProperty(),
+			facade.rotateProperty(),
+			facade.mirrorXProperty(),
+			facade.mirrorYProperty(),
+			facade.zoomModeOrDefaultProperty(),
+			facade.zoomFactorProperty());
 	}
 
 	private void _runImageTransformsTestRemote(PropertiesConsumer propertiesConsumer)
