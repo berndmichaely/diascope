@@ -72,6 +72,9 @@ class ActionsImageControl implements AutoCloseable
 		final String strTooltipModeGrid = """
 			Set multi image GRID mode.
 
+      GRID mode is currently UNDER CONSTRUCTION and experimental!
+      Don't expect it to be feature complete or work properly yet!
+
 			To enable SPOT mode, open at least 2 layers,
 			single-select the base layer and then
 			<Ctrl>-select the spot layer.""";

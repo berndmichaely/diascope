@@ -2,7 +2,7 @@
 
 ![version](doc/shields/version.svg "version")
 
-Diascope is an image viewer application for desktop. *Core features* include:
+**Diascope** is an advanced image viewing and comparison application for desktop. *Core features* include:
 
   * a multi layer image mode to overlay two or more images for comparison – split dividers can be freely moved and rotated
   * a multi layer image mode to overlay a second image over a base image in a spot – the spot is freely movable, resizable and adjustable in shape.
@@ -31,9 +31,9 @@ to run the application immediately or
 
     ./gradlew installDist
 
-to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 25 (it is tested with Eclipse Adoptium JDK on Linux).
+to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 25.
 
-Since this version uses preview features of JavaFX25, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
+Since this version uses preview features of JavaFX 26, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
     export JAVA_OPTS='-Djavafx.enablePreview=true -Djavafx.suppressPreviewWarning=true --enable-native-access=javafx.graphics'
 
@@ -120,3 +120,7 @@ When in *ellipse/band mode*:
   * Ctrl-dragging changes the *length* of the ellipse/band and allows its *rotation*.
   * Shift+Ctrl-dragging will *rotate only* the ellipse/band, and will leave the shape unmodified.
   * Alt+Ctrl-dragging will rotate in discrete steps.
+
+### Grid Mode
+
+This mode is currently UNDER CONSTRUCTION! Don't expect it to be feature complete or work properly yet!
