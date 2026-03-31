@@ -83,14 +83,16 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// @return the inner node, if found, or {@code null}
 	///
 	public @Nullable
-	BinaryNode findInnerNode(I value)
+	BinaryNode<I> findInnerNode(I value)
 	{
 		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
 		{
-			if (iter.next() instanceof BinaryNode innerNode && Objects.equals(innerNode.getValue(), value))
+			if (iter.next() instanceof BinaryNode<?> innerNode && Objects.equals(innerNode.getValue(), value))
 			{
-				return innerNode;
+				@SuppressWarnings("unchecked")
+				final var binaryNode = (BinaryNode<I>) innerNode;
+				return binaryNode;
 			}
 		}
 		return null;
@@ -103,13 +105,15 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	///         if found, or {@code null}
 	///
 	public @Nullable
-	LeafNode findLeafNode(L value)
+	LeafNode<L> findLeafNode(L value)
 	{
 		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
 		{
-			if (iter.next() instanceof LeafNode leafNode && Objects.equals(leafNode.getValue(), value))
+			if (iter.next() instanceof LeafNode<?> node && Objects.equals(node.getValue(), value))
 			{
+				@SuppressWarnings("unchecked")
+				final var leafNode = (LeafNode<L>) node;
 				return leafNode;
 			}
 		}
@@ -251,7 +255,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// @return the first LeafNode in iteration order with the given value found or {@code null}
 	///
 	public @Nullable
-	LeafNode removeItem(L item)
+	LeafNode<L> removeItem(L item)
 	{
 		final var leafNode = findLeafNode(item);
 		if (leafNode != null)
@@ -268,7 +272,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	///
 	/// @param leafNode the given leaf node
 	///
-	public void removeNode(LeafNode leafNode)
+	public void removeNode(LeafNode<L> leafNode)
 	{
 		final var pn = leafNode.getParentNode();
 		if (pn != null)

@@ -50,13 +50,9 @@ final class ImageLayers extends ImageLayersBase
 		final Map<ImageLayer, ImageLayerShapeSplit> imageLayerShapes = new IdentityHashMap<>();
 		final Function<ImageLayer, @Nullable GridDivider> gridDividerByImageLayer = imageLayer ->
 		{
-			GridDivider result = null;
 			final var leafNode = gridTree.findLeafNode(imageLayer);
-			if (leafNode != null && leafNode.getParentNode() instanceof BinaryNode binaryNode)
-			{
-				result = (GridDivider) binaryNode.getValue();
-			}
-			return result;
+			return (leafNode != null && leafNode.getParentNode() instanceof BinaryNode<?> binaryNode) ?
+				(GridDivider) binaryNode.getValue() : null;
 		};
 		final Function<ImageLayer, SplitDivider> splitDividerByImageLayer = imageLayer ->
 		{

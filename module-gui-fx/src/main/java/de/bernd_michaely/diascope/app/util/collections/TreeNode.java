@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.util.collections;
 
 import java.lang.ref.WeakReference;
 import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Base class for tree nodes.
@@ -66,6 +67,7 @@ public abstract sealed class TreeNode permits InnerNode, LeafNode
 	///
 	/// @return true, iff this node is the root node
 	///
+	@EnsuresNonNullIf(expression = "this.parentNode", result = false)
 	public boolean isRootNode()
 	{
 		return parentNode == null;
