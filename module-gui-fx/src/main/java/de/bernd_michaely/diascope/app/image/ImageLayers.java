@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
+import de.bernd_michaely.diascope.app.util.collections.BinaryNode;
 import de.bernd_michaely.diascope.app.util.collections.BinaryTree;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -51,9 +52,9 @@ final class ImageLayers extends ImageLayersBase
 		{
 			GridDivider result = null;
 			final var leafNode = gridTree.findLeafNode(imageLayer);
-			if (leafNode != null && leafNode.getValue() instanceof GridDivider gridDivider)
+			if (leafNode != null && leafNode.getParentNode() instanceof BinaryNode binaryNode)
 			{
-				result = gridDivider;
+				result = (GridDivider) binaryNode.getValue();
 			}
 			return result;
 		};
@@ -123,8 +124,8 @@ final class ImageLayers extends ImageLayersBase
 						else
 						{
 							gridDivider = new GridDivider();
-							final ImageLayer layerPrev = list.get(i > 0 ? i - 1 : 0);
-							if (!gridTree.insertItemAt(imageLayer, gridDivider, layerPrev, i > 0))
+							final ImageLayer insertionPoint = list.get(i > 0 ? i - 1 : 0);
+							if (!gridTree.insertItemAt(imageLayer, gridDivider, insertionPoint, i > 0))
 							{
 								throw new IllegalStateException(getClass().getName() +
 									" : grid insertion point not found");
@@ -160,8 +161,9 @@ final class ImageLayers extends ImageLayersBase
 				for (var imageLayer : change.getRemoved())
 				{
 					final var leafNode = gridTree.findLeafNode(imageLayer);
-					if (leafNode != null && leafNode.getValue() instanceof GridDivider gridDivider)
+					if (leafNode != null)
 					{
+						final var gridDivider = gridDividerByImageLayer.apply(imageLayer);
 						try (gridDivider)
 						{
 							gridTree.removeNode(leafNode);
@@ -169,11 +171,8 @@ final class ImageLayers extends ImageLayersBase
 					}
 					else
 					{
-						if (change.getList().size() > 1)
-						{
-							throw new IllegalStateException(getClass().getName() +
-								" : on remove layer : Invalid GridDivider");
-						}
+						throw new IllegalStateException(getClass().getName() +
+							" : on remove layer : Invalid GridDivider");
 					}
 					final var splitDivider = splitDividers.remove(imageLayer);
 					try (imageLayer; splitDivider)
