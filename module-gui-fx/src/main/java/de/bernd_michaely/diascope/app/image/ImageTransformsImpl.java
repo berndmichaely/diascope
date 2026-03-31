@@ -25,6 +25,7 @@ import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import org.checkerframework.checker.nullness.qual.EnsuresNonNullIf;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Implementation of the `ImageTransforms` interface providing
@@ -90,37 +91,53 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	///
 	void unbindControlProperties()
 	{
-		this.zoomModeProperties.rawValueProperty().unbind();
-		this.zoomFixed.unbind();
-		this.rotate.unbind();
-		this.mirrorX.unbind();
 		this.mirrorY.unbind();
+		this.mirrorX.unbind();
+		this.rotate.unbind();
+		this.zoomFixed.unbind();
+		this.zoomModeProperties.rawValueProperty().unbind();
 	}
 
-	/// Bind this image control transforms to the other transforms.
+	@EnsuresNonNullIf(expression = "this.otherResultingZoomFactor", result = true)
+	boolean isCalculatedPropertiesBound()
+	{
+		return otherResultingZoomFactor != null;
+	}
+
+	/// Bind the other calculated transforms to this transforms.
 	///
 	/// @param other the other transforms
 	/// @see #unbindCalculatedProperties()
 	///
 	void bindCalculatedProperties(ImageTransformsImpl other)
 	{
-		if (otherResultingZoomFactor == null)
+		if (!isCalculatedPropertiesBound())
 		{
 			otherResultingZoomFactor = other.resultingZoomFactorProperty();
 			otherResultingZoomFactor.bind(this.resultingZoomFactor);
 		}
+		else
+		{
+			throw new IllegalStateException(getClass().getName() +
+				"::bindCalculatedProperties : CalculatedProperties are bound already");
+		}
 	}
 
-	/// Unbind this transforms from the other transforms.
+	/// Unbind the calculated transforms.
 	///
 	/// @see #bindCalculatedProperties(ImageTransformsImpl)
 	///
 	void unbindCalculatedProperties()
 	{
-		if (otherResultingZoomFactor != null)
+		if (isCalculatedPropertiesBound())
 		{
 			otherResultingZoomFactor.unbind();
 			otherResultingZoomFactor = null;
+		}
+		else
+		{
+			throw new IllegalStateException(getClass().getName() +
+				"::unbindCalculatedProperties : CalculatedProperties are not bound");
 		}
 	}
 
@@ -142,7 +159,10 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	///
 	void unbindAllProperties()
 	{
-		unbindCalculatedProperties();
+		if (isCalculatedPropertiesBound())
+		{
+			unbindCalculatedProperties();
+		}
 		unbindControlProperties();
 	}
 

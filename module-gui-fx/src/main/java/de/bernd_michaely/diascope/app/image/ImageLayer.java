@@ -50,7 +50,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayer implements AutoCloseable
+final class ImageLayer implements Transformable
 {
 	private static final Logger logger = System.getLogger(ImageLayer.class.getName());
 	private final Pane paneLayer = new Pane();
@@ -168,7 +168,8 @@ final class ImageLayer implements AutoCloseable
 		}));
 	}
 
-	ImageTransformsImpl getImageTransforms()
+	@Override
+	public ImageTransformsImpl getImageTransforms()
 	{
 		return imageTransforms;
 	}

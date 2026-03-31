@@ -44,7 +44,7 @@ public class MultiImageView implements AutoCloseable
 {
 	private static final Logger logger = System.getLogger(MultiImageView.class.getName());
 	private final Viewport viewport;
-	private final ImageTransformsSwitch imageTransformsSwitch;
+	private final ImageTransformsSwitch<ImageLayer> imageTransformsSwitch;
 	private final ImageLayers imageLayers;
 	private final ImageLayersSpot spotImageLayers;
 	private final BooleanProperty scrollBarsEnabled;
@@ -76,7 +76,7 @@ public class MultiImageView implements AutoCloseable
 		final var layerSelectionModel = imageLayers.layerSelectionModel;
 		viewport.setLayerSelectionModel(layerSelectionModel);
 		this.spotImageLayers = new ImageLayersSpot(viewport);
-		this.imageTransformsSwitch = new ImageTransformsSwitch(
+		this.imageTransformsSwitch = new ImageTransformsSwitch<>(
 			viewport.modeProperties(), layerSelectionModel.singleSelectedLayerProperty(),
 			imageLayers.unmodifiableLayers, spotImageLayers.unmodifiableLayers);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(

@@ -33,25 +33,28 @@ import javafx.collections.ObservableList;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 
 /// Class for connecting facade with image layer ImageTransforms.
+/// `_get*()` methods are for use by unit tests only.
+///
+/// @param <T> generic Transformable type, e.g. ImageLayer
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class ImageTransformsSwitch implements AutoCloseable
+class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 {
 	private final ImageTransformsImpl facadeImageTransforms = new ImageTransformsImpl();
 	private final ImageTransformsImpl globalImageTransforms = new ImageTransformsImpl();
-	private final Map<ImageLayer, ImageTransformsImpl> mapIntermediate = new IdentityHashMap<>();
+	private final Map<T, ImageTransformsImpl> mapIntermediate = new IdentityHashMap<>();
 	private final ObservableBooleanValue local;
 	private final ObjectProperty<Optional<ImageTransformsImpl>> selectedImageTransforms;
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
-		ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty,
-		ObservableList<ImageLayer> unmodifiableLayers,
-		ObservableList<ImageLayer> unmodifiableSpotLayers)
+		ReadOnlyObjectProperty<Optional<T>> singleSelectedLayerProperty,
+		ObservableList<T> unmodifiableLayers,
+		ObservableList<T> unmodifiableSpotLayers)
 	{
 		this.local = modeProperties.isValueProperty(Mode.GRID);
-		this.selectedImageTransforms = new SimpleObjectProperty<>();
-		selectedImageTransforms.addListener(onChange(optionalImageTransforms ->
+		this.selectedImageTransforms = new SimpleObjectProperty<>(Optional.empty());
+		final Runnable unbindAllTransforms = () ->
 		{
 			mapIntermediate.forEach((layer, intermediateTransforms) ->
 			{
@@ -60,12 +63,16 @@ class ImageTransformsSwitch implements AutoCloseable
 			});
 			globalImageTransforms.unbindAllProperties();
 			facadeImageTransforms.unbindAllProperties();
+		};
+		selectedImageTransforms.addListener(onChange(optionalImageTransforms ->
+		{
+			unbindAllTransforms.run();
 			optionalImageTransforms.ifPresent(selectedTransforms ->
 			{
 				if (selectedTransforms == globalImageTransforms)
 				{
-					unmodifiableLayers.stream().map(ImageLayer::getImageTransforms)
-						.forEach(layerTransforms -> layerTransforms.bindAllProperties(globalImageTransforms));
+					unmodifiableLayers.forEach(layer ->
+						layer.getImageTransforms().bindAllProperties(globalImageTransforms));
 					globalImageTransforms.adjustControlProperties(facadeImageTransforms);
 					globalImageTransforms.bindAllProperties(facadeImageTransforms);
 				}
@@ -75,10 +82,10 @@ class ImageTransformsSwitch implements AutoCloseable
 					mapIntermediate.forEach((layer, intermediateTransforms) ->
 					{
 						final var layerTransforms = layer.getImageTransforms();
-						layerTransforms.adjustControlProperties(intermediateTransforms);
-						layerTransforms.bindAllProperties(intermediateTransforms);
+//						layerTransforms.bindAllProperties(intermediateTransforms);
 						if (layer == selectedLayer)
 						{
+							System.out.println("layer == selectedLayer");
 							intermediateTransforms.adjustControlProperties(facadeImageTransforms);
 							intermediateTransforms.bindAllProperties(facadeImageTransforms);
 						}
@@ -103,7 +110,7 @@ class ImageTransformsSwitch implements AutoCloseable
 					optionalGlobalImageTransforms;
 			}
 		});
-		final Consumer<ImageLayer> addLayer = layer ->
+		final Consumer<T> addLayer = layer ->
 		{
 			mapIntermediate.put(layer, new ImageTransformsImpl());
 			if (!local.get())
@@ -111,7 +118,7 @@ class ImageTransformsSwitch implements AutoCloseable
 				layer.getImageTransforms().bindAllProperties(globalImageTransforms);
 			}
 		};
-		final Consumer<ImageLayer> removeLayer = layer ->
+		final Consumer<T> removeLayer = layer ->
 		{
 			try (layer)
 			{
@@ -120,18 +127,55 @@ class ImageTransformsSwitch implements AutoCloseable
 				{
 					removed.unbindAllProperties();
 				}
+				else
+				{
+					throw new IllegalStateException(
+						getClass().getName() + ": Removing invalid layer");
+				}
 			}
 		};
 		unmodifiableLayers.forEach(addLayer);
-		unmodifiableLayers.addListener(new ListChangeListenerBuilder<ImageLayer>()
+		unmodifiableLayers.addListener(new ListChangeListenerBuilder<T>()
 			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
 			.onRemove(change -> change.getRemoved().forEach(removeLayer))
 			.build());
+		unmodifiableSpotLayers.stream()
+			.map(Transformable::getImageTransforms)
+			.forEach(t -> t.bindAllProperties(globalImageTransforms));
 	}
 
+	/// Returns the ImageTransforms of the facade.
+	///
+	/// @return the ImageTransforms of the facade
+	///
 	ImageTransforms getFacadeImageTransforms()
 	{
 		return facadeImageTransforms;
+	}
+
+	ImageTransformsImpl _getFacadeImageTransforms()
+	{
+		return facadeImageTransforms;
+	}
+
+	ImageTransformsImpl _getGlobalImageTransforms()
+	{
+		return globalImageTransforms;
+	}
+
+	ObservableBooleanValue _getLocal()
+	{
+		return local;
+	}
+
+	Map<T, ImageTransformsImpl> _getMapIntermediate()
+	{
+		return mapIntermediate;
+	}
+
+	ObjectProperty<Optional<ImageTransformsImpl>> _getSelectedImageTransforms()
+	{
+		return selectedImageTransforms;
 	}
 
 	/// {@inheritDoc}

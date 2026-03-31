@@ -68,7 +68,9 @@ class ViewportComponents
 			case SINGLE ->
 				List.of(imageLayers, scrollBarNodes);
 			case GRID ->
-				List.of(imageLayers, gridShapeLines, gridShapes, gridEventLines);
+				// TODO
+				// List.of(imageLayers, gridShapeLines, gridShapes, gridEventLines);
+				List.of(imageLayers, gridShapes);
 			case SPLIT ->
 				List.of(
 				imageLayers, splitShapeLines, splitShapes, splitEventLines,
