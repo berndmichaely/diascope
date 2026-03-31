@@ -186,16 +186,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		}
 		else
 		{
-			// find last leaf:
-			LeafNode lastLeaf = null;
-			final Iterator<TreeNode> iterator = iterator();
-			while (iterator.hasNext())
-			{
-				if (iterator.next() instanceof LeafNode nextLeaf)
-				{
-					lastLeaf = nextLeaf;
-				}
-			}
+			final var lastLeaf = getLast();
 			if (lastLeaf != null)
 			{
 				insertLeafNode(item, value, lastLeaf, true);
@@ -206,6 +197,19 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 					"::append : no last leaf found".formatted(getClass().getName()));
 			}
 		}
+	}
+
+	private @Nullable
+	LeafNode<L> getLast()
+	{
+		TreeNode r = getRoot();
+		while (r instanceof InnerNode innerNode)
+		{
+			r = innerNode.getLastSubNode();
+		}
+		@SuppressWarnings("unchecked")
+		final LeafNode<L> lastLeaf = (LeafNode<L>) r;
+		return lastLeaf;
 	}
 
 	/// Inserts a new leaf node before or after the leaf node given by the insertion point.
