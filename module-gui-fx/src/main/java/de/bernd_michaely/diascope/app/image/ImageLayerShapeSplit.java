@@ -70,18 +70,14 @@ final class ImageLayerShapeSplit extends AbstractImageLayerShapeStroke
 		rectangle.heightProperty().bind(viewportBounds.heightProperty());
 	}
 
-	void setPolygonPoints(Double... points)
-	{
-		polygon.getPoints().setAll(points);
-		polygonClip.getPoints().setAll(points);
-	}
-
 	void setPolygonPoints(ClippingPointsListener.Points points)
 	{
 		//polygon.getPoints().setAll(points);
 		//polygonClip.getPoints().setAll(points);
-		// … doesn't seem to work …
-		setPolygonPoints(points.toArray());
+		// … this doesn't seem to work (JavaFX 25.0.2) → workaround:
+		final var pointsArray = points.toArray(Double[]::new);
+		polygon.getPoints().setAll(pointsArray);
+		polygonClip.getPoints().setAll(pointsArray);
 	}
 
 	Rectangle getRectangle()

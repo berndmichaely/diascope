@@ -36,14 +36,19 @@ class ClippingPointsListener implements Runnable
 	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
 	private final Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer;
 
+	/// Class to handle the coordinates of polygon points.
+	/// The implementation should try to avoid repeated heap allocations
+	/// (in particular during frequent mouse drag events).
+	///
 	static class Points extends AbstractCollection<Double>
 	{
 		private static final int MAX_NUM_POINTS = 3 + Border.values().length;
 		private final Double[] coordinates = new Double[2 * MAX_NUM_POINTS];
-		private int numPoints;
-		private int numCoordinates;
-		private int index;
+		private int currentSize;
 
+		/// Coordinates iterator implementation.
+		/// One single instance is resettable and can be reused.
+		///
 		private class PointsIterator implements Iterator<Double>
 		{
 			private int counter;
@@ -51,7 +56,7 @@ class ClippingPointsListener implements Runnable
 			@Override
 			public boolean hasNext()
 			{
-				return counter < numCoordinates;
+				return counter < currentSize;
 			}
 
 			@Override
@@ -83,28 +88,19 @@ class ClippingPointsListener implements Runnable
 		@Override
 		public int size()
 		{
-			return numPoints;
+			return currentSize;
 		}
 
-		private void setNumPoints(int numPoints)
+		private void reset()
 		{
-			this.numPoints = numPoints;
-			numCoordinates = 2 * numPoints;
-			index = 0;
+			currentSize = 0;
 			iterator.reset();
 		}
 
-		private void setNextCoordinate(Double value)
+		private void setNext(Double x, Double y)
 		{
-			coordinates[index++] = value;
-		}
-
-		@Override
-		public Double[] toArray()
-		{
-			final Double[] result = new Double[numCoordinates];
-			System.arraycopy(coordinates, 0, result, 0, numCoordinates);
-			return result;
+			coordinates[currentSize++] = x;
+			coordinates[currentSize++] = y;
 		}
 	}
 	private final Points points = new Points();
@@ -135,43 +131,43 @@ class ClippingPointsListener implements Runnable
 				final var cornerNext = dividerNext.getBorder();
 				final int numIntermediateCorners = numberOfCornerPointsBetween(
 					corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
-				points.setNumPoints(3 + numIntermediateCorners);
+				points.reset();
 				final var splitCenter = viewport.getSplitCenter();
-				points.setNextCoordinate(splitCenter.xProperty().getValue());
-				points.setNextCoordinate(splitCenter.yProperty().getValue());
-				points.setNextCoordinate(divider.getBorderIntersectionX());
-				points.setNextCoordinate(divider.getBorderIntersectionY());
+				points.setNext(
+					splitCenter.xProperty().getValue(),
+					splitCenter.yProperty().getValue());
+				points.setNext(
+					divider.getBorderIntersectionX(),
+					divider.getBorderIntersectionY());
 				for (int k = 0; k < numIntermediateCorners; k++, corner = corner.next())
 				{
-					points.setNextCoordinate(switch (corner)
-					{
-						case TOP, RIGHT -> viewport.widthProperty().getValue();
-						case BOTTOM, LEFT -> ZERO;
-					});
-					points.setNextCoordinate(switch (corner)
-					{
-						case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
-						case LEFT, TOP -> ZERO;
-					});
+					points.setNext(
+						switch (corner)
+						{
+							case TOP, RIGHT -> viewport.widthProperty().getValue();
+							case BOTTOM, LEFT -> ZERO;
+						},
+						switch (corner)
+						{
+							case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
+							case LEFT, TOP -> ZERO;
+						});
 				}
-				points.setNextCoordinate(dividerNext.getBorderIntersectionX());
-				points.setNextCoordinate(dividerNext.getBorderIntersectionY());
+				points.setNext(
+					dividerNext.getBorderIntersectionX(),
+					dividerNext.getBorderIntersectionY());
 				shapeByImageLayer.apply(layer).setPolygonPoints(points);
 			}
 		}
 		else if (n == 1)
 		{
-			points.setNumPoints(4);
 			final double width = viewport.widthProperty().get();
 			final double height = viewport.heightProperty().get();
-			points.setNextCoordinate(ZERO);
-			points.setNextCoordinate(ZERO);
-			points.setNextCoordinate(width);
-			points.setNextCoordinate(ZERO);
-			points.setNextCoordinate(width);
-			points.setNextCoordinate(height);
-			points.setNextCoordinate(ZERO);
-			points.setNextCoordinate(height);
+			points.reset();
+			points.setNext(ZERO, ZERO);
+			points.setNext(width, ZERO);
+			points.setNext(width, height);
+			points.setNext(ZERO, height);
 			shapeByImageLayer.apply(unmodifiableLayers.getFirst()).setPolygonPoints(points);
 		}
 	}
