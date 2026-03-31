@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
@@ -94,18 +95,19 @@ class Viewport implements AutoCloseable
 				layer.setImageDescriptor(property.get().flatMap(ImageLayer::getImageDescriptor));
 			}
 		};
+		final Consumer<@Nullable ImageLayer> clearImage = layer ->
+		{
+			if (layer != null)
+			{
+				layer.setImageDescriptor(Optional.empty());
+			}
+		};
 		final ChangeListener<Mode> onModeChange = onChange((oldMode, newMode) ->
 		{
 			if (oldMode == SPOT)
 			{
-				if (spotBaseLayer != null)
-				{
-					spotBaseLayer.setImageDescriptor(Optional.empty());
-				}
-				if (spotLayer != null)
-				{
-					spotLayer.setImageDescriptor(Optional.empty());
-				}
+				clearImage.accept(spotBaseLayer);
+				clearImage.accept(spotLayer);
 			}
 			else if (newMode == SPOT)
 			{
