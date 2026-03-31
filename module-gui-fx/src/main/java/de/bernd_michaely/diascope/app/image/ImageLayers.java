@@ -119,7 +119,7 @@ final class ImageLayers extends ImageLayersBase
 						}
 						else
 						{
-							gridDivider = new GridDivider();
+							gridDivider = new GridDivider(imageLayer.getViewportBoundsLocal());
 							final ImageLayer insertionPoint = list.get(i > 0 ? i - 1 : 0);
 							if (!gridTree.insertItemAt(imageLayer, gridDivider, insertionPoint, i > 0))
 							{

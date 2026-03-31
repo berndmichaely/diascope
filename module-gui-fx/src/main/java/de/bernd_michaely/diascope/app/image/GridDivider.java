@@ -16,31 +16,48 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+
+import static javafx.beans.binding.Bindings.when;
+
 /// Class to handle image layer grid dividers.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
 final class GridDivider extends AbstractDivider implements AutoCloseable
 {
-	private Orientation orientation = Orientation.values()[0];
+	private final ViewportBoundsLocal viewportBoundsLocal;
+	private final EnumProperties<Orientation> orientation;
 
 	enum Orientation
 	{
 		VERTICAL, HORIZONTAL
 	}
 
-	GridDivider()
+	GridDivider(ViewportBoundsLocal viewportBoundsLocal)
 	{
+		this.viewportBoundsLocal = viewportBoundsLocal;
+		this.orientation = EnumProperties.createInstance(Orientation.values()[0]);
+		// TODO
+		startXProperty().bind(
+			when(orientation.isValueProperty(Orientation.VERTICAL))
+				.then(viewportBoundsLocal.widthProperty())
+				.otherwise(viewportBoundsLocal.heightProperty()));
 	}
 
-	static GridDivider createInstance(Viewport viewport)
+	EnumProperties<Orientation> orientationProperties()
 	{
-		return new GridDivider();
+		return orientation;
 	}
 
 	Orientation getOrientation()
 	{
-		return orientation;
+		return orientation.getValueOrDefault();
+	}
+
+	void setOrientation(Orientation orientation)
+	{
+		this.orientation.setRawValue(orientation);
 	}
 
 	@Override

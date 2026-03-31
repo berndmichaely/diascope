@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.scene.Cursor;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -62,6 +63,26 @@ abstract sealed class AbstractDivider permits SplitDivider, GridDivider
 	Line getLineEvent()
 	{
 		return lineEvent;
+	}
+
+	DoubleProperty startXProperty()
+	{
+		return lineShape.startXProperty();
+	}
+
+	DoubleProperty startYProperty()
+	{
+		return lineShape.startYProperty();
+	}
+
+	DoubleProperty endXProperty()
+	{
+		return lineShape.endXProperty();
+	}
+
+	DoubleProperty endYProperty()
+	{
+		return lineShape.endYProperty();
 	}
 
 	BooleanProperty visibleProperty()

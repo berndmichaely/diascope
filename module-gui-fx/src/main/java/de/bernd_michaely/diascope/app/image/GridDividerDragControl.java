@@ -17,12 +17,16 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.collections.BinaryTree;
+import de.bernd_michaely.diascope.app.util.collections.InnerNode;
 import de.bernd_michaely.diascope.app.util.collections.LeafNode;
+import java.lang.System.Logger;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 
+import static de.bernd_michaely.diascope.app.image.GridDivider.Orientation.*;
 import static java.lang.Math.ceilDiv;
 import static java.lang.Math.sqrt;
+import static java.lang.System.Logger.Level.*;
 
 /// Class to handle grid divider drag operations.
 ///
@@ -30,6 +34,7 @@ import static java.lang.Math.sqrt;
 ///
 class GridDividerDragControl
 {
+	private static final Logger logger = System.getLogger(GridDividerDragControl.class.getName());
 	private final BinaryTree<GridDivider, ImageLayer> gridTree;
 	private final ReadOnlyDoubleProperty width;
 	private final ReadOnlyDoubleProperty height;
@@ -45,19 +50,19 @@ class GridDividerDragControl
 	void initializeDividerPositions()
 	{
 		final int n = gridTree.getNumLeafNodes();
-		System.out.println("→ INITIALIZE GRID → n = %d".formatted(n));
+		logger.log(TRACE, () -> "→ INITIALIZE GRID → n = %d".formatted(n));
 		final int rows = (int) sqrt(n);
 		final int cols = n > 0 ? ceilDiv(n, rows) : 0;
 		int row = 0;
 		int col = 0;
 		for (var treeNode : gridTree)
 		{
-			if (treeNode instanceof LeafNode node)
+			if (treeNode instanceof LeafNode leafNode)
 			{
-				final ImageLayer layer = (ImageLayer) node.getValue();
+				final var layer = (ImageLayer) leafNode.getValue();
 				if (layer != null)
 				{
-					System.out.println("→ INITIALIZE GRID [%d/%d]".formatted(row, col));
+					logger.log(TRACE, "→ INITIALIZE GRID [%d/%d]".formatted(row, col));
 					final var viewportBoundsLocal = layer.getViewportBoundsLocal();
 					final DoubleBinding w_n = width.divide(cols);
 					final DoubleBinding h_n = height.divide(rows);
@@ -65,8 +70,17 @@ class GridDividerDragControl
 					viewportBoundsLocal.yProperty().bind(h_n.multiply(row));
 					viewportBoundsLocal.widthProperty().bind(w_n);
 					viewportBoundsLocal.heightProperty().bind(h_n);
-					col++;
-					if (col >= cols)
+					// TODO
+					final boolean newRow = ++col >= cols;
+					final InnerNode parentNode = leafNode.getParentNode();
+					if (parentNode != null)
+					{
+						if (parentNode.getValue() instanceof GridDivider gridDivider)
+						{
+							gridDivider.setOrientation(newRow ? HORIZONTAL : VERTICAL);
+						}
+					}
+					if (newRow)
 					{
 						col = 0;
 						row++;

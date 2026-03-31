@@ -122,7 +122,7 @@ class Viewport implements AutoCloseable
 			getInitialMode(), List.of(onChange(components::setListsByMode), onModeChange));
 		this.multiLayerMode = not(modeProperties.isValueProperty(SINGLE));
 		dividersEnabled.bind(dividersVisible
-			.and(modeProperties.isValueProperty(SPLIT))
+			.and(modeProperties.isValueProperty(SPLIT).or(modeProperties.isValueProperty(GRID)))
 			.and(size(components.imageLayers).greaterThanOrEqualTo(2)));
 		pane.setBackground(Background.fill(Color.BLACK));
 		pane.setMinSize(0, 0);
@@ -190,6 +190,7 @@ class Viewport implements AutoCloseable
 		));
 		if (gridDivider != null)
 		{
+			gridDivider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 			components.addGridSplitLayer(index - 1, imageLayer, Map.of(
 				gridDivider.getLineEvent(), components.gridEventLines,
 				gridDivider.getLineShape(), components.gridShapeLines
