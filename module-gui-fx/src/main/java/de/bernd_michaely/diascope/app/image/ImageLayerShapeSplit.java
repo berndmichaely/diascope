@@ -76,6 +76,14 @@ final class ImageLayerShapeSplit extends AbstractImageLayerShapeStroke
 		polygonClip.getPoints().setAll(points);
 	}
 
+	void setPolygonPoints(ClippingPointsListener.Points points)
+	{
+		//polygon.getPoints().setAll(points);
+		//polygonClip.getPoints().setAll(points);
+		// … doesn't seem to work …
+		setPolygonPoints(points.toArray());
+	}
+
 	Rectangle getRectangle()
 	{
 		return rectangle;

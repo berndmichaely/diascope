@@ -16,7 +16,10 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.AbstractCollection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static de.bernd_michaely.diascope.app.image.Border.*;
@@ -32,7 +35,79 @@ class ClippingPointsListener implements Runnable
 	private final List<ImageLayer> unmodifiableLayers;
 	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
 	private final Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer;
-	private final Double[] pointsRect;
+
+	static class Points extends AbstractCollection<Double>
+	{
+		private static final int MAX_NUM_POINTS = 3 + Border.values().length;
+		private final Double[] coordinates = new Double[2 * MAX_NUM_POINTS];
+		private int numPoints;
+		private int numCoordinates;
+		private int index;
+
+		private class PointsIterator implements Iterator<Double>
+		{
+			private int counter;
+
+			@Override
+			public boolean hasNext()
+			{
+				return counter < numCoordinates;
+			}
+
+			@Override
+			public Double next()
+			{
+				if (hasNext())
+				{
+					return coordinates[counter++];
+				}
+				else
+				{
+					throw new NoSuchElementException();
+				}
+			}
+
+			private void reset()
+			{
+				counter = 0;
+			}
+		}
+		private final PointsIterator iterator = new PointsIterator();
+
+		@Override
+		public Iterator<Double> iterator()
+		{
+			return iterator;
+		}
+
+		@Override
+		public int size()
+		{
+			return numPoints;
+		}
+
+		private void setNumPoints(int numPoints)
+		{
+			this.numPoints = numPoints;
+			numCoordinates = 2 * numPoints;
+			index = 0;
+			iterator.reset();
+		}
+
+		private void setNextCoordinate(Double value)
+		{
+			coordinates[index++] = value;
+		}
+
+		@Override
+		public Double[] toArray()
+		{
+			final Double[] result = new Double[numCoordinates];
+			System.arraycopy(coordinates, 0, result, 0, numCoordinates);
+			return result;
+		}
+	}
+	private final Points points = new Points();
 
 	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers,
 		Function<ImageLayer, SplitDivider> dividerByImageLayer,
@@ -42,11 +117,6 @@ class ClippingPointsListener implements Runnable
 		this.unmodifiableLayers = unmodifiableLayers;
 		this.dividerByImageLayer = dividerByImageLayer;
 		this.shapeByImageLayer = shapeByImageLayer;
-		this.pointsRect = new Double[8];
-		pointsRect[0] = ZERO;
-		pointsRect[1] = ZERO;
-		pointsRect[3] = ZERO;
-		pointsRect[6] = ZERO;
 	}
 
 	@Override
@@ -65,41 +135,44 @@ class ClippingPointsListener implements Runnable
 				final var cornerNext = dividerNext.getBorder();
 				final int numIntermediateCorners = numberOfCornerPointsBetween(
 					corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
-				final int numPoints = 2 * (3 + numIntermediateCorners);
-				final Double[] points = new Double[numPoints];
-				int index = 0;
+				points.setNumPoints(3 + numIntermediateCorners);
 				final var splitCenter = viewport.getSplitCenter();
-				points[index++] = splitCenter.xProperty().getValue();
-				points[index++] = splitCenter.yProperty().getValue();
-				points[index++] = divider.getBorderIntersectionX();
-				points[index++] = divider.getBorderIntersectionY();
+				points.setNextCoordinate(splitCenter.xProperty().getValue());
+				points.setNextCoordinate(splitCenter.yProperty().getValue());
+				points.setNextCoordinate(divider.getBorderIntersectionX());
+				points.setNextCoordinate(divider.getBorderIntersectionY());
 				for (int k = 0; k < numIntermediateCorners; k++, corner = corner.next())
 				{
-					points[index++] = switch (corner)
+					points.setNextCoordinate(switch (corner)
 					{
 						case TOP, RIGHT -> viewport.widthProperty().getValue();
 						case BOTTOM, LEFT -> ZERO;
-					};
-					points[index++] = switch (corner)
+					});
+					points.setNextCoordinate(switch (corner)
 					{
 						case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
 						case LEFT, TOP -> ZERO;
-					};
+					});
 				}
-				points[index++] = dividerNext.getBorderIntersectionX();
-				points[index++] = dividerNext.getBorderIntersectionY();
+				points.setNextCoordinate(dividerNext.getBorderIntersectionX());
+				points.setNextCoordinate(dividerNext.getBorderIntersectionY());
 				shapeByImageLayer.apply(layer).setPolygonPoints(points);
 			}
 		}
 		else if (n == 1)
 		{
+			points.setNumPoints(4);
 			final double width = viewport.widthProperty().get();
 			final double height = viewport.heightProperty().get();
-			pointsRect[2] = width;
-			pointsRect[4] = width;
-			pointsRect[5] = height;
-			pointsRect[7] = height;
-			shapeByImageLayer.apply(unmodifiableLayers.getFirst()).setPolygonPoints(pointsRect);
+			points.setNextCoordinate(ZERO);
+			points.setNextCoordinate(ZERO);
+			points.setNextCoordinate(width);
+			points.setNextCoordinate(ZERO);
+			points.setNextCoordinate(width);
+			points.setNextCoordinate(height);
+			points.setNextCoordinate(ZERO);
+			points.setNextCoordinate(height);
+			shapeByImageLayer.apply(unmodifiableLayers.getFirst()).setPolygonPoints(points);
 		}
 	}
 }
