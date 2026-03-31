@@ -20,7 +20,15 @@ import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.util.Map;
 import java.util.Optional;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyDoubleProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -189,11 +197,77 @@ public class ImageTransformsSwitchTest
 		assertEquals(its._getGlobalImageTransforms(), optional.get());
 	}
 
-	@Test
-	public void test_facade_properties()
+	@FunctionalInterface
+	private interface PropertiesConsumer
 	{
-		System.out.println("test_ImageTransformsSwitch_facade_properties");
+		void accept(
+			ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+			DoubleProperty zoomFixedProperty,
+			DoubleProperty rotateProperty,
+			BooleanProperty mirrorXProperty,
+			BooleanProperty mirrorYProperty,
+			ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+			ReadOnlyDoubleProperty zoomFactorProperty);
+	}
+
+	private void _runImageTransformsTestFacade(PropertiesConsumer propertiesConsumer)
+	{
+		final ImageTransforms facade = its._getFacadeImageTransforms();
+		final ObjectProperty<ZoomMode> zoomModeRawValueProperty = facade.zoomModeRawValueProperty();
+		final DoubleProperty zoomFixedProperty = facade.zoomFixedProperty();
+		final DoubleProperty rotateProperty = facade.rotateProperty();
+		final BooleanProperty mirrorXProperty = facade.mirrorXProperty();
+		final BooleanProperty mirrorYProperty = facade.mirrorYProperty();
+		final ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty =
+			facade.zoomModeOrDefaultProperty();
+		final ReadOnlyDoubleProperty zoomFactorProperty = facade.zoomFactorProperty();
+		propertiesConsumer.accept(
+			zoomModeRawValueProperty,
+			zoomFixedProperty,
+			rotateProperty,
+			mirrorXProperty,
+			mirrorYProperty,
+			zoomModeOrDefaultProperty,
+			zoomFactorProperty);
+	}
+
+	private void _runImageTransformsTestRemote(PropertiesConsumer propertiesConsumer)
+	{
+		// remote properties:
+		final EnumProperties<ZoomMode> enumProperties =
+			EnumProperties.createInstance(ZoomMode.getDefault());
+		final ObjectProperty<ZoomMode> zoomModeRawValueProperty = enumProperties.rawValueProperty();
+		final DoubleProperty zoomFixedProperty = new SimpleDoubleProperty(1.0);
+		final DoubleProperty rotateProperty = new SimpleDoubleProperty(0.0);
+		final BooleanProperty mirrorXProperty = new SimpleBooleanProperty(false);
+		final BooleanProperty mirrorYProperty = new SimpleBooleanProperty(false);
+		final ObjectProperty<ZoomMode> zoomModeOrDefaultProperty =
+			new SimpleObjectProperty<>(ZoomMode.getDefault());
+		final DoubleProperty zoomFactorProperty = new SimpleDoubleProperty();
+		// bind remote properties to facade:
 		final ImageTransforms facade = its.getFacadeImageTransforms();
+		zoomModeRawValueProperty.bindBidirectional(facade.zoomModeRawValueProperty());
+		zoomFixedProperty.bindBidirectional(facade.zoomFixedProperty());
+		rotateProperty.bindBidirectional(facade.rotateProperty());
+		mirrorXProperty.bindBidirectional(facade.mirrorXProperty());
+		mirrorYProperty.bindBidirectional(facade.mirrorYProperty());
+		zoomModeOrDefaultProperty.bind(facade.zoomModeOrDefaultProperty());
+		zoomFactorProperty.bind(facade.zoomFactorProperty());
+		// run test:
+		propertiesConsumer.accept(zoomModeRawValueProperty, zoomFixedProperty, rotateProperty,
+			mirrorXProperty, mirrorYProperty, zoomModeOrDefaultProperty, zoomFactorProperty);
+	}
+
+	private void _test_facade_properties(
+		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+		DoubleProperty zoomFixedProperty,
+		DoubleProperty rotateProperty,
+		BooleanProperty mirrorXProperty,
+		BooleanProperty mirrorYProperty,
+		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+		ReadOnlyDoubleProperty zoomFactorProperty)
+	{
+		System.out.println("ImageTransformsSwitch _test_facade_properties");
 		assertTrue(isGlobal());
 		// add layer
 		final Transformable_ ta = new Transformable_("A");
@@ -207,7 +281,7 @@ public class ImageTransformsSwitchTest
 		zmp_b.isValue(ZoomMode.getDefault());
 		zmp_c.isValue(ZoomMode.getDefault());
 		// set global mode
-		facade.zoomModeRawValueProperty().set(ZoomMode.FIT);
+		zoomModeRawValueProperty.set(ZoomMode.FIT);
 		zmp_a.isValue(ZoomMode.FIT);
 		zmp_b.isValue(ZoomMode.FIT);
 		zmp_c.isValue(ZoomMode.FIT);
@@ -218,13 +292,13 @@ public class ImageTransformsSwitchTest
 		zmp_c.isValue(ZoomMode.getDefault());
 		// no single selection
 		assertTrue(singleSelectedLayerProperty.get().isEmpty());
-		facade.zoomModeRawValueProperty().set(ZoomMode.ORIGINAL);
+		zoomModeRawValueProperty.set(ZoomMode.ORIGINAL);
 		zmp_a.isValue(ZoomMode.getDefault());
 		zmp_b.isValue(ZoomMode.getDefault());
 		zmp_c.isValue(ZoomMode.getDefault());
 		// select layer b
 		singleSelectedLayerProperty.set(Optional.of(tb));
-		facade.zoomModeRawValueProperty().set(ZoomMode.ORIGINAL);
+		zoomModeRawValueProperty.set(ZoomMode.ORIGINAL);
 		zmp_a.isValue(ZoomMode.getDefault());
 		zmp_b.isValue(ZoomMode.ORIGINAL);
 		zmp_c.isValue(ZoomMode.getDefault());
@@ -244,7 +318,7 @@ public class ImageTransformsSwitchTest
 		zmp_b.isValue(ZoomMode.FIT);
 		zmp_c.isValue(ZoomMode.FIT);
 		// set global mode
-		facade.zoomModeRawValueProperty().set(ZoomMode.FILL);
+		zoomModeRawValueProperty.set(ZoomMode.FILL);
 		zmp_a.isValue(ZoomMode.FILL);
 		zmp_b.isValue(ZoomMode.FILL);
 		zmp_c.isValue(ZoomMode.FILL);
@@ -253,5 +327,19 @@ public class ImageTransformsSwitchTest
 		zmp_a.isValue(ZoomMode.getDefault());
 		zmp_b.isValue(ZoomMode.ORIGINAL);
 		zmp_c.isValue(ZoomMode.getDefault());
+	}
+
+	@Test
+	public void test_facade_properties_facade()
+	{
+		System.out.println("test_facade_properties_facade");
+		_runImageTransformsTestFacade(this::_test_facade_properties);
+	}
+
+	@Test
+	public void test_facade_properties_remote()
+	{
+		System.out.println("test_facade_properties_remote");
+		_runImageTransformsTestRemote(this::_test_facade_properties);
 	}
 }

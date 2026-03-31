@@ -33,6 +33,9 @@ import javafx.collections.ObservableList;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 
 /// Class for connecting facade with image layer ImageTransforms.
+///
+/// **API note**
+///
 /// `_get*()` methods are for use by unit tests only.
 ///
 /// @param <T> generic Transformable type, e.g. ImageLayer
