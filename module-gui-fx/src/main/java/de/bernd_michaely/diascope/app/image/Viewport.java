@@ -22,6 +22,7 @@ import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
@@ -85,6 +86,14 @@ class Viewport implements AutoCloseable
 		this.stackNodes = new ListContentConcatenation<>(pane.getChildren());
 		this.components = new ViewportComponents(stackNodes.getObservableLists(),
 			scrollBars.getScrollBars(), splitCenter.getShapes());
+		final BiConsumer<ReadOnlyObjectProperty<Optional<ImageLayer>>, @Nullable ImageLayer> setImage =
+			(property, layer) ->
+		{
+			if (layer != null)
+			{
+				layer.setImageDescriptor(property.get().flatMap(ImageLayer::getImageDescriptor));
+			}
+		};
 		final ChangeListener<Mode> onModeChange = onChange((oldMode, newMode) ->
 		{
 			if (oldMode == SPOT)
@@ -102,20 +111,8 @@ class Viewport implements AutoCloseable
 			{
 				if (layerSelectionModel != null && layerSelectionModel.dualLayerSelected().get())
 				{
-					final var l0 = spotBaseLayer;
-					if (l0 != null)
-					{
-						layerSelectionModel.dualSelectedLayerFirstProperty().get().ifPresentOrElse(
-							imageLayer -> l0.setImageDescriptor(imageLayer.getImageDescriptor()),
-							() -> l0.setImageDescriptor(Optional.empty()));
-					}
-					final var l1 = spotLayer;
-					if (l1 != null)
-					{
-						layerSelectionModel.dualSelectedLayerSecondProperty().get().ifPresentOrElse(
-							imageLayer -> l1.setImageDescriptor(imageLayer.getImageDescriptor()),
-							() -> l1.setImageDescriptor(Optional.empty()));
-					}
+					setImage.accept(layerSelectionModel.dualSelectedLayerFirstProperty(), spotBaseLayer);
+					setImage.accept(layerSelectionModel.dualSelectedLayerSecondProperty(), spotLayer);
 				}
 			}
 		});
