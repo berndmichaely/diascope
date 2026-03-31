@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.util.collections;
 import java.util.AbstractCollection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -186,21 +187,34 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		}
 		else
 		{
-			final var lastLeaf = getLast();
-			if (lastLeaf != null)
-			{
-				insertLeafNode(item, value, lastLeaf, true);
-			}
-			else
-			{
-				throw new IllegalStateException(
-					"::append : no last leaf found".formatted(getClass().getName()));
-			}
+			insertLeafNode(item, value, getLast(), true);
 		}
 	}
 
-	private @Nullable
-	LeafNode<L> getLast()
+	/// Returns the first node.
+	/// @return the root node
+	///
+	/// @throws NoSuchElementException if the tree is empty
+	///
+	public TreeNode getFirst()
+	{
+		final TreeNode rootNode = getRoot();
+		if (rootNode != null)
+		{
+			return rootNode;
+		}
+		else
+		{
+			throw new NoSuchElementException();
+		}
+	}
+
+	/// Finds the last node.
+	///
+	/// @return the last node
+	/// @throws NoSuchElementException if tree is empty
+	///
+	public LeafNode<L> getLast()
 	{
 		TreeNode r = getRoot();
 		while (r instanceof InnerNode innerNode)
@@ -209,7 +223,14 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		}
 		@SuppressWarnings("unchecked")
 		final LeafNode<L> lastLeaf = (LeafNode<L>) r;
-		return lastLeaf;
+		if (lastLeaf != null)
+		{
+			return lastLeaf;
+		}
+		else
+		{
+			throw new NoSuchElementException();
+		}
 	}
 
 	/// Inserts a new leaf node before or after the leaf node given by the insertion point.

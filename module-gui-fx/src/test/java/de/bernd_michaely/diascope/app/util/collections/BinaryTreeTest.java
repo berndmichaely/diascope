@@ -18,6 +18,7 @@ package de.bernd_michaely.diascope.app.util.collections;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 import static de.bernd_michaely.diascope.app.util.collections.TreeNode.STRING_EMPTY;
@@ -252,11 +253,17 @@ public class BinaryTreeTest
 		System.out.println(">>> test_remove");
 		final var binaryTree = new BinaryTree<String, String>();
 		checkSize(0, binaryTree);
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getFirst());
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getLast());
 		binaryTree.append("one");
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("one", binaryTree.getLast().getValue());
 		binaryTree.append((String) null);
 		binaryTree.append("two", "2");
 		binaryTree.append("three", "3");
 		checkSize(4, binaryTree);
+		assertEquals(binaryTree.getRoot(), binaryTree.getFirst());
+		assertEquals("three", binaryTree.getLast().getValue());
 		final BinaryNode<String> innerNode = binaryTree.findInnerNode("2");
 		assertFalse(binaryTree.remove(innerNode));
 		assertFalse(binaryTree.remove("2"));
