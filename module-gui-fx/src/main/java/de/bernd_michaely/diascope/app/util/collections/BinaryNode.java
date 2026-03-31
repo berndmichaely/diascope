@@ -58,6 +58,18 @@ public final class BinaryNode<I> extends InnerNode<I>
 		}
 	}
 
+	@Nullable
+	TreeNode setFirstSubNode(TreeNode node)
+	{
+		return setSubNode(0, node);
+	}
+
+	@Nullable
+	TreeNode setLastSubNode(TreeNode node)
+	{
+		return setSubNode(1, node);
+	}
+
 	@Override
 	public @NonNull
 	TreeNode getFirstSubNode()

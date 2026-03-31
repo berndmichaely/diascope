@@ -191,17 +191,23 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		}
 	}
 
-	/// Returns the first node.
-	/// @return the root node
+	/// Returns the first leaf node.
+	/// @return the first leaf node
 	///
 	/// @throws NoSuchElementException if the tree is empty
 	///
-	public TreeNode getFirst()
+	public LeafNode<L> getFirst()
 	{
-		final TreeNode rootNode = getRoot();
-		if (rootNode != null)
+		TreeNode r = getRoot();
+		while (r instanceof InnerNode innerNode)
 		{
-			return rootNode;
+			r = innerNode.getFirstSubNode();
+		}
+		@SuppressWarnings("unchecked")
+		final LeafNode<L> firstLeaf = (LeafNode<L>) r;
+		if (firstLeaf != null)
+		{
+			return firstLeaf;
 		}
 		else
 		{
@@ -301,9 +307,27 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	///
 	/// @see #removeNode(LeafNode, boolean)
 	///
-	public void removeNode(LeafNode<L> leafNode)
+	public LeafNode<L> removeNode(LeafNode<L> leafNode)
 	{
-		removeNode(leafNode, true);
+		return removeNode(leafNode, true);
+	}
+
+	/// Returns the sibling of the given node.
+	///
+	/// @return the sibling of the given node
+	/// @throws NoSuchElementException if the given node has no sibling
+	///
+	public TreeNode getSibling(TreeNode node)
+	{
+		final BinaryNode pn = (BinaryNode) node.getParentNode();
+		if (pn != null)
+		{
+			return node == pn.getFirstSubNode() ? pn.getLastSubNode() : pn.getFirstSubNode();
+		}
+		else
+		{
+			throw new NoSuchElementException();
+		}
 	}
 
 	/// Removes the given leaf node.
@@ -315,7 +339,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// @throws IllegalArgumentException if it has been checked, that the given
 	///                                  leafNode is not part of this tree
 	///
-	public void removeNode(LeafNode<L> leafNode, boolean checkTreeNode)
+	public LeafNode<L> removeNode(LeafNode<L> leafNode, boolean checkTreeNode)
 	{
 		if (checkTreeNode && stream().noneMatch(node -> node == leafNode))
 		{
@@ -326,15 +350,23 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		final var pn = leafNode.getParentNode();
 		if (pn != null)
 		{
-			final var ppn = pn.getParentNode();
-			final TreeNode otherChild = pn.getSubNode(leafNode == pn.getSubNode(1) ? 0 : 1);
+			final TreeNode sibling = getSibling(leafNode);
+			final BinaryNode ppn = (BinaryNode) pn.getParentNode();
 			if (ppn != null)
 			{
-				ppn.setSubNode(pn == ppn.getSubNode(1) ? 1 : 0, otherChild);
+				if (pn == ppn.getFirstSubNode())
+				{
+					ppn.setFirstSubNode(sibling);
+				}
+				else
+				{
+					ppn.setLastSubNode(sibling);
+				}
 			}
 			else
 			{
-				root = otherChild;
+				sibling.setParentNode(null);
+				root = sibling;
 			}
 			numLeafNodes--;
 		}
@@ -342,6 +374,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		{
 			clear();
 		}
+		return leafNode;
 	}
 
 	/// {@inheritDoc}
@@ -364,6 +397,26 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 			return true;
 		}
 		return false;
+	}
+
+	/// Removes the first leaf node.
+	///
+	/// @return the removed node
+	/// @throws NoSuchElementException if the tree was empty
+	///
+	public LeafNode<L> removeFirst()
+	{
+		return removeNode(getFirst());
+	}
+
+	/// Removes the last leaf node.
+	///
+	/// @return the removed node
+	/// @throws NoSuchElementException if the tree was empty
+	///
+	public LeafNode<L> removeLast()
+	{
+		return removeNode(getLast());
 	}
 
 	@Override

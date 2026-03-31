@@ -258,11 +258,13 @@ public class BinaryTreeTest
 		binaryTree.append("one");
 		assertEquals("one", binaryTree.getFirst().getValue());
 		assertEquals("one", binaryTree.getLast().getValue());
-		binaryTree.append((String) null);
 		binaryTree.append("two", "2");
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("two", binaryTree.getLast().getValue());
+		binaryTree.append((String) null);
 		binaryTree.append("three", "3");
 		checkSize(4, binaryTree);
-		assertEquals(binaryTree.getRoot(), binaryTree.getFirst());
+		assertEquals("one", binaryTree.getFirst().getValue());
 		assertEquals("three", binaryTree.getLast().getValue());
 		final BinaryNode<String> innerNode = binaryTree.findInnerNode("2");
 		assertFalse(binaryTree.remove(innerNode));
@@ -299,5 +301,29 @@ public class BinaryTreeTest
 		// OOPS !!! Need to check precondition in your code yourself before !!!
 		assertDoesNotThrow(() -> binaryTree1.removeNode(leaf2, false));
 		checkSize(0, binaryTree1); // this shouln't happen in real code
+	}
+
+	@Test
+	public void test_remove_first_last()
+	{
+		System.out.println(">>> test_remove_first_last");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getFirst());
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getLast());
+		binaryTree.append(List.of("one", "two", "three"));
+		checkSize(3, binaryTree);
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("three", binaryTree.getLast().getValue());
+		//
+		assertEquals("one", binaryTree.removeFirst().getValue());
+		checkSize(2, binaryTree);
+		assertEquals("two", binaryTree.getFirst().getValue());
+		assertEquals("three", binaryTree.getLast().getValue());
+		//
+		assertEquals("three", binaryTree.removeLast().getValue());
+		checkSize(1, binaryTree);
+		assertEquals("two", binaryTree.getFirst().getValue());
+		assertEquals("two", binaryTree.getLast().getValue());
 	}
 }
