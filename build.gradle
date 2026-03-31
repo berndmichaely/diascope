@@ -136,7 +136,7 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = '25.0.2'
+			version = '26'
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
@@ -248,7 +248,7 @@ application {
 	if (javaLangVer >= 24) {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 	}
-	if (javafxVer == 25) {
+	if (javafxVer >= 25) {
 		applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
 		applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	}
