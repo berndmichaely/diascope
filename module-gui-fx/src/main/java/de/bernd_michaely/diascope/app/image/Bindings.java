@@ -19,58 +19,14 @@ package de.bernd_michaely.diascope.app.image;
 import javafx.beans.binding.DoubleBinding;
 import javafx.beans.value.ObservableNumberValue;
 
+import static javafx.beans.binding.Bindings.createDoubleBinding;
+
 /// Factory class for custom bindings.
 ///
 /// @author Factory class for custom bindings.
 ///
 class Bindings
 {
-	private static class TanBinding extends DoubleBinding
-	{
-		private final ObservableNumberValue angle;
-
-		private TanBinding(ObservableNumberValue angle)
-		{
-			this.angle = angle;
-		}
-
-		@Override
-		protected double computeValue()
-		{
-			return Math.tan(Math.toRadians(angle.doubleValue()));
-		}
-
-		private static TanBinding newInstance(ObservableNumberValue angle)
-		{
-			final var binding = new TanBinding(angle);
-			binding.bind(angle);
-			return binding;
-		}
-	}
-
-	private static class ArcTanBinding extends DoubleBinding
-	{
-		private final ObservableNumberValue value;
-
-		private ArcTanBinding(ObservableNumberValue value)
-		{
-			this.value = value;
-		}
-
-		@Override
-		protected double computeValue()
-		{
-			return Math.toDegrees(Math.atan(value.doubleValue()));
-		}
-
-		private static ArcTanBinding newInstance(ObservableNumberValue value)
-		{
-			final var binding = new ArcTanBinding(value);
-			binding.bind(value);
-			return binding;
-		}
-	}
-
 	/// The number of degrees of a full circle.
 	static final double C = 360.0;
 
@@ -89,29 +45,6 @@ class Bindings
 		return a == -0.0 ? 0.0 : a;
 	}
 
-	private static class NormalizeAngleBinding extends DoubleBinding
-	{
-		private final ObservableNumberValue angle;
-
-		private NormalizeAngleBinding(ObservableNumberValue angle)
-		{
-			this.angle = angle;
-		}
-
-		@Override
-		protected double computeValue()
-		{
-			return normalizeAngle(angle.doubleValue());
-		}
-
-		private static NormalizeAngleBinding newInstance(ObservableNumberValue angle)
-		{
-			final var binding = new NormalizeAngleBinding(angle);
-			binding.bind(angle);
-			return binding;
-		}
-	}
-
 	/// Binding to calculate the tangent of an angle.
 	///
 	/// @param angle an angle in degrees
@@ -119,7 +52,9 @@ class Bindings
 	///
 	static DoubleBinding tan(ObservableNumberValue angle)
 	{
-		return TanBinding.newInstance(angle);
+		return createDoubleBinding(
+			() -> Math.tan(Math.toRadians(angle.doubleValue())),
+			angle);
 	}
 
 	/// Binding to calculate the arctangent.
@@ -129,7 +64,9 @@ class Bindings
 	///
 	static DoubleBinding arctan(ObservableNumberValue value)
 	{
-		return ArcTanBinding.newInstance(value);
+		return createDoubleBinding(
+			() -> Math.toDegrees(Math.atan(value.doubleValue())),
+			value);
 	}
 
 	/// Binding to normalize an angle.
@@ -139,6 +76,8 @@ class Bindings
 	///
 	static DoubleBinding normalizeAngle(ObservableNumberValue angle)
 	{
-		return NormalizeAngleBinding.newInstance(angle);
+		return createDoubleBinding(
+			() -> normalizeAngle(angle.doubleValue()),
+			angle);
 	}
 }
