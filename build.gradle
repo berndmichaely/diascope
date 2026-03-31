@@ -2,7 +2,7 @@ plugins {
 	id 'java'
 	id 'application'
 	id 'jacoco'
-	id 'org.openjfx.javafxplugin' version '0.1.0'
+	id 'org.openjfx.javafxplugin' version '0.1.0' apply false
 	id 'org.checkerframework' version '1.0.2' apply false
 	
 	// auto create automatic modules:

@@ -105,7 +105,13 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	///         if found, or {@code null}
 	///
 	public @Nullable
-	LeafNode<L> findLeafNode(L value)
+	LeafNode<L> findLeafNode(@Nullable L value)
+	{
+		return _findLeafNode(value);
+	}
+
+	private @Nullable
+	LeafNode<L> _findLeafNode(@Nullable Object value)
 	{
 		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
@@ -293,6 +299,26 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		{
 			clear();
 		}
+	}
+
+	/// {@inheritDoc}
+	///
+	/// This implementation removes a leaf node by the given associated value.
+	/// (That is, it will *not* remove an *inner* node directly
+	///  by its associated value!)
+	///
+	/// @param expects a value of a LeafNode
+	///
+	@Override
+	public boolean remove(Object leafValue)
+	{
+		final LeafNode<L> leafNode = _findLeafNode(leafValue);
+		if (leafNode != null)
+		{
+			removeNode(leafNode);
+			return true;
+		}
+		return false;
 	}
 
 	@Override

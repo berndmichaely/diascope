@@ -245,4 +245,22 @@ public class BinaryTreeTest
 			"BinaryTree:{BinaryNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(STRING_EMPTY),
 			binaryTree.toString());
 	}
+
+	@Test
+	public void test_remove()
+	{
+		System.out.println(">>> test_remove");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append("one");
+		binaryTree.append("two", 2);
+		binaryTree.append("three", 3);
+		checkSize(3, binaryTree);
+		final BinaryNode<Integer> innerNode = binaryTree.findInnerNode(2);
+		assertFalse(binaryTree.remove(innerNode));
+		assertFalse(binaryTree.remove(2));
+		checkSize(3, binaryTree);
+		assertTrue(binaryTree.remove("two"));
+		checkSize(2, binaryTree);
+	}
 }
