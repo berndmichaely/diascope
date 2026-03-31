@@ -57,42 +57,13 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 	{
 		this.local = modeProperties.isValueProperty(Mode.GRID);
 		this.selectedImageTransforms = new SimpleObjectProperty<>(Optional.empty());
-		final Runnable unbindAllTransforms = () ->
+		selectedImageTransforms.addListener(onChange((oldValue, newValue) ->
 		{
-			mapIntermediate.forEach((layer, intermediateTransforms) ->
+			oldValue.ifPresent(ImageTransformsImpl::unbindAllProperties);
+			newValue.ifPresent(selectedTransforms ->
 			{
-				layer.getImageTransforms().unbindAllProperties();
-				intermediateTransforms.unbindAllProperties();
-			});
-			globalImageTransforms.unbindAllProperties();
-			facadeImageTransforms.unbindAllProperties();
-		};
-		selectedImageTransforms.addListener(onChange((oldOptionalTransforms, newOptionalTransforms) ->
-		{
-			unbindAllTransforms.run();
-			newOptionalTransforms.ifPresent(selectedTransforms ->
-			{
-				if (selectedTransforms == globalImageTransforms)
-				{
-					unmodifiableLayers.forEach(layer ->
-						layer.getImageTransforms().bindAllProperties(globalImageTransforms));
-					globalImageTransforms.adjustControlProperties(facadeImageTransforms);
-					globalImageTransforms.bindAllProperties(facadeImageTransforms);
-				}
-				else
-				{
-					final Transformable selectedLayer = singleSelectedLayerProperty.get().get();
-					mapIntermediate.forEach((layer, intermediateTransforms) ->
-					{
-						final var layerTransforms = layer.getImageTransforms();
-						layerTransforms.bindAllProperties(intermediateTransforms);
-						if (layer == selectedLayer)
-						{
-							intermediateTransforms.adjustControlProperties(facadeImageTransforms);
-							intermediateTransforms.bindAllProperties(facadeImageTransforms);
-						}
-					});
-				}
+				selectedTransforms.adjustControlProperties(facadeImageTransforms);
+				selectedTransforms.bindAllProperties(facadeImageTransforms);
 			});
 		}));
 		selectedImageTransforms.bind(new ObjectBinding<Optional<ImageTransformsImpl>>()
@@ -114,19 +85,26 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		});
 		final Consumer<T> addLayer = layer ->
 		{
-			mapIntermediate.put(layer, new ImageTransformsImpl());
-			if (!local.get())
+			final var intermediateImageTransforms = new ImageTransformsImpl();
+			mapIntermediate.put(layer, intermediateImageTransforms);
+			final Consumer<Boolean> onLocalChange = isLocal ->
 			{
-				layer.getImageTransforms().bindAllProperties(globalImageTransforms);
-			}
+				final var layerImageTransforms = layer.getImageTransforms();
+				layerImageTransforms.unbindAllProperties();
+				layerImageTransforms.bindAllProperties(isLocal ?
+					intermediateImageTransforms : globalImageTransforms);
+			};
+			onLocalChange.accept(local.get());
+			local.addListener(onChange(onLocalChange));
 		};
 		final Consumer<T> removeLayer = layer ->
 		{
 			try (layer)
 			{
-				final var removed = mapIntermediate.remove(layer);
+				final ImageTransformsImpl removed = mapIntermediate.remove(layer);
 				if (removed != null)
 				{
+					layer.getImageTransforms().unbindAllProperties();
 					removed.unbindAllProperties();
 				}
 				else
@@ -141,9 +119,8 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
 			.onRemove(change -> change.getRemoved().forEach(removeLayer))
 			.build());
-		unmodifiableSpotLayers.stream()
-			.map(Transformable::getImageTransforms)
-			.forEach(t -> t.bindAllProperties(globalImageTransforms));
+		unmodifiableSpotLayers.forEach(layer ->
+			layer.getImageTransforms().bindAllProperties(globalImageTransforms));
 	}
 
 	/// Returns the ImageTransforms of the facade.
