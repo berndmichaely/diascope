@@ -59,7 +59,7 @@ class DividerDragCycle implements Runnable
 
 		private FoldState(boolean forward)
 		{
-			if (n < 2 || indexDivider < 0 || indexDivider >= n)
+			if (n < 1 || indexDivider < 0 || indexDivider >= n)
 			{
 				throw new IllegalStateException("Invalid precondition for FoldState");
 			}
@@ -284,7 +284,6 @@ class DividerDragCycle implements Runnable
 					}
 				}
 			}
-			default -> throw new AssertionError("Invalid RotationType »%s«".formatted(rotationType));
 		}
 	}
 }

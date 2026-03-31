@@ -45,52 +45,37 @@ class ViewportComponents
 	final ObservableList<Node> splitShapes = observableArrayList();
 	final ObservableList<Node> splitEventLines = observableArrayList();
 	final ObservableList<Node> spotShapes = observableArrayList();
+	private final ObservableList<ObservableList<Node>> lists;
+	private final ObservableList<Node> scrollBarNodes;
+	private final ObservableList<Node> splitCenterNodes;
 	private final Map<ImageLayer, Map<Node, ObservableList<Node>>> mapImageLayerNodes;
 	private final EnumMap<Mode, Collection<ObservableList<Node>>> mapListsByMode;
 
-	ViewportComponents(Collection<ScrollBar> scrollBars, Collection<Node> splitCenterShapes)
+	ViewportComponents(ObservableList<ObservableList<Node>> lists,
+		Collection<ScrollBar> scrollBars, Collection<Node> splitCenterShapes)
 	{
-		final ObservableList<Node> scrollBarNodes =
-			unmodifiableObservableList(observableArrayList(scrollBars));
-		final ObservableList<Node> splitCenterNodes =
-			unmodifiableObservableList(observableArrayList(splitCenterShapes));
+		this.lists = lists;
+		this.scrollBarNodes = unmodifiableObservableList(observableArrayList(scrollBars));
+		this.splitCenterNodes = unmodifiableObservableList(observableArrayList(splitCenterShapes));
 		this.mapImageLayerNodes = new IdentityHashMap<>();
 		this.mapListsByMode = new EnumMap<>(Mode.class);
-		for (var mode : Mode.values())
-		{
-			mapListsByMode.put(mode, switch (mode)
-			{
-				case SINGLE ->
-					List.of(imageLayers, scrollBarNodes);
-				case GRID ->
-					List.of(imageLayers, gridShapeLines, gridShapes, gridEventLines);
-				case SPLIT ->
-					List.of(
-					imageLayers, splitShapeLines, splitShapes, splitEventLines,
-					splitCenterNodes, scrollBarNodes);
-				case SPOT ->
-					List.of(spotLayers, spotShapes, scrollBarNodes);
-			});
-		}
 	}
 
-	private Collection<ObservableList<Node>> getListsByMode(Mode mode)
+	void setListsByMode(Mode mode)
 	{
-		final var lists = mapListsByMode.get(mode);
-		if (lists != null)
+		lists.setAll(mapListsByMode.computeIfAbsent(mode, m -> switch (m)
 		{
-			return lists;
-		}
-		else
-		{
-			throw new IllegalStateException(getClass().getName() +
-				"::getLists : mapListsByMode not initialized for Mode " + mode);
-		}
-	}
-
-	void setListsByMode(ObservableList<ObservableList<Node>> nodes, Mode mode)
-	{
-		nodes.setAll(getListsByMode(mode));
+			case SINGLE ->
+				List.of(imageLayers, scrollBarNodes);
+			case GRID ->
+				List.of(imageLayers, gridShapeLines, gridShapes, gridEventLines);
+			case SPLIT ->
+				List.of(
+				imageLayers, splitShapeLines, splitShapes, splitEventLines,
+				splitCenterNodes, scrollBarNodes);
+			case SPOT ->
+				List.of(spotLayers, spotShapes, scrollBarNodes);
+		}));
 	}
 
 	/// Add the given ImageLayer and all its related components.

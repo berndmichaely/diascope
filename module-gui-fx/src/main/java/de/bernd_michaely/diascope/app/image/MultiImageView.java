@@ -144,8 +144,6 @@ public class MultiImageView implements AutoCloseable
 			case SINGLE ->
 			{
 			}
-			default -> throw new AssertionError(getClass().getName() +
-					"::resetControls → Invalid mode: " + mode);
 		}
 	}
 
@@ -231,11 +229,21 @@ public class MultiImageView implements AutoCloseable
 		return scrollBarsEnabled;
 	}
 
+	/// Returns true, iff the multi image mode is actually not SINGLE.
+	/// Note, that the current number of layers may be 1 nonetheless.
+	///
+	/// @see Mode#SINGLE
+	///
 	public ObservableBooleanValue multiLayerModeProperty()
 	{
 		return viewport.multiLayerModeProperty();
 	}
 
+	/// Returns true, iff the multi image mode is actually not SINGLE.
+	/// Note, that the current number of layers may be 1 nonetheless.
+	///
+	/// @see #multiLayerModeProperty()
+	///
 	public boolean isMultiLayerMode()
 	{
 		return multiLayerModeProperty().get();

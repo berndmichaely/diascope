@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.image;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListContentConcatenation;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javafx.beans.property.*;
@@ -37,6 +38,7 @@ import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.Math.clamp;
 import static javafx.beans.binding.Bindings.not;
+import static javafx.beans.binding.Bindings.size;
 
 /// Class to describe the viewport of a MultiImageView containing all images.
 ///
@@ -79,12 +81,12 @@ class Viewport implements AutoCloseable
 		this.scrollPosY = new ReadOnlyDoubleWrapper();
 		this.scrollBars = new ScrollBars(pane.widthProperty(), pane.heightProperty());
 		this.splitCenter = new SplitCenter(pane.widthProperty(), pane.heightProperty());
-		this.components = new ViewportComponents(scrollBars.getScrollBars(), splitCenter.getShapes());
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
 		this.stackNodes = new ListContentConcatenation<>(pane.getChildren());
+		this.components = new ViewportComponents(stackNodes.getObservableLists(),
+			scrollBars.getScrollBars(), splitCenter.getShapes());
 		final ChangeListener<Mode> onModeChange = onChange((oldMode, newMode) ->
 		{
-			components.setListsByMode(stackNodes.getObservableLists(), newMode);
 			if (oldMode == SPOT)
 			{
 				if (spotBaseLayer != null)
@@ -117,9 +119,12 @@ class Viewport implements AutoCloseable
 				}
 			}
 		});
-		this.modeProperties = EnumProperties.createInstance(getInitialMode(), onModeChange);
+		this.modeProperties = EnumProperties.createInstance(
+			getInitialMode(), List.of(onChange(components::setListsByMode), onModeChange));
 		this.multiLayerMode = not(modeProperties.isValueProperty(SINGLE));
-		dividersEnabled.bind(dividersVisible.and(modeProperties.isValueProperty(SPLIT)).and(multiLayerMode));
+		dividersEnabled.bind(dividersVisible
+			.and(modeProperties.isValueProperty(SPLIT))
+			.and(size(components.imageLayers).greaterThanOrEqualTo(2)));
 		pane.setBackground(Background.fill(Color.BLACK));
 		pane.setMinSize(0, 0);
 		pane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -178,6 +183,7 @@ class Viewport implements AutoCloseable
 		@Nullable GridDivider gridDivider, SplitDivider splitDivider,
 		ImageLayerShape imageLayerShape)
 	{
+		splitDivider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 		components.addGridSplitLayer(index, imageLayer, Map.of(
 			imageLayer.getRegion(), components.imageLayers,
 			splitDivider.getLineEvent(), components.splitEventLines,

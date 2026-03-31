@@ -32,6 +32,7 @@ class ClippingPointsListener implements Runnable
 	private final List<ImageLayer> unmodifiableLayers;
 	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
 	private final Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer;
+	private final Double[] pointsRect;
 
 	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers,
 		Function<ImageLayer, SplitDivider> dividerByImageLayer,
@@ -41,14 +42,19 @@ class ClippingPointsListener implements Runnable
 		this.unmodifiableLayers = unmodifiableLayers;
 		this.dividerByImageLayer = dividerByImageLayer;
 		this.shapeByImageLayer = shapeByImageLayer;
+		this.pointsRect = new Double[8];
+		pointsRect[0] = ZERO;
+		pointsRect[1] = ZERO;
+		pointsRect[3] = ZERO;
+		pointsRect[6] = ZERO;
 	}
 
 	@Override
 	public void run()
 	{
-		if (viewport.multiLayerModeProperty().get())
+		final int n = unmodifiableLayers.size();
+		if (n > 1)
 		{
-			final int n = unmodifiableLayers.size();
 			for (int i = 0; i < n; i++)
 			{
 				final var layer = unmodifiableLayers.get(i);
@@ -84,6 +90,16 @@ class ClippingPointsListener implements Runnable
 				points[index++] = dividerNext.getBorderIntersectionY();
 				shapeByImageLayer.apply(layer).setPolygonPoints(points);
 			}
+		}
+		else if (n == 1)
+		{
+			final double width = viewport.widthProperty().get();
+			final double height = viewport.heightProperty().get();
+			pointsRect[2] = width;
+			pointsRect[4] = width;
+			pointsRect[5] = height;
+			pointsRect[7] = height;
+			shapeByImageLayer.apply(unmodifiableLayers.getFirst()).setPolygonPoints(pointsRect);
 		}
 	}
 }
