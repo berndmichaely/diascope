@@ -16,7 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.util.collections;
 
-import java.util.Objects;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /// Leaf nodes of a BinaryTree.
@@ -42,24 +41,5 @@ public final class LeafNode<L> extends TreeNode
 	public void setValue(@Nullable L value)
 	{
 		this.value = value;
-	}
-
-	@Override
-	public boolean equals(@Nullable Object object)
-	{
-		if (object instanceof LeafNode other)
-		{
-			return Objects.equals(this.getValue(), other.getValue());
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	@Override
-	public int hashCode()
-	{
-		return Objects.hashCode(getValue());
 	}
 }

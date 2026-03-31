@@ -250,17 +250,47 @@ public class BinaryTreeTest
 	public void test_remove()
 	{
 		System.out.println(">>> test_remove");
-		final var binaryTree = new BinaryTree<Integer, String>();
+		final var binaryTree = new BinaryTree<String, String>();
 		checkSize(0, binaryTree);
 		binaryTree.append("one");
-		binaryTree.append("two", 2);
-		binaryTree.append("three", 3);
-		checkSize(3, binaryTree);
-		final BinaryNode<Integer> innerNode = binaryTree.findInnerNode(2);
+		binaryTree.append((String) null);
+		binaryTree.append("two", "2");
+		binaryTree.append("three", "3");
+		checkSize(4, binaryTree);
+		final BinaryNode<String> innerNode = binaryTree.findInnerNode("2");
 		assertFalse(binaryTree.remove(innerNode));
-		assertFalse(binaryTree.remove(2));
-		checkSize(3, binaryTree);
+		assertFalse(binaryTree.remove("2"));
+		checkSize(4, binaryTree);
 		assertTrue(binaryTree.remove("two"));
+		checkSize(3, binaryTree);
+		assertTrue(binaryTree.remove(null));
 		checkSize(2, binaryTree);
+	}
+
+	@Test
+	public void test_removeNode()
+	{
+		System.out.println(">>> test_removeNode");
+		final var binaryTree1 = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree1);
+		binaryTree1.append("one");
+		checkSize(1, binaryTree1);
+		final var binaryTree2 = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree2);
+		binaryTree2.append("one");
+		checkSize(1, binaryTree2);
+		final LeafNode<String> leaf1 = binaryTree1.findLeafNode("one");
+		final LeafNode<String> leaf2 = binaryTree2.findLeafNode("one");
+		assertTrue(binaryTree1.contains(leaf1));
+		assertTrue(binaryTree2.contains(leaf2));
+		assertFalse(binaryTree1.contains(leaf2));
+		assertFalse(binaryTree2.contains(leaf1));
+		assertDoesNotThrow(() -> binaryTree2.removeNode(leaf2, true));
+		checkSize(0, binaryTree2);
+		assertThrows(IllegalArgumentException.class, () -> binaryTree1.removeNode(leaf2, true));
+		// Check, that precondition is skipped to ensure the related performance gain, but …
+		// OOPS !!! Need to check precondition in your code yourself before !!!
+		assertDoesNotThrow(() -> binaryTree1.removeNode(leaf2, false));
+		checkSize(0, binaryTree1); // this shouln't happen in real code
 	}
 }

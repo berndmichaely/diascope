@@ -83,7 +83,7 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 	/// @return the inner node, if found, or {@code null}
 	///
 	public @Nullable
-	BinaryNode<I> findInnerNode(I value)
+	BinaryNode<I> findInnerNode(@Nullable I value)
 	{
 		final Iterator<TreeNode> iter = iterator();
 		while (iter.hasNext())
@@ -266,20 +266,38 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 		final var leafNode = findLeafNode(item);
 		if (leafNode != null)
 		{
-			removeNode(leafNode);
+			removeNode(leafNode, false);
 		}
 		return leafNode;
 	}
 
 	/// Removes the given leaf node.
+	/// Same as `removeNode(leafNode, true)`.
 	///
-	/// *Implementation note:*
-	/// There is no test, that the given node is part of this tree.
-	///
-	/// @param leafNode the given leaf node
+	/// @see #removeNode(LeafNode, boolean)
 	///
 	public void removeNode(LeafNode<L> leafNode)
 	{
+		removeNode(leafNode, true);
+	}
+
+	/// Removes the given leaf node.
+	///
+	/// @param leafNode the given leaf node
+	/// @param checkTreeNode if true, check first, that the given leafNode is
+	///          part of this tree, otherwise the check is omitted, which is more
+	///          efficient, but you are own your own about correctness
+	/// @throws IllegalArgumentException if it has been checked, that the given
+	///                                  leafNode is not part of this tree
+	///
+	public void removeNode(LeafNode<L> leafNode, boolean checkTreeNode)
+	{
+		if (checkTreeNode && stream().noneMatch(node -> node == leafNode))
+		{
+			throw new IllegalArgumentException(
+				"::removeNode : leafNode »%s «is not part of this tree instance"
+					.formatted(getClass().getName(), leafNode));
+		}
 		final var pn = leafNode.getParentNode();
 		if (pn != null)
 		{
@@ -303,19 +321,21 @@ public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
 
 	/// {@inheritDoc}
 	///
-	/// This implementation removes a leaf node by the given associated value.
+	/// This implementation removes the first leaf node found which has the given
+	/// associated value.
 	/// (That is, it will *not* remove an *inner* node directly
 	///  by its associated value!)
 	///
 	/// @param expects a value of a LeafNode
+	/// @return true, iff a leaf node was found and removed
 	///
 	@Override
-	public boolean remove(Object leafValue)
+	public boolean remove(@Nullable Object leafValue)
 	{
 		final LeafNode<L> leafNode = _findLeafNode(leafValue);
 		if (leafNode != null)
 		{
-			removeNode(leafNode);
+			removeNode(leafNode, false);
 			return true;
 		}
 		return false;
