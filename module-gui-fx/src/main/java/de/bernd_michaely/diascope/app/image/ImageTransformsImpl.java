@@ -17,6 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+import javafx.beans.binding.NumberBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -113,7 +114,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	{
 		if (!isCalculatedPropertiesBound())
 		{
-			otherResultingZoomFactor = other.resultingZoomFactorProperty();
+			otherResultingZoomFactor = other.resultingZoomFactor;
 			otherResultingZoomFactor.bind(this.resultingZoomFactor);
 		}
 		else
@@ -166,15 +167,26 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 		unbindControlProperties();
 	}
 
-	ReadOnlyDoubleWrapper resultingZoomFactorProperty()
+	/// Set a binding to calculate the resulting zoom factor.
+	///
+	/// @param numberBinding the binding to set, `null` to unbind
+	///
+	void setResultingZoomFactorBinding(@Nullable NumberBinding numberBinding)
 	{
-		return resultingZoomFactor;
+		if (numberBinding != null)
+		{
+			resultingZoomFactor.bind(numberBinding);
+		}
+		else
+		{
+			resultingZoomFactor.unbind();
+		}
 	}
 
 	@Override
 	public ReadOnlyDoubleProperty zoomFactorProperty()
 	{
-		return resultingZoomFactorProperty().getReadOnlyProperty();
+		return resultingZoomFactor.getReadOnlyProperty();
 	}
 
 	EnumProperties<ZoomMode> zoomModeProperties()

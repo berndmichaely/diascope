@@ -104,11 +104,12 @@ final class ImageLayer implements Transformable
 		zoomFit.bind(min(zoomFitWidth, zoomFitHeight));
 		zoomFill.bind(max(zoomFitWidth, zoomFitHeight));
 		final EnumProperties<ZoomMode> zoomModeProperties = imageTransforms.zoomModeProperties();
-		imageTransforms.resultingZoomFactorProperty().bind(when(imageIsNull).then(0.0)
-			.otherwise(when(zoomModeProperties.isValueProperty(FIT)).then(zoomFit)
-				.otherwise(when(zoomModeProperties.isValueProperty(FILL)).then(zoomFill)
-					.otherwise(when(zoomModeProperties.isValueProperty(ORIGINAL)).then(1.0)
-						.otherwise(imageTransforms.zoomFixedProperty())))));
+		imageTransforms.setResultingZoomFactorBinding(
+			when(imageIsNull).then(0.0)
+				.otherwise(when(zoomModeProperties.isValueProperty(FIT)).then(zoomFit)
+					.otherwise(when(zoomModeProperties.isValueProperty(FILL)).then(zoomFill)
+						.otherwise(when(zoomModeProperties.isValueProperty(ORIGINAL)).then(1.0)
+							.otherwise(imageTransforms.zoomFixedProperty())))));
 		imageRotated.rotateProperty().bind(imageTransforms.rotateProperty());
 		this.scale = new Scale();
 		final var zoomFactorProperty = imageTransforms.zoomFactorProperty();

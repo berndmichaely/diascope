@@ -34,19 +34,22 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
+import static javafx.beans.binding.Bindings.when;
 import static javafx.collections.FXCollections.observableArrayList;
 import static javafx.collections.FXCollections.unmodifiableObservableList;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * ImageTransformsSwitch Test.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// ImageTransformsSwitch Test.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public class ImageTransformsSwitchTest
 {
-	class Transformable_ implements Transformable
+	private static class Transformable_ implements Transformable
 	{
+		private static final double FACTOR_FIT = 0.7;
+		private static final double FACTOR_FILL = 0.8;
 		private final ImageTransformsImpl imageTransforms;
 		private final String name;
 
@@ -54,6 +57,12 @@ public class ImageTransformsSwitchTest
 		{
 			this.name = name;
 			this.imageTransforms = new ImageTransformsImpl();
+			final EnumProperties<ZoomMode> zoomModeProperties = imageTransforms.zoomModeProperties();
+			imageTransforms.setResultingZoomFactorBinding(
+				when(zoomModeProperties.isValueProperty(FIT)).then(FACTOR_FIT)
+					.otherwise(when(zoomModeProperties.isValueProperty(FILL)).then(FACTOR_FILL)
+						.otherwise(when(zoomModeProperties.isValueProperty(ORIGINAL)).then(1.0)
+							.otherwise(imageTransforms.zoomFixedProperty()))));
 		}
 
 		@Override
@@ -210,7 +219,9 @@ public class ImageTransformsSwitchTest
 			ReadOnlyDoubleProperty zoomFactorProperty);
 	}
 
-	private void _runImageTransformsTestFacade(PropertiesConsumer propertiesConsumer)
+	/// Runs a test on the ImageTransforms facade directly.
+	///
+	private void _runImageTransformsTestImmediate(PropertiesConsumer propertiesConsumer)
 	{
 		final ImageTransforms facade = its._getFacadeImageTransforms();
 		propertiesConsumer.accept(
@@ -223,6 +234,9 @@ public class ImageTransformsSwitchTest
 			facade.zoomFactorProperty());
 	}
 
+	/// Runs a test on the ImageTransforms facade remotely by using a set of
+	/// additional bidirectionally bound external properties.
+	///
 	private void _runImageTransformsTestRemote(PropertiesConsumer propertiesConsumer)
 	{
 		// remote properties:
@@ -250,7 +264,7 @@ public class ImageTransformsSwitchTest
 			mirrorXProperty, mirrorYProperty, zoomModeOrDefaultProperty, zoomFactorProperty);
 	}
 
-	private void _test_facade_properties(
+	private void _test_facade_zoom_mode(
 		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
 		DoubleProperty zoomFixedProperty,
 		DoubleProperty rotateProperty,
@@ -259,7 +273,6 @@ public class ImageTransformsSwitchTest
 		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
 		ReadOnlyDoubleProperty zoomFactorProperty)
 	{
-		System.out.println("ImageTransformsSwitch _test_facade_properties");
 		assertTrue(isGlobal());
 		// add layer
 		final Transformable_ ta = new Transformable_("A");
@@ -269,69 +282,187 @@ public class ImageTransformsSwitchTest
 		final EnumProperties<ZoomMode> zmp_a = ta.getImageTransforms().zoomModeProperties();
 		final EnumProperties<ZoomMode> zmp_b = tb.getImageTransforms().zoomModeProperties();
 		final EnumProperties<ZoomMode> zmp_c = tc.getImageTransforms().zoomModeProperties();
-		zmp_a.isValue(ZoomMode.getDefault());
-		zmp_b.isValue(ZoomMode.getDefault());
-		zmp_c.isValue(ZoomMode.getDefault());
+		assertTrue(zmp_a.isValue(getDefault()));
+		assertTrue(zmp_b.isValue(getDefault()));
+		assertTrue(zmp_c.isValue(getDefault()));
 		// set global mode
-		zoomModeRawValueProperty.set(ZoomMode.FIT);
-		zmp_a.isValue(ZoomMode.FIT);
-		zmp_b.isValue(ZoomMode.FIT);
-		zmp_c.isValue(ZoomMode.FIT);
+		zoomModeRawValueProperty.set(FIT);
+		assertTrue(zmp_a.isValue(FIT));
+		assertTrue(zmp_b.isValue(FIT));
+		assertTrue(zmp_c.isValue(FIT));
 		setLocal(true);
 		assertTrue(isLocal());
-		zmp_a.isValue(ZoomMode.getDefault());
-		zmp_b.isValue(ZoomMode.getDefault());
-		zmp_c.isValue(ZoomMode.getDefault());
+		assertTrue(zmp_a.isValue(getDefault()));
+		assertTrue(zmp_b.isValue(getDefault()));
+		assertTrue(zmp_c.isValue(getDefault()));
 		// no single selection
 		assertTrue(singleSelectedLayerProperty.get().isEmpty());
-		zoomModeRawValueProperty.set(ZoomMode.ORIGINAL);
-		zmp_a.isValue(ZoomMode.getDefault());
-		zmp_b.isValue(ZoomMode.getDefault());
-		zmp_c.isValue(ZoomMode.getDefault());
+		zoomModeRawValueProperty.set(ORIGINAL);
+		assertTrue(zmp_a.isValue(getDefault()));
+		assertTrue(zmp_b.isValue(getDefault()));
+		assertTrue(zmp_c.isValue(getDefault()));
 		// select layer b
 		singleSelectedLayerProperty.set(Optional.of(tb));
-		zoomModeRawValueProperty.set(ZoomMode.ORIGINAL);
-		zmp_a.isValue(ZoomMode.getDefault());
-		zmp_b.isValue(ZoomMode.ORIGINAL);
-		zmp_c.isValue(ZoomMode.getDefault());
+//		zoomModeRawValueProperty.set(null);
+		zoomModeRawValueProperty.set(ORIGINAL);
+		assertTrue(zmp_a.isValue(getDefault()));
+		assertTrue(zmp_b.isValue(ORIGINAL));
+		assertTrue(zmp_c.isValue(getDefault()));
 		setLocal(false);
 		assertTrue(isGlobal());
-		zmp_a.isValue(ZoomMode.FIT);
-		zmp_b.isValue(ZoomMode.FIT);
-		zmp_c.isValue(ZoomMode.FIT);
+		assertTrue(zmp_a.isValue(FIT));
+		assertTrue(zmp_b.isValue(FIT));
+		assertTrue(zmp_c.isValue(FIT));
 		setLocal(true);
 		assertTrue(isLocal());
-		zmp_a.isValue(ZoomMode.getDefault());
-		zmp_b.isValue(ZoomMode.ORIGINAL);
-		zmp_c.isValue(ZoomMode.getDefault());
+		assertTrue(zmp_a.isValue(getDefault()));
+		assertTrue(zmp_b.isValue(ORIGINAL));
+		assertTrue(zmp_c.isValue(getDefault()));
 		setLocal(false);
 		assertTrue(isGlobal());
-		zmp_a.isValue(ZoomMode.FIT);
-		zmp_b.isValue(ZoomMode.FIT);
-		zmp_c.isValue(ZoomMode.FIT);
+		assertTrue(zmp_a.isValue(FIT));
+		assertTrue(zmp_b.isValue(FIT));
+		assertTrue(zmp_c.isValue(FIT));
 		// set global mode
-		zoomModeRawValueProperty.set(ZoomMode.FILL);
-		zmp_a.isValue(ZoomMode.FILL);
-		zmp_b.isValue(ZoomMode.FILL);
-		zmp_c.isValue(ZoomMode.FILL);
+		zoomModeRawValueProperty.set(FILL);
+		assertTrue(zmp_a.isValue(FILL));
+		assertTrue(zmp_b.isValue(FILL));
+		assertTrue(zmp_c.isValue(FILL));
 		setLocal(true);
 		assertTrue(isLocal());
-		zmp_a.isValue(ZoomMode.getDefault());
-		zmp_b.isValue(ZoomMode.ORIGINAL);
-		zmp_c.isValue(ZoomMode.getDefault());
+		assertTrue(zmp_a.isValue(getDefault()));
+		assertTrue(zmp_b.isValue(ORIGINAL));
+		assertTrue(zmp_c.isValue(getDefault()));
 	}
 
 	@Test
-	public void test_facade_properties_facade()
+	public void test_facade_zoom_mode_immediate()
 	{
-		System.out.println("test_facade_properties_facade");
-		_runImageTransformsTestFacade(this::_test_facade_properties);
+		System.out.println("test_facade_zoom_mode_immediate");
+		_runImageTransformsTestImmediate(this::_test_facade_zoom_mode);
 	}
 
 	@Test
-	public void test_facade_properties_remote()
+	public void test_facade_zoom_mode_remote()
 	{
-		System.out.println("test_facade_properties_remote");
-		_runImageTransformsTestRemote(this::_test_facade_properties);
+		System.out.println("test_facade_zoom_mode_remote");
+		_runImageTransformsTestRemote(this::_test_facade_zoom_mode);
+	}
+
+	private void _test_facade_zoom_factor(
+		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+		DoubleProperty zoomFixedProperty,
+		DoubleProperty rotateProperty,
+		BooleanProperty mirrorXProperty,
+		BooleanProperty mirrorYProperty,
+		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+		ReadOnlyDoubleProperty zoomFactorProperty)
+	{
+		assertTrue(isGlobal());
+		// add layer
+		final Transformable_ ta = new Transformable_("A");
+		final Transformable_ tb = new Transformable_("B");
+		final Transformable_ tc = new Transformable_("C");
+		layers.addAll(ta, tb, tc);
+		final ImageTransformsImpl it_a = ta.getImageTransforms();
+		final ImageTransformsImpl it_b = tb.getImageTransforms();
+		final ImageTransformsImpl it_c = tc.getImageTransforms();
+		zoomModeRawValueProperty.set(ORIGINAL);
+		assertEquals(1.0, it_a.zoomFactorProperty().get());
+		assertEquals(1.0, it_b.zoomFactorProperty().get());
+		assertEquals(1.0, it_c.zoomFactorProperty().get());
+		setLocal(true);
+		assertTrue(isLocal());
+		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		singleSelectedLayerProperty.set(Optional.of(ta));
+		zoomModeRawValueProperty.set(FIXED);
+		zoomFixedProperty.set(1.1);
+		singleSelectedLayerProperty.set(Optional.of(tb));
+		zoomModeRawValueProperty.set(FIXED);
+		zoomFixedProperty.set(1.2);
+		singleSelectedLayerProperty.set(Optional.of(tc));
+		zoomModeRawValueProperty.set(FIXED);
+		zoomFixedProperty.set(1.3);
+		singleSelectedLayerProperty.set(Optional.empty());
+		setLocal(false);
+		assertTrue(isGlobal());
+		assertEquals(1.0, it_a.zoomFactorProperty().get());
+		assertEquals(1.0, it_b.zoomFactorProperty().get());
+		assertEquals(1.0, it_c.zoomFactorProperty().get());
+		setLocal(true);
+		assertTrue(isLocal());
+		assertEquals(1.1, it_a.zoomFactorProperty().get());
+		assertEquals(1.2, it_b.zoomFactorProperty().get());
+		assertEquals(1.3, it_c.zoomFactorProperty().get());
+	}
+
+	@Test
+	public void test_facade_zoom_factor_immediate()
+	{
+		System.out.println("test_facade_zoom_factor_immediate");
+		_runImageTransformsTestImmediate(this::_test_facade_zoom_factor);
+	}
+
+	@Test
+	public void test_facade_zoom_factor_remote()
+	{
+		System.out.println("test_facade_zoom_factor_remote");
+		_runImageTransformsTestRemote(this::_test_facade_zoom_factor);
+	}
+
+	private void _test_facade_rotate(
+		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+		DoubleProperty zoomFixedProperty,
+		DoubleProperty rotateProperty,
+		BooleanProperty mirrorXProperty,
+		BooleanProperty mirrorYProperty,
+		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+		ReadOnlyDoubleProperty zoomFactorProperty)
+	{
+		assertTrue(isGlobal());
+		// add layer
+		final Transformable_ ta = new Transformable_("A");
+		final Transformable_ tb = new Transformable_("B");
+		final Transformable_ tc = new Transformable_("C");
+		layers.addAll(ta, tb, tc);
+		final ImageTransformsImpl it_a = ta.getImageTransforms();
+		final ImageTransformsImpl it_b = tb.getImageTransforms();
+		final ImageTransformsImpl it_c = tc.getImageTransforms();
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(0.0, it_c.rotateProperty().get());
+		rotateProperty.set(17.5);
+		assertEquals(17.5, it_a.rotateProperty().get());
+		assertEquals(17.5, it_b.rotateProperty().get());
+		assertEquals(17.5, it_c.rotateProperty().get());
+		setLocal(true);
+		assertTrue(isLocal());
+		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(0.0, it_c.rotateProperty().get());
+		rotateProperty.set(7.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(0.0, it_c.rotateProperty().get());
+		singleSelectedLayerProperty.set(Optional.of(tb));
+		rotateProperty.set(2.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(2.0, it_b.rotateProperty().get());
+		assertEquals(0.0, it_c.rotateProperty().get());
+	}
+
+	@Test
+	public void test_facade_rotate_immediate()
+	{
+		System.out.println("test_facade_zoom_factor_immediate");
+		_runImageTransformsTestImmediate(this::_test_facade_rotate);
+	}
+
+	@Test
+	public void test_facade_rotate_remote()
+	{
+		System.out.println("test_facade_zoom_factor_remote");
+		_runImageTransformsTestRemote(this::_test_facade_rotate);
 	}
 }

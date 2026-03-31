@@ -67,10 +67,10 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 			globalImageTransforms.unbindAllProperties();
 			facadeImageTransforms.unbindAllProperties();
 		};
-		selectedImageTransforms.addListener(onChange(optionalImageTransforms ->
+		selectedImageTransforms.addListener(onChange((oldOptionalTransforms, newOptionalTransforms) ->
 		{
 			unbindAllTransforms.run();
-			optionalImageTransforms.ifPresent(selectedTransforms ->
+			newOptionalTransforms.ifPresent(selectedTransforms ->
 			{
 				if (selectedTransforms == globalImageTransforms)
 				{
@@ -81,14 +81,13 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 				}
 				else
 				{
-					final var selectedLayer = singleSelectedLayerProperty.get().get();
+					final Transformable selectedLayer = singleSelectedLayerProperty.get().get();
 					mapIntermediate.forEach((layer, intermediateTransforms) ->
 					{
 						final var layerTransforms = layer.getImageTransforms();
-//						layerTransforms.bindAllProperties(intermediateTransforms);
+						layerTransforms.bindAllProperties(intermediateTransforms);
 						if (layer == selectedLayer)
 						{
-							System.out.println("layer == selectedLayer");
 							intermediateTransforms.adjustControlProperties(facadeImageTransforms);
 							intermediateTransforms.bindAllProperties(facadeImageTransforms);
 						}
