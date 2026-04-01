@@ -16,80 +16,76 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
-import javafx.beans.property.BooleanProperty;
+import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ObservableObjectValue;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 import static javafx.beans.binding.Bindings.when;
 
 /// Class to describe an ImageLayer selection shape for SPLIT mode.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayerShapeSplit extends ImageLayerShapeBase
+final class ImageLayerShapeSplit extends AbstractImageLayerShapeStroke
 {
-	private static final double STROKE_WIDTH_SELECTED = 4 * STROKE_WIDTH_UNSELECTED;
-	private final BooleanProperty dualSpotSelected;
-	private final ReadOnlyObjectWrapper<Paint> strokeSelectedPaint;
+	private final Rectangle rectangle = new Rectangle();
+	private final Rectangle rectangleClip = new Rectangle();
 	private final Polygon polygon = new Polygon();
+	private final Polygon polygonClip = new Polygon();
+	private final ReadOnlyObjectWrapper<@Nullable Shape> clip;
 
-	private ImageLayerShapeSplit()
+	ImageLayerShapeSplit(EnumProperties<Mode> modeProperties)
 	{
 		super(false, null, null);
-		this.dualSpotSelected = new SimpleBooleanProperty();
-		this.strokeSelectedPaint = new ReadOnlyObjectWrapper<>();
-		strokeSelectedPaint.bind(when(dualSpotSelected)
-			.then(COLORS_SELECTED.getLast())
-			.otherwise(COLORS_SELECTED.getFirst()));
+		this.clip = new ReadOnlyObjectWrapper<>();
+		clip.bind(when(modeProperties.isValueProperty(Mode.SPLIT))
+			.<@Nullable Shape>then(polygonClip).otherwise(
+			when(modeProperties.isValueProperty(Mode.GRID))
+				.<@Nullable Shape>then(rectangleClip).otherwise((@Nullable Shape) null)));
+		rectangleClip.xProperty().bind(rectangle.xProperty());
+		rectangleClip.yProperty().bind(rectangle.yProperty());
+		rectangleClip.widthProperty().bind(rectangle.widthProperty());
+		rectangleClip.heightProperty().bind(rectangle.heightProperty());
+		rectangleClip.arcWidthProperty().bind(rectangle.arcWidthProperty());
+		rectangleClip.arcHeightProperty().bind(rectangle.arcHeightProperty());
+		initShape(rectangle);
+		initShape(polygon);
 	}
 
-	static ImageLayerShapeSplit createInstance()
+	ReadOnlyObjectProperty<@Nullable Shape> clipProperty()
 	{
-		final var imageLayerShape = new ImageLayerShapeSplit();
-		imageLayerShape._postInit();
-		return imageLayerShape;
+		return clip.getReadOnlyProperty();
 	}
 
-	void setShapePoints(Double... points)
+	void bindViewportBounds(ViewportBoundsLocal viewportBounds)
 	{
-		polygon.getPoints().setAll(points);
+		rectangle.xProperty().bind(viewportBounds.xProperty());
+		rectangle.yProperty().bind(viewportBounds.yProperty());
+		rectangle.widthProperty().bind(viewportBounds.widthProperty());
+		rectangle.heightProperty().bind(viewportBounds.heightProperty());
 	}
 
-	void clearPoints()
+	void setPolygonPoints(ClippingPointsListener.Points points)
 	{
-		polygon.getPoints().clear();
+		//polygon.getPoints().setAll(points);
+		//polygonClip.getPoints().setAll(points);
+		// … this doesn't seem to work (JavaFX 25.0.2) → workaround:
+		final var pointsArray = points.toArray(Double[]::new);
+		polygon.getPoints().setAll(pointsArray);
+		polygonClip.getPoints().setAll(pointsArray);
 	}
 
-	BooleanProperty dualSpotSelectedProperty()
+	Rectangle getRectangle()
 	{
-		return dualSpotSelected;
+		return rectangle;
 	}
 
-	@Override
-	ObservableObjectValue<Paint> getStrokeSelectedPaint()
-	{
-		return strokeSelectedPaint.getReadOnlyProperty();
-	}
-
-	@Override
-	double getStrokeWidthSelected()
-	{
-		return STROKE_WIDTH_SELECTED;
-	}
-
-	@Override
-	Type getType()
-	{
-		return SPLIT;
-	}
-
-	@Override
-	Polygon getShape()
+	Polygon getPolygon()
 	{
 		return polygon;
 	}

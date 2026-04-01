@@ -46,13 +46,13 @@ class ImageControlProperties
 		this.addLayerDisableProperty = new ReadOnlyBooleanWrapper();
 		addLayerDisableProperty.bind(
 			numLayers.greaterThanOrEqualTo(multiImageView.maximumNumberOfLayersProperty()).or(
-				multiImageView.modeProperty().isEqualTo(SPOT)));
+				multiImageView.modeProperties().isValueProperty(SPOT)));
 		this.removeLayerDisableProperty = new ReadOnlyBooleanWrapper();
 		removeLayerDisableProperty.bind(
 			not(numLayers.greaterThan(1)
 				.and(numSelectedLayers.greaterThan(0)
 					.and(numSelectedLayers.lessThan(numLayers))))
-				.or(multiImageView.modeProperty().isEqualTo(SPOT)));
+				.or(multiImageView.modeProperties().isValueProperty(SPOT)));
 	}
 
 	MainContentProperties getMainContentProperties()

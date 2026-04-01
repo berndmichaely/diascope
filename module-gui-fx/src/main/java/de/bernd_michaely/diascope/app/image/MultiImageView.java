@@ -16,17 +16,17 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.layout.Region;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
@@ -40,15 +40,14 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class MultiImageView
+public class MultiImageView implements AutoCloseable
 {
 	private static final Logger logger = System.getLogger(MultiImageView.class.getName());
 	private final Viewport viewport;
-	private final ImageTransforms imageTransforms;
-	private final ImageLayers imageLayersSplit;
-	private final ImageLayersSpot imageLayersSpot;
+	private final ImageTransformsSwitch<ImageLayer> imageTransformsSwitch;
+	private final ImageLayers imageLayers;
+	private final ImageLayersSpot spotImageLayers;
 	private final BooleanProperty scrollBarsEnabled;
-	private final ReadOnlyIntegerWrapper numLayers;
 	private final ReadOnlyIntegerWrapper maximumNumberOfLayers;
 	private final ReadOnlyBooleanWrapper spotModeDisabled;
 
@@ -56,7 +55,7 @@ public class MultiImageView
 	///
 	public enum Mode
 	{
-		SINGLE, SPLIT, SPOT;
+		SINGLE, GRID, SPLIT, SPOT;
 
 		public static Mode getInitialMode()
 		{
@@ -65,43 +64,39 @@ public class MultiImageView
 
 		public static Mode getDefaultMultiImageMode()
 		{
+//			return GRID;
 			return SPLIT;
-		}
-
-		public boolean isSpotMode()
-		{
-			return this == SPOT;
 		}
 	}
 
 	public MultiImageView()
 	{
-		this.numLayers = new ReadOnlyIntegerWrapper();
-		this.viewport = new Viewport(numLayers.getReadOnlyProperty());
-		this.imageTransforms = new ImageTransforms();
-		this.imageLayersSplit = new ImageLayers(viewport, imageTransforms);
-		final var layerSelectionModel = imageLayersSplit.layerSelectionModel;
+		this.viewport = new Viewport();
+		this.imageLayers = new ImageLayers(viewport);
+		final var layerSelectionModel = imageLayers.layerSelectionModel;
 		viewport.setLayerSelectionModel(layerSelectionModel);
-		this.imageLayersSpot = new ImageLayersSpot(viewport, imageTransforms);
-		imageLayersSpot.layerSelectionModel.setSelected(1, true);
+		this.spotImageLayers = new ImageLayersSpot(viewport);
+		this.imageTransformsSwitch = new ImageTransformsSwitch<>(
+			viewport.modeProperties(), layerSelectionModel.singleSelectedLayerProperty(),
+			imageLayers.unmodifiableLayers, spotImageLayers.unmodifiableLayers);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
-			(int) (C / imageLayersSplit.getDividerRotationControl().getDividerMinGap()));
-		viewport.layersMaxWidthProperty().bind(when(viewport.spotProperty())
-			.then(imageLayersSpot.layersMaxWidth).otherwise(imageLayersSplit.layersMaxWidth));
-		viewport.layersMaxHeightProperty().bind(when(viewport.spotProperty())
-			.then(imageLayersSpot.layersMaxHeight).otherwise(imageLayersSplit.layersMaxHeight));
-		viewport.modeProperty().addListener(onChange(mode ->
+			(int) (C / imageLayers.getSplitDividerRotationControl().getDividerMinGap()));
+		viewport.layersMaxWidthProperty().bind(when(viewport.modeProperties().isValueProperty(SPOT))
+			.then(spotImageLayers.layersMaxWidth).otherwise(imageLayers.layersMaxWidth));
+		viewport.layersMaxHeightProperty().bind(when(viewport.modeProperties().isValueProperty(SPOT))
+			.then(spotImageLayers.layersMaxHeight).otherwise(imageLayers.layersMaxHeight));
+		viewport.modeProperties().isValueProperty(SINGLE).addListener(onChange(isSingleMode ->
 		{
-			if (mode == null || mode == SINGLE)
+			if (isSingleMode)
 			{
-				imageLayersSplit.removeAllLayersButOne();
-				imageLayersSplit.layers.setSelected(0, true);
+				imageLayers.removeAllLayersButOne();
+				imageLayers.layers.setSelected(0, true);
 			}
 		}));
-		numLayers.bind(layerSelectionModel.sizeProperty());
 		this.scrollBarsEnabled = new SimpleBooleanProperty();
-		viewport.getScrollBars().enabledProperty().bind(
-			scrollBarsEnabled.and(imageTransforms.zoomModeProperty().isNotEqualTo(FIT)));
+		viewport.scrollBarsEnabledProperty().bind(
+			scrollBarsEnabled.and(imageTransformsSwitch.getFacadeImageTransforms()
+				.zoomModeOrDefaultProperty().isNotEqualTo(FIT)));
 		this.spotModeDisabled = new ReadOnlyBooleanWrapper();
 		spotModeDisabled.bind(not(layerSelectionModel.dualLayerSelected()));
 	}
@@ -117,52 +112,52 @@ public class MultiImageView
 
 	public ImageTransforms getImageTransforms()
 	{
-		return this.imageTransforms;
+		return imageTransformsSwitch.getFacadeImageTransforms();
 	}
 
 	public LayerSelectionModel getLayerSelectionModel()
 	{
-		return imageLayersSplit.layerSelectionModel;
+		return imageLayers.layerSelectionModel;
 	}
 
-	/// Resets the multi image layer controls:
-	///
-	///   * In SPLIT mode, centers the split center in the viewport and re-initializes the divider angles.
-	///   * In SPOT mode, centers the spot in the viewport.
+	/// Resets the multi image layer controls by setting a default layout,
+	/// depending on the mode.
 	///
 	public void resetControls()
 	{
 		final var mode = getMode();
 		switch (mode)
 		{
+			case GRID ->
+			{
+				imageLayers.getGridDividerDragControl().initializeDividerPositions();
+			}
 			case SPLIT ->
 			{
 				viewport.getSplitCenter().center();
-				imageLayersSplit.getDividerRotationControl().initializeDividerAngles();
+				imageLayers.getSplitDividerRotationControl().initializeDividerAngles();
 			}
 			case SPOT ->
 			{
-				imageLayersSpot.reset();
+				spotImageLayers.reset();
 			}
 			case SINGLE ->
 			{
 			}
-			default -> throw new AssertionError("Invalid mode: " + mode);
 		}
 	}
 
 	/// Adds a new layer.
 	public void addLayer()
 	{
-		final var layers = imageLayersSplit.layers;
+		final var layers = imageLayers.layers;
 		if (layers.size() == 1 && getMode() == getInitialMode())
 		{
 			setMode(getDefaultMultiImageMode());
 		}
-		final Optional<ImageLayer> singleSelectedLayer =
-			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get();
-		imageLayersSplit.createImageLayer(singleSelectedLayer.isPresent() ?
-			layers.indexOf(singleSelectedLayer.get()) + 1 : layers.size());
+		imageLayers.createImageLayer(
+			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get()
+				.map(layer -> layers.indexOf(layer) + 1).orElse(layers.size()));
 	}
 
 	/// Returns a property indicating the number of layers.
@@ -171,7 +166,7 @@ public class MultiImageView
 	///
 	public ReadOnlyIntegerProperty numLayersProperty()
 	{
-		return numLayers.getReadOnlyProperty();
+		return imageLayers.layerSelectionModel.sizeProperty();
 	}
 
 	/// Returns the number of layers.
@@ -209,7 +204,7 @@ public class MultiImageView
 	///
 	public boolean removeSelectedLayers()
 	{
-		return imageLayersSplit.removeSelectedLayers();
+		return imageLayers.removeSelectedLayers();
 	}
 
 	/**
@@ -219,12 +214,12 @@ public class MultiImageView
 	 *
 	 * @param imageDescriptor the given image, may be null to clear the display
 	 */
-	public void setImageDescriptor(@Nullable ImageDescriptor imageDescriptor)
+	public void setImageDescriptor(Optional<ImageDescriptor> imageDescriptor)
 	{
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
-		if (!viewport.isSpotMode())
+		if (!viewport.modeProperties().isValue(SPOT))
 		{
-			imageLayersSplit.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(
+			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(
 				imageLayer -> imageLayer.setImageDescriptor(imageDescriptor));
 		}
 	}
@@ -234,11 +229,21 @@ public class MultiImageView
 		return scrollBarsEnabled;
 	}
 
-	public ReadOnlyBooleanProperty multiLayerModeProperty()
+	/// Returns true, iff the multi image mode is actually not SINGLE.
+	/// Note, that the current number of layers may be 1 nonetheless.
+	///
+	/// @see Mode#SINGLE
+	///
+	public ObservableBooleanValue multiLayerModeProperty()
 	{
 		return viewport.multiLayerModeProperty();
 	}
 
+	/// Returns true, iff the multi image mode is actually not SINGLE.
+	/// Note, that the current number of layers may be 1 nonetheless.
+	///
+	/// @see #multiLayerModeProperty()
+	///
 	public boolean isMultiLayerMode()
 	{
 		return multiLayerModeProperty().get();
@@ -253,9 +258,9 @@ public class MultiImageView
 	///
 	/// @return property to indicate the multi image mode
 	///
-	public ObjectProperty<Mode> modeProperty()
+	public EnumProperties<Mode> modeProperties()
 	{
-		return viewport.modeProperty();
+		return viewport.modeProperties();
 	}
 
 	/// Returns the multi image mode.
@@ -264,7 +269,7 @@ public class MultiImageView
 	///
 	public Mode getMode()
 	{
-		return modeProperty().get();
+		return modeProperties().getValueOrDefault();
 	}
 
 	/// Sets the multi image mode.
@@ -273,11 +278,23 @@ public class MultiImageView
 	///
 	public void setMode(Mode mode)
 	{
-		modeProperty().set(mode);
+		modeProperties().setRawValue(mode);
 	}
 
 	public ReadOnlyBooleanProperty spotModeDisabledProperty()
 	{
 		return spotModeDisabled.getReadOnlyProperty();
+	}
+
+	/// {@inheritDoc}
+	///
+	/// This implementation unbinds all properties.
+	///
+	@Override
+	public void close()
+	{
+		try (viewport; imageTransformsSwitch; imageLayers)
+		{
+		}
 	}
 }

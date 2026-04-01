@@ -20,6 +20,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.value.ObservableDoubleValue;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.arctan;
 import static de.bernd_michaely.diascope.app.image.Border.*;
@@ -31,7 +32,7 @@ import static java.util.Collections.unmodifiableMap;
 ///
 class CornerAngles
 {
-	private final Map<Border, ReadOnlyDoubleWrapper> cornerAngles;
+	private final Map<Border, ObservableDoubleValue> cornerAngles;
 
 	/// Creates a new instance.
 	///
@@ -44,11 +45,10 @@ class CornerAngles
 		ReadOnlyDoubleProperty x, ReadOnlyDoubleProperty y,
 		ReadOnlyDoubleProperty dx, ReadOnlyDoubleProperty dy)
 	{
-		final var map = new EnumMap<Border, ReadOnlyDoubleWrapper>(Border.class);
+		final var map = new EnumMap<Border, ObservableDoubleValue>(Border.class);
 		for (var border : Border.values())
 		{
 			final var property = new ReadOnlyDoubleWrapper();
-			map.put(border, property);
 			switch (border)
 			{
 				case RIGHT -> property.bind(arctan(dy.divide(dx)));
@@ -57,26 +57,27 @@ class CornerAngles
 				case TOP -> property.bind(arctan(dx.divide(y)).add(270.0));
 				default -> throw new IllegalStateException("Invalid border: " + border);
 			}
+			map.put(border, property.getReadOnlyProperty());
 		}
 		this.cornerAngles = unmodifiableMap(map);
 	}
 
-	/// Returns a property indicating the angle of the split center point to the
+	/// Returns a value indicating the angle of the split center point to the
 	/// given viewport corner.
 	///
 	/// @param  border the given corner indicated by the associated border
-	/// @return a property indicating the angle of the split center point to the
+	/// @return a value indicating the angle of the split center point to the
 	///         given viewport corner
 	/// @see    Border
 	///
-	ReadOnlyDoubleProperty get(Border border)
+	ObservableDoubleValue get(Border border)
 	{
-		final var prop = cornerAngles.get(border);
-		if (prop == null)
+		final var property = cornerAngles.get(border);
+		if (property == null)
 		{
 			throw new IllegalStateException(
 				"Corner angle not initialized for Border: " + border);
 		}
-		return prop.getReadOnlyProperty();
+		return property;
 	}
 }

@@ -16,14 +16,16 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.Collection;
+import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Shape;
 import javafx.scene.text.Font;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
@@ -40,6 +42,7 @@ class SplitCenter
 	private final ReadOnlyDoubleWrapper splitCenterX, splitCenterY;
 	private final ReadOnlyDoubleWrapper splitCenterDx, splitCenterDy;
 	private final Circle shapeSplitCenter;
+	private final Collection<Node> shapes;
 	private final double diameter, radius;
 	private final Runnable center;
 	private boolean positionInitialized;
@@ -62,7 +65,7 @@ class SplitCenter
 		shapeSplitCenter.centerYProperty().bind(splitCenterY);
 		shapeSplitCenter.setOnMouseEntered(_ -> shapeSplitCenter.setFill(COLOR_HOVER_SPLIT));
 		shapeSplitCenter.setOnMouseExited(_ -> shapeSplitCenter.setFill(COLOR_DEFAULT_SPLIT));
-
+		this.shapes = List.of(shapeSplitCenter);
 		viewportWidth.addListener(onChange((oldWidth, newWidth) ->
 		{
 			final double w = newWidth.doubleValue();
@@ -142,8 +145,8 @@ class SplitCenter
 		return splitCenterDy;
 	}
 
-	Shape getShape()
+	Collection<Node> getShapes()
 	{
-		return shapeSplitCenter;
+		return shapes;
 	}
 }

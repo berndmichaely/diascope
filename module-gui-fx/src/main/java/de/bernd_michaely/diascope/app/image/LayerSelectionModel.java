@@ -21,6 +21,7 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
@@ -36,7 +37,8 @@ public class LayerSelectionModel implements SelectableProperties
 	private final SelectableProperties selectionModel;
 	private final ListDualSelection<ImageLayer> listDualSelection;
 
-	LayerSelectionModel(SelectableList<ImageLayer> layers)
+	LayerSelectionModel(SelectableList<ImageLayer> layers,
+		Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer)
 	{
 		this.selectionModel = SelectableListFactory.listSelectionHandler(layers);
 		this.listDualSelection = new ListDualSelection<>(layers);
@@ -44,7 +46,7 @@ public class LayerSelectionModel implements SelectableProperties
 		{
 			for (int i = change.getFrom(); i <= change.getTo(); i++)
 			{
-				layers.get(i).setSelected(layers.isSelected(i));
+				shapeByImageLayer.apply(layers.get(i)).selectedProperty().set(layers.isSelected(i));
 			}
 		});
 	}

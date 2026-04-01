@@ -1,0 +1,138 @@
+/*
+ * Copyright (C) 2025 Bernd Michaely (info@bernd-michaely.de)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package de.bernd_michaely.diascope.app.util.collections;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static java.util.Collections.unmodifiableList;
+
+/// Inner nodes of a tree.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
+public sealed class InnerNode<I> extends TreeNode permits BinaryNode
+{
+	private @Nullable I value;
+	private final List<@Nullable TreeNode> nodes;
+	private final List<@Nullable TreeNode> nodesUnmodifiable;
+
+	/// Creates a new inner node instance with a fixed number of subnodes.
+	///
+	/// @param numSubNodes the number of possible subnodes.
+	/// @param value a value associated with the inner node (may be {@code null})
+	///
+	InnerNode(int numSubNodes, @Nullable I value)
+	{
+		this.value = value;
+		this.nodes = new ArrayList<>(numSubNodes);
+		for (int i = 0; i < numSubNodes; i++)
+		{
+			nodes.add(null);
+		}
+		this.nodesUnmodifiable = unmodifiableList(nodes);
+	}
+
+	public int getSize()
+	{
+		return nodes.size();
+	}
+
+	@Override
+	public @Nullable
+	I getValue()
+	{
+		return value;
+	}
+
+	/// Sets the value associated with this node.
+	///
+	/// @param value the value to associate with this node
+	///
+	public void setValue(@Nullable I value)
+	{
+		this.value = value;
+	}
+
+	@Nullable
+	TreeNode getSubNode(int index)
+	{
+		return nodesUnmodifiable.get(index);
+	}
+
+	/// Returns the first subnode.
+	///
+	/// @return the first subnode
+	///
+	@Nullable
+	TreeNode getFirstSubNode()
+	{
+		return getSubNodes().getFirst();
+	}
+
+	/// Returns the last subnode.
+	///
+	/// @return the last subnode
+	///
+	@Nullable
+	TreeNode getLastSubNode()
+	{
+		return getSubNodes().getLast();
+	}
+
+	/// Returns an unmodifiable list of subnodes.
+	///
+	/// @return an unmodifiable list of subnodes
+	///
+	List<@Nullable TreeNode> getSubNodes()
+	{
+		return nodesUnmodifiable;
+	}
+
+	@Nullable
+	TreeNode setSubNode(int index, @Nullable TreeNode node)
+	{
+		final TreeNode oldValue = nodes.set(index, node);
+		if (node != null)
+		{
+			node.setParentNode(this);
+		}
+		return oldValue;
+	}
+
+	@Override
+	public String toString()
+	{
+		final var s = new StringBuilder();
+		s.append(getClass().getSimpleName())
+			.append("[<")
+			.append(Objects.toString(getValue(), STRING_EMPTY))
+			.append(">:");
+		for (int i = 0; i < getSubNodes().size(); i++)
+		{
+			if (i > 0)
+			{
+				s.append("|");
+			}
+			s.append(Objects.toString(getSubNode(i), STRING_EMPTY));
+		}
+		s.append("]");
+		return s.toString();
+	}
+}

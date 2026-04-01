@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Bernd Michaely (info@bernd-michaely.de)
+ * Copyright (C) 2026 Bernd Michaely (info@bernd-michaely.de)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,93 +20,61 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleWrapper;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-/// Properties for external control of image transforms.
+/// Properties for external control of image transformations.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class ImageTransforms
+public sealed interface ImageTransforms permits ImageTransformsImpl
 {
-	private final ObjectProperty<ZoomMode> zoomMode;
-	private final DoubleProperty zoomFixed;
-	private final ReadOnlyDoubleWrapper zoomFactor;
-	private final DoubleProperty rotate;
-	private final BooleanProperty mirrorX, mirrorY;
-
-	ImageTransforms()
-	{
-		this.zoomMode = new SimpleObjectProperty<>(ZoomMode.getDefault());
-		this.zoomFixed = new SimpleDoubleProperty(1.0);
-		this.zoomFactor = new ReadOnlyDoubleWrapper();
-		this.rotate = new SimpleDoubleProperty(0.0);
-		this.mirrorX = new SimpleBooleanProperty();
-		this.mirrorY = new SimpleBooleanProperty();
-	}
-
-	/// Bind this transforms to other transforms.
+	/// Property holding the nullable zoom mode value.
 	///
-	/// @param other the other transforms
+	/// @return Property holding the zoom mode value.
+	///         The property value may be `null`.
+	///         (The property itself is never `null`.)
+	/// @see #zoomModeOrDefaultProperty()
 	///
-	void bindProperties(ImageTransforms other)
-	{
-		this.zoomMode.bind(other.zoomMode);
-		this.zoomFixed.bind(other.zoomFixed);
-//		other.zoomFactorWrapperProperty().bind(this.zoomFactor);
-		this.rotate.bind(other.rotate);
-		this.mirrorX.bind(other.mirrorX);
-		this.mirrorY.bind(other.mirrorY);
-	}
+	ObjectProperty<@Nullable ZoomMode> zoomModeRawValueProperty();
 
-	/// Unbind this transforms from other transforms.
+	/// Property returning the non-`null` zoom mode value or the default, if the
+	/// raw value is `null`.
 	///
-	/// @param other the other transforms
+	/// @return Property returning the zoomModeRawValue, if it is non-`null`,
+	///         or the default value otherwise.
+	///         (That is, the property value is never `null`).
+	/// @see #zoomModeRawValueProperty()
 	///
-	void unbindProperties(ImageTransforms other)
-	{
-		this.zoomMode.unbind();
-		this.zoomFixed.unbind();
-//		other.zoomFactorWrapperProperty().unbind();
-		this.rotate.unbind();
-		this.mirrorX.unbind();
-		this.mirrorY.unbind();
-	}
+	ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty();
 
-	public ObjectProperty<ZoomMode> zoomModeProperty()
-	{
-		return zoomMode;
-	}
+	/// Property holding the externally given fixed zoom factor value.
+	///
+	/// @return a property holding the externally given fixed zoom factor value
+	///
+	DoubleProperty zoomFixedProperty();
 
-	public DoubleProperty zoomFixedProperty()
-	{
-		return zoomFixed;
-	}
+	/// Property returning the actual calculated zoom factor value.
+	///
+	/// @return a property returning the actual calculated zoom factor value
+	///
+	ReadOnlyDoubleProperty zoomFactorProperty();
 
-	ReadOnlyDoubleWrapper zoomFactorWrapperProperty()
-	{
-		return zoomFactor;
-	}
+	/// Property holding the rotation angle in degrees.
+	///
+	/// @return a property holding the rotation angle in degrees
+	///
+	DoubleProperty rotateProperty();
 
-	public ReadOnlyDoubleProperty zoomFactorProperty()
-	{
-		return zoomFactor.getReadOnlyProperty();
-	}
+	/// Property indicating the mirroring along x axis.
+	///
+	/// @return a property indicating the mirroring along x axis
+	///
+	BooleanProperty mirrorXProperty();
 
-	public DoubleProperty rotateProperty()
-	{
-		return rotate;
-	}
-
-	public BooleanProperty mirrorXProperty()
-	{
-		return mirrorX;
-	}
-
-	public BooleanProperty mirrorYProperty()
-	{
-		return mirrorY;
-	}
+	/// Property indicating the mirroring along y axis.
+	///
+	/// @return a property indicating the mirroring along y axis
+	///
+	BooleanProperty mirrorYProperty();
 }

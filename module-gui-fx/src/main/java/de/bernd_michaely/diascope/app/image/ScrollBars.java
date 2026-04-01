@@ -16,16 +16,14 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.Collection;
 import java.util.List;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Orientation;
-import javafx.scene.control.Control;
 import javafx.scene.control.ScrollBar;
-
-import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 
 /// Class to handle viewport scrollbars.
 ///
@@ -34,6 +32,7 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 class ScrollBars
 {
 	private final ScrollBar scrollBarH, scrollBarV;
+	private final Collection<ScrollBar> scrollBars;
 	private final BooleanProperty enabled = new SimpleBooleanProperty();
 
 	ScrollBars(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
@@ -46,23 +45,16 @@ class ScrollBars
 		scrollBarV.setOrientation(Orientation.VERTICAL);
 		scrollBarH.visibleProperty().bind(enabled);
 		scrollBarV.visibleProperty().bind(enabled);
-		// anchor:
-		final Runnable adjustWidth = () ->
-		{
-			final double w = viewportWidth.get() - scrollBarV.getWidth();
-			scrollBarH.setPrefWidth(w);
-			scrollBarV.relocate(w, 0);
-		};
-		final Runnable adjustHeight = () ->
-		{
-			final double h = viewportHeight.get() - scrollBarH.getHeight();
-			scrollBarV.setPrefHeight(h);
-			scrollBarH.relocate(0, h);
-		};
-		scrollBarH.heightProperty().addListener(onChange(adjustHeight));
-		scrollBarV.widthProperty().addListener(onChange(adjustWidth));
-		viewportWidth.addListener(onChange(adjustWidth));
-		viewportHeight.addListener(onChange(adjustHeight));
+		this.scrollBars = List.of(scrollBarH, scrollBarV);
+		// position:
+		final var widthBinding = viewportWidth.subtract(scrollBarV.widthProperty());
+		final var heightBinding = viewportHeight.subtract(scrollBarH.heightProperty());
+		scrollBarH.prefWidthProperty().bind(widthBinding);
+		scrollBarV.prefHeightProperty().bind(heightBinding);
+		scrollBarH.setLayoutX(0);
+		scrollBarV.setLayoutY(0);
+		scrollBarH.layoutYProperty().bind(heightBinding);
+		scrollBarV.layoutXProperty().bind(widthBinding);
 	}
 
 	private static void initScrollBar(ScrollBar scrollBar)
@@ -72,7 +64,7 @@ class ScrollBars
 		scrollBar.setValue(0.5);
 		scrollBar.setUnitIncrement(0.05);
 		scrollBar.setBlockIncrement(0.2);
-		scrollBar.setOpacity(0.75);
+		scrollBar.setOpacity(0.85);
 	}
 
 	DoubleProperty valueHProperty()
@@ -100,8 +92,12 @@ class ScrollBars
 		return scrollBarV.visibleProperty();
 	}
 
-	List<Control> getControls()
+	/// Returns an unmodifiable collection of scrollbars.
+	///
+	/// @return an unmodifiable collection of scrollbars
+	///
+	Collection<ScrollBar> getScrollBars()
 	{
-		return List.of(scrollBarH, scrollBarV);
+		return scrollBars;
 	}
 }

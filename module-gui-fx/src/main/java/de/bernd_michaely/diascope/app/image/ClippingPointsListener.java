@@ -16,7 +16,11 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import java.util.AbstractCollection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
 
 import static de.bernd_michaely.diascope.app.image.Border.*;
 
@@ -29,54 +33,142 @@ class ClippingPointsListener implements Runnable
 	private static final Double ZERO = 0.0;
 	private final Viewport viewport;
 	private final List<ImageLayer> unmodifiableLayers;
+	private final Function<ImageLayer, SplitDivider> dividerByImageLayer;
+	private final Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer;
 
-	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers)
+	/// Class to handle the coordinates of polygon points.
+	/// The implementation should try to avoid repeated heap allocations
+	/// (in particular during frequent mouse drag events).
+	///
+	static class Points extends AbstractCollection<Double>
+	{
+		private static final int MAX_NUM_POINTS = 3 + Border.values().length;
+		private final Double[] coordinates = new Double[2 * MAX_NUM_POINTS];
+		private int currentSize;
+
+		/// Coordinates iterator implementation.
+		/// One single instance is resettable and can be reused.
+		///
+		private class PointsIterator implements Iterator<Double>
+		{
+			private int counter;
+
+			@Override
+			public boolean hasNext()
+			{
+				return counter < currentSize;
+			}
+
+			@Override
+			public Double next()
+			{
+				if (hasNext())
+				{
+					return coordinates[counter++];
+				}
+				else
+				{
+					throw new NoSuchElementException();
+				}
+			}
+
+			private void reset()
+			{
+				counter = 0;
+			}
+		}
+		private final PointsIterator iterator = new PointsIterator();
+
+		@Override
+		public Iterator<Double> iterator()
+		{
+			return iterator;
+		}
+
+		@Override
+		public int size()
+		{
+			return currentSize;
+		}
+
+		private void reset()
+		{
+			currentSize = 0;
+			iterator.reset();
+		}
+
+		private void setNext(Double x, Double y)
+		{
+			coordinates[currentSize++] = x;
+			coordinates[currentSize++] = y;
+		}
+	}
+	private final Points points = new Points();
+
+	ClippingPointsListener(Viewport viewport, List<ImageLayer> unmodifiableLayers,
+		Function<ImageLayer, SplitDivider> dividerByImageLayer,
+		Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer)
 	{
 		this.viewport = viewport;
 		this.unmodifiableLayers = unmodifiableLayers;
+		this.dividerByImageLayer = dividerByImageLayer;
+		this.shapeByImageLayer = shapeByImageLayer;
 	}
 
 	@Override
 	public void run()
 	{
-		if (viewport.multiLayerModeProperty().get())
+		final int n = unmodifiableLayers.size();
+		if (n > 1)
 		{
-			final int n = unmodifiableLayers.size();
 			for (int i = 0; i < n; i++)
 			{
 				final var layer = unmodifiableLayers.get(i);
-				final var divider = layer.getDivider();
-				final var corner = divider.getBorder();
-				final var layerNext = unmodifiableLayers.get(i == n - 1 ? 0 : i + 1);
-				final var dividerNext = layerNext.getDivider();
+				final var layerNext = unmodifiableLayers.get((i + 1) % n);
+				final var divider = dividerByImageLayer.apply(layer);
+				final var dividerNext = dividerByImageLayer.apply(layerNext);
+				var corner = divider.getBorder();
 				final var cornerNext = dividerNext.getBorder();
 				final int numIntermediateCorners = numberOfCornerPointsBetween(
 					corner, divider.getAngle(), cornerNext, dividerNext.getAngle());
-				final int numPoints = 2 * (3 + numIntermediateCorners);
-				final Double[] points = new Double[numPoints];
-				int index = 0;
-				points[index++] = viewport.getSplitCenter().xProperty().getValue();
-				points[index++] = viewport.getSplitCenter().yProperty().getValue();
-				points[index++] = divider.getBorderIntersectionX();
-				points[index++] = divider.getBorderIntersectionY();
-				var c = corner;
-				for (int k = 0; k < numIntermediateCorners; k++, c = c.next())
+				points.reset();
+				final var splitCenter = viewport.getSplitCenter();
+				points.setNext(
+					splitCenter.xProperty().getValue(),
+					splitCenter.yProperty().getValue());
+				points.setNext(
+					divider.getBorderIntersectionX(),
+					divider.getBorderIntersectionY());
+				for (int k = 0; k < numIntermediateCorners; k++, corner = corner.next())
 				{
-					points[index++] = switch (c)
-					{
-						case TOP, RIGHT -> viewport.widthProperty().getValue();
-						case BOTTOM, LEFT -> ZERO;
-					};
-					points[index++] = switch (c)
-					{
-						case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
-						case LEFT, TOP -> ZERO;
-					};
+					points.setNext(
+						switch (corner)
+						{
+							case TOP, RIGHT -> viewport.widthProperty().getValue();
+							case BOTTOM, LEFT -> ZERO;
+						},
+						switch (corner)
+						{
+							case RIGHT, BOTTOM -> viewport.heightProperty().getValue();
+							case LEFT, TOP -> ZERO;
+						});
 				}
-				points[index++] = dividerNext.getBorderIntersectionX();
-				points[index++] = dividerNext.getBorderIntersectionY();
-				layer.setShapePoints(points);
+				points.setNext(
+					dividerNext.getBorderIntersectionX(),
+					dividerNext.getBorderIntersectionY());
+				shapeByImageLayer.apply(layer).setPolygonPoints(points);
 			}
+		}
+		else if (n == 1)
+		{
+			final double width = viewport.widthProperty().get();
+			final double height = viewport.heightProperty().get();
+			points.reset();
+			points.setNext(ZERO, ZERO);
+			points.setNext(width, ZERO);
+			points.setNext(width, height);
+			points.setNext(ZERO, height);
+			shapeByImageLayer.apply(unmodifiableLayers.getFirst()).setPolygonPoints(points);
 		}
 	}
 }

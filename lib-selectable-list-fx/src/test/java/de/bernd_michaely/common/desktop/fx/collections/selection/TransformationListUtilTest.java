@@ -58,6 +58,7 @@ public class TransformationListUtilTest
 		System.out.println("test_SortedList_getViewIndex");
 		final var sourceList = FXCollections.observableArrayList(4, 1, 3, 2);
 		final var sortedList = new SortedList<>(sourceList, Integer::compare);
+		final int n = sourceList.size();
 		System.out.println("Source    list : " + sourceList);
 		System.out.println("Sorted    list : " + sortedList);
 		assertEquals(3, sortedList.getViewIndex(0));
@@ -66,13 +67,16 @@ public class TransformationListUtilTest
 		assertEquals(1, sortedList.getViewIndex(3));
 		for (int i = 0; i < 10; i++)
 		{
-			try
+			final int index = i;
+			if (i < n)
 			{
-				System.out.println("sortedList.getViewIndex(" + i + ") = " + sortedList.getViewIndex(i));
+				System.out.println("sortedList.getViewIndex(%d) = %d".formatted(i, sortedList.getViewIndex(i)));
 			}
-			catch (IndexOutOfBoundsException ex)
+			else
 			{
-				System.out.println("JavaFX bug : " + ex.getMessage());
+				assertThrows(IndexOutOfBoundsException.class, () -> sortedList.getViewIndex(index),
+					() -> "Old JavaFX bug for index %d - please use newer JavaFX version".formatted(index));
+				System.out.println();
 			}
 		}
 		// the following tests fail in OpenJavaFX 16:

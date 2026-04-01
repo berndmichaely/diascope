@@ -16,16 +16,15 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
-import de.bernd_michaely.diascope.app.image.MultiImageView;
+import de.bernd_michaely.diascope.app.image.ImageTransforms;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
 import de.bernd_michaely.diascope.app.util.action.Action;
-import java.util.List;
+import java.util.stream.Stream;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToolBar;
@@ -47,7 +46,7 @@ class ToolBarImage
 	private final ToolBar toolBar;
 	private final ContextMenu contextMenu;
 
-	ToolBarImage(ActionsImageControl actions, MultiImageView multiImageView)
+	ToolBarImage(ActionsImageControl actions, ImageTransforms imageTransforms)
 	{
 		final EventHandler<ScrollEvent> sliderScrollEventHandler = event ->
 		{
@@ -66,14 +65,12 @@ class ToolBarImage
 				}
 			}
 		};
-		final var sliderZoom = new Slider(0.05, 4, 1);
+		final var sliderZoom = new Slider(0.05, 4.0, 1.0);
 		sliderZoom.setBlockIncrement(0.05);
 		sliderZoom.setTooltip(new Tooltip("Zoom factor"));
 		sliderZoom.valueProperty().addListener(onChange(value ->
-		{
-			actions.actionZoom.setSelectedId(ZoomMode.FIXED);
-			multiImageView.getImageTransforms().zoomFixedProperty().set(value.doubleValue());
-		}));
+			actions.actionZoom.setSelectedId(ZoomMode.FIXED)));
+		sliderZoom.valueProperty().bindBidirectional(imageTransforms.zoomFixedProperty());
 		sliderZoom.setTooltip(new Tooltip("""
       Set zoom factor
 
@@ -81,23 +78,22 @@ class ToolBarImage
 		sliderZoom.setOnMouseClicked(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2 &&
-				multiImageView.getImageTransforms().zoomModeProperty().get() != ZoomMode.FIXED)
+				imageTransforms.zoomModeOrDefaultProperty().get() != ZoomMode.FIXED)
 			{
-				sliderZoom.setValue(multiImageView.getImageTransforms().zoomFactorProperty().get());
+				sliderZoom.setValue(imageTransforms.zoomFactorProperty().get());
 			}
 		});
 		sliderZoom.setOnScroll(sliderScrollEventHandler);
 		final var labelZoom = new Label("100.0%");
 		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
-		labelZoom.textProperty().bind(
-			multiImageView.getImageTransforms().zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
+		labelZoom.textProperty().bind(imageTransforms.zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
 		final var labelZoomWidth = new Label("8888.8% ");
 		labelZoomWidth.setVisible(false);
 		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);
 //		stackPaneZoom.setBackground(Background.fill(Color.ROSYBROWN));
 		stackPaneZoom.setAlignment(CENTER_RIGHT);
 		// transformations
-		final var sliderRotation = new Slider(-180, 180, 0);
+		final var sliderRotation = new Slider(-180.0, 180.0, 0.0);
 		sliderRotation.setBlockIncrement(30);
 		sliderRotation.setTooltip(new Tooltip("""
       Set image rotation
@@ -113,14 +109,13 @@ class ToolBarImage
 		sliderRotation.setOnScroll(sliderScrollEventHandler);
 		final var labelRotation = new Label("0°");
 		labelRotation.setTooltip(new Tooltip("Current image rotation"));
-		labelRotation.textProperty().bind(
-			multiImageView.getImageTransforms().rotateProperty().asString("%.0f° "));
+		labelRotation.textProperty().bind(imageTransforms.rotateProperty().asString("%.0f° "));
 		final var labelRotationWidth = new Label(" -180° ");
 		labelRotationWidth.setVisible(false);
 		final var stackPaneRotation = new StackPane(labelRotationWidth, labelRotation);
 		stackPaneRotation.setAlignment(CENTER_RIGHT);
 //		stackPaneRotation.setBackground(Background.fill(Color.DARKKHAKI));
-		multiImageView.getImageTransforms().rotateProperty().bind(sliderRotation.valueProperty());
+		sliderRotation.valueProperty().bindBidirectional(imageTransforms.rotateProperty());
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		// create ToolBar:
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -152,30 +147,30 @@ class ToolBarImage
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		// create ContextMenu:
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-		this.contextMenu = new ContextMenu(
-			List.of(
-				actions.actionToolbar,
-				actions.actionThumbnails,
-				actions.actionScrollbars,
-				SEPARATOR,
-				actions.actionLayerAdd,
-				actions.actionLayerRemove,
-				actions.actionShowDividers,
-				SEPARATOR,
-				actions.actionMode,
-				SEPARATOR,
-				actions.actionZoom,
-				SEPARATOR,
-				actions.actionSelectAll,
-				actions.actionSelectNone,
-				actions.actionSelectToggle,
-				SEPARATOR,
-				actions.actionMirrorX,
-				actions.actionMirrorY,
-				SEPARATOR,
-				actions.actionResetControls,
-				actions.actionFullScreen
-			).stream().map(Action::createMenuItems).flatMap(List::stream).toArray(MenuItem[]::new));
+		this.contextMenu = new ContextMenu();
+		Stream.of(
+			actions.actionToolbar,
+			actions.actionThumbnails,
+			actions.actionScrollbars,
+			SEPARATOR,
+			actions.actionLayerAdd,
+			actions.actionLayerRemove,
+			actions.actionShowDividers,
+			SEPARATOR,
+			actions.actionMode,
+			SEPARATOR,
+			actions.actionZoom,
+			SEPARATOR,
+			actions.actionSelectAll,
+			actions.actionSelectNone,
+			actions.actionSelectToggle,
+			SEPARATOR,
+			actions.actionMirrorX,
+			actions.actionMirrorY,
+			SEPARATOR,
+			actions.actionResetControls,
+			actions.actionFullScreen
+		).map(Action::createMenuItems).forEachOrdered(contextMenu.getItems()::addAll);
 	}
 
 	ToolBar getToolBar()

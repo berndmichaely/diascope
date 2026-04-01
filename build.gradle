@@ -2,8 +2,8 @@ plugins {
 	id 'java'
 	id 'application'
 	id 'jacoco'
-	id 'org.openjfx.javafxplugin' version '0.1.0'
-	id 'org.checkerframework' version '0.6.60' apply false
+	id 'org.openjfx.javafxplugin' version '0.1.0' apply false
+	id 'org.checkerframework' version '1.0.2' apply false
 	
 	// auto create automatic modules:
 	//id 'extra-java-module-info' apply false
@@ -12,17 +12,14 @@ plugins {
 }
 
 //apply plugin: 'extra-java-module-info'
-apply plugin: 'org.checkerframework'
 
 wrapper {
-	gradleVersion = '9.1.0'
+	gradleVersion = '9.3.1'
 }
 
-final def javaLangVersion = JavaLanguageVersion.of(23)
+final def javaLangVersion = JavaLanguageVersion.of(25)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
 //final def jvmVendor = JvmVendorSpec.matching('Arch Linux')
-
-final def versionCheckerFramework = '3.51.1'
 
 java {
 	toolchain {
@@ -79,16 +76,15 @@ def String readSvnRevision()
 						// create valid semantic version build-nr:
 						svnRev = 'r' + svnRev.replaceAll('[^0-9a-zA-Z]+' , '.')
 						svnRev = svnRev.endsWith('.') ? svnRev.substring(0, n-1) : svnRev
-						if (isolateNumericBuildParts) {
-							final int n = svnRev.length()
-							final def s = new StringBuilder();
-							final def p = ~/([a-zA-Z][0-9])|([0-9][a-zA-Z])/
-							for (int i = 1; i < n; i++) {
-								s.append(svnRev.substring(i-1, i))
-								if (svnRev.substring(i-1, i+1) ==~ p) s.append('.')
-							}
-							svnRev = s.append(svnRev.substring(n-1, n)).toString()
+						// isolate numeric build parts:
+						final int n = svnRev.length()
+						final def s = new StringBuilder();
+						final def p = ~/([a-zA-Z][0-9])|([0-9][a-zA-Z])/
+						for (int i = 1; i < n; i++) {
+							s.append(svnRev.substring(i-1, i))
+							if (svnRev.substring(i-1, i+1) ==~ p) s.append('.')
 						}
+						svnRev = s.append(svnRev.substring(n-1, n)).toString()
 					}
 				}
 			} else {
@@ -120,7 +116,16 @@ allprojects {
 	group = 'de.bernd_michaely'
 	version = semVer
 	
-	ext.versionJUnit = '5.13.4'
+	apply plugin: 'org.checkerframework'
+
+	checkerFramework {
+		version = libs.checker.get().version
+		checkers = [ 'org.checkerframework.checker.nullness.NullnessChecker' ]
+		excludeTests = true
+	}
+
+	ext.versionJUnit = '6.0.1'
+	// ext.versionJUnit = '5.14.1'
 	// ext.versionJUnitVintage = '4.13.2'
 	
 	repositories {
@@ -131,17 +136,20 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = '25.0.1'
+			version = '26'
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
 }
 
 logger.lifecycle "Running Gradle $project.gradle.gradleVersion"
-logger.lifecycle "Java source level           : ${java.sourceCompatibility}"
+logger.lifecycle "Java source compatibility   : ${java.sourceCompatibility}"
+logger.lifecycle "Java target compatibility   : ${java.targetCompatibility}"
+logger.lifecycle "Java toolchain              : ${java.toolchain.displayName}"
 logger.lifecycle "Compile      -> Debug-Level : ${compileJava.options.debug}"
 logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}"
 logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"
+logger.lifecycle "Using Checker Framework     : ${checkerFramework.version.get()}"
 logger.lifecycle "==> Root project »$name ($version)«"
 logger.lifecycle " -> Base dir is »${file('.')}«"
 if (ext.has('versionJUnitVintage')) {
@@ -187,7 +195,6 @@ dependencies {
 	implementation project (':lib-common-cli-parser')
 	implementation project (':lib-common-semver')
 	implementation project (':module-gui-fx')
-	implementation "org.checkerframework:checker-qual:${versionCheckerFramework}"
 	//implementation 'com.github.weisj:jsvg:1.5.0'
 	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
 	//implementation 'xml-apis:xml-apis:1.4.01'
@@ -195,11 +202,6 @@ dependencies {
 	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
 	
-checkerFramework {
-	checkers += 'org.checkerframework.checker.nullness.NullnessChecker'
-	excludeTests = true
-}
-
 task writeSemVer {
 	description = "Write application semantic version to resource file »${fileSemVer}«"
 	group = processResources.group
@@ -243,10 +245,10 @@ application {
 	}
 	final int javaLangVer = javaLangVersion.asInt()
 
-	if (javafxVer == 25) {
-		if (javaLangVer >= 24) {
-			applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
-		}
+	if (javaLangVer >= 24) {
+		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
+	}
+	if (javafxVer >= 25) {
 		applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
 		applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	}
@@ -265,7 +267,6 @@ jar {
 		
 run {
 	logger.lifecycle " -> run task modularity : ${modularity.inferModulePath.get()}"
-	//args = [ '--development', 'running from within gradle' ]
 	
 	systemProperty 'java.util.logging.config.file', file('logging.properties')
 	

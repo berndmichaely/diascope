@@ -36,8 +36,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 	implements SelectableList<E>, RandomAccess
 {
-	static final int INDEX_REMOVED = -1;
-
 	/**
 	 * Class to encapsulate a list item with a selection state.
 	 *
@@ -128,12 +126,12 @@ class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 	@Override
 	protected E doRemove(int index)
 	{
-		final SelectableItem<E> removed = delegate.remove(index);
-		if (removed.selected)
+		final SelectableItem<E> selectableItem = delegate.get(index);
+		if (selectableItem.selected)
 		{
-			getSelectionControl().decrementSelectionCounter(INDEX_REMOVED);
+			getSelectionControl().decrementSelectionCounter(index);
 		}
-		return removed.item;
+		return delegate.remove(index).item;
 	}
 
 	@Override

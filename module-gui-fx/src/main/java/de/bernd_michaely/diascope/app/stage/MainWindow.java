@@ -53,6 +53,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HeaderBar;
+import javafx.scene.layout.Region;
+import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -336,20 +338,33 @@ public class MainWindow
 	}
 
 	@SuppressWarnings("deprecation")
-	private HeaderBar createHeaderBar(Stage stage)
+	private Region createHeaderBar(Stage stage)
 	{
+		final double offset = Font.getDefault().getSize() * 3 / 8;
 		stage.initStyle(StageStyle.EXTENDED);
-		final var headerBar = new HeaderBar();
 		menuBar.setBorder(Border.EMPTY);
-		HeaderBar.setAlignment(menuBar, Pos.CENTER_LEFT);
-		HeaderBar.setMargin(menuBar, new Insets(5));
-		final var paneLeading = new BorderPane(menuBar);
-		headerBar.setLeading(paneLeading);
 		final Label title = new Label();
 		title.textProperty().bind(titleProperty);
-		title.setMouseTransparent(true);
-		headerBar.setCenter(title);
-		final var icon = createResourceImage(FILE_RES_ICON_STAGE_2);
+		title.setAlignment(Pos.CENTER);
+		final var headerBarMain = new HeaderBar();
+		headerBarMain.setLeft(menuBar);
+		final boolean centerTitleToHeaderBar = true;
+		if (centerTitleToHeaderBar)
+		{
+			title.setMouseTransparent(true);
+			headerBarMain.setCenter(title);
+		}
+		else
+		{
+			final var titlePane = new BorderPane(title);
+			titlePane.setMouseTransparent(true);
+			headerBarMain.setCenter(titlePane);
+		}
+		HeaderBar.setAlignment(menuBar, Pos.CENTER_LEFT);
+		HeaderBar.setMargin(menuBar, new Insets(offset));
+		HeaderBar.setMargin(title, new Insets(offset));
+		// final Image icon = null;
+		final Image icon = createResourceImage(FILE_RES_ICON_STAGE_2);
 		if (icon != null)
 		{
 			final var imageView = new ImageView(icon);
@@ -360,11 +375,23 @@ public class MainWindow
 				imageView.fitWidthProperty().set(height);
 				imageView.fitHeightProperty().set(height);
 			}));
-			paneLeading.setLeft(imageView);
-			BorderPane.setAlignment(imageView, Pos.CENTER);
-			BorderPane.setMargin(imageView, new Insets(0, 5, 0, 5));
+			imageView.setMouseTransparent(true);
+			HeaderBar.setAlignment(imageView, Pos.CENTER);
+			HeaderBar.setMargin(imageView, new Insets(0, offset, 0, offset));
+			final var headerBarIcon = new HeaderBar();
+			headerBarIcon.setCenter(imageView);
+			headerBarIcon.setRightSystemPadding(false);
+			headerBarMain.setLeftSystemPadding(false);
+			final var pane = new BorderPane(headerBarMain);
+			pane.setLeft(headerBarIcon);
+			pane.setBorder(Border.EMPTY);
+			pane.setPadding(Insets.EMPTY);
+			return pane;
 		}
-		return headerBar;
+		else
+		{
+			return headerBarMain;
+		}
 	}
 
 	private static @Nullable

@@ -71,7 +71,7 @@ public class PersistedProperties
 		{
 			value = Enum.valueOf(enumClass, enumConstantName);
 		}
-		catch (IllegalArgumentException ex)
+		catch (IllegalArgumentException _)
 		{
 			value = defaultValue;
 			logger.log(WARNING, () ->

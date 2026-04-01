@@ -1,0 +1,440 @@
+/*
+ * Copyright (C) 2025 Bernd Michaely (info@bernd-michaely.de)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package de.bernd_michaely.diascope.app.util.collections;
+
+import java.util.AbstractCollection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Consumer;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+/// Generic class to describe a binary tree structure.
+///
+/// This is a {@code  Collection<TreeNode>}.
+/// Note, that {@code add} and {@code remove} methods are not supported.
+///
+/// @see #append(Object)
+/// @see #append(List)
+/// @see #append(Object, Object)
+/// @see #insertItemAt(Object, Object)
+/// @see #insertItemAt(Object, Object, Object)
+/// @see #removeItem(Object)
+///
+/// @param <I> data type associated with inner nodes
+/// @param <L> data type associated with leaf nodes
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
+public class BinaryTree<I, L> extends AbstractCollection<TreeNode>
+{
+	private @Nullable TreeNode root;
+	private int numLeafNodes;
+
+	/// Returns the root node.
+	///
+	/// @return the root node or `null`, if the tree is empty
+	///
+	@Nullable
+	TreeNode getRoot()
+	{
+		return root;
+	}
+
+	@Override
+	public Iterator<TreeNode> iterator()
+	{
+		return new TreeNodeIterator(getRoot());
+	}
+
+	public int getNumInnerNodes()
+	{
+		return numLeafNodes > 1 ? numLeafNodes - 1 : 0;
+	}
+
+	public int getNumLeafNodes()
+	{
+		return numLeafNodes;
+	}
+
+	@Override
+	public int size()
+	{
+		return getNumLeafNodes() + getNumInnerNodes();
+	}
+
+	/// Finds an inner node by its value.
+	///
+	/// @param value the value to search for
+	/// @return the inner node, if found, or {@code null}
+	///
+	public @Nullable
+	BinaryNode<I> findInnerNode(@Nullable I value)
+	{
+		final Iterator<TreeNode> iter = iterator();
+		while (iter.hasNext())
+		{
+			if (iter.next() instanceof BinaryNode<?> innerNode && Objects.equals(innerNode.getValue(), value))
+			{
+				@SuppressWarnings("unchecked")
+				final var binaryNode = (BinaryNode<I>) innerNode;
+				return binaryNode;
+			}
+		}
+		return null;
+	}
+
+	/// Finds a leaf node by its value.
+	///
+	/// @param value the value to search for
+	/// @return the first leaf node in iteration order with the given value,
+	///         if found, or {@code null}
+	///
+	public @Nullable
+	LeafNode<L> findLeafNode(@Nullable L value)
+	{
+		return _findLeafNode(value);
+	}
+
+	private @Nullable
+	LeafNode<L> _findLeafNode(@Nullable Object value)
+	{
+		final Iterator<TreeNode> iter = iterator();
+		while (iter.hasNext())
+		{
+			if (iter.next() instanceof LeafNode<?> node && Objects.equals(node.getValue(), value))
+			{
+				@SuppressWarnings("unchecked")
+				final var leafNode = (LeafNode<L>) node;
+				return leafNode;
+			}
+		}
+		return null;
+	}
+
+	/// Returns true, iff the tree contains an inner node with the given value.
+	///
+	/// @return true, iff the tree contains an inner node with the given value
+	///
+	public boolean containsInnerValue(I item)
+	{
+		return findInnerNode(item) != null;
+	}
+
+	/// Returns true, iff the tree contains a leaf node with the given value.
+	///
+	/// @return true, iff the tree contains a leaf node with the given value
+	///
+	public boolean containsLeaf(L item)
+	{
+		return findLeafNode(item) != null;
+	}
+
+	/// Appends a leaf node for the given item.
+	///
+	/// @param item the given item
+	///
+	public void append(L item)
+	{
+		append(item, null);
+	}
+
+	/// Appends leaf nodes for the given items.
+	///
+	/// @param item the given list of items
+	///
+	public void append(List<L> items)
+	{
+		items.forEach(this::append);
+	}
+
+	/// Appends a leaf node for the given item and
+	/// sets a value for the generated inner parent node.
+	///
+	/// @param item the given item
+	/// @param value the associated inner node value
+	///
+	public void append(L item, @Nullable I value)
+	{
+		if (root == null)
+		{
+			if (value == null)
+			{
+				root = new LeafNode<>(item);
+				numLeafNodes = 1;
+			}
+			else
+			{
+				throw new IllegalArgumentException(
+					"%s::append : node is first leaf in tree and cannot have an associated value"
+						.formatted(getClass().getName()));
+			}
+		}
+		else
+		{
+			insertLeafNode(item, value, getLast(), true);
+		}
+	}
+
+	/// Returns the first leaf node.
+	/// @return the first leaf node
+	///
+	/// @throws NoSuchElementException if the tree is empty
+	///
+	public LeafNode<L> getFirst()
+	{
+		TreeNode r = getRoot();
+		while (r instanceof InnerNode innerNode)
+		{
+			r = innerNode.getFirstSubNode();
+		}
+		@SuppressWarnings("unchecked")
+		final LeafNode<L> firstLeaf = (LeafNode<L>) r;
+		if (firstLeaf != null)
+		{
+			return firstLeaf;
+		}
+		else
+		{
+			throw new NoSuchElementException();
+		}
+	}
+
+	/// Finds the last node.
+	///
+	/// @return the last node
+	/// @throws NoSuchElementException if tree is empty
+	///
+	public LeafNode<L> getLast()
+	{
+		TreeNode r = getRoot();
+		while (r instanceof InnerNode innerNode)
+		{
+			r = innerNode.getLastSubNode();
+		}
+		@SuppressWarnings("unchecked")
+		final LeafNode<L> lastLeaf = (LeafNode<L>) r;
+		if (lastLeaf != null)
+		{
+			return lastLeaf;
+		}
+		else
+		{
+			throw new NoSuchElementException();
+		}
+	}
+
+	/// Inserts a new leaf node before or after the leaf node given by the insertion point.
+	/// Also sets a value for the generated inner parent node.
+	///
+	/// @param item the given leaf node value
+	/// @param value the associated inner node value (may be `null`)
+	/// @param insertionPoint the insertion point indicated by its leaf value
+	/// @param append true to append, false to prepend
+	/// @return true, iff the insertion point was found and a new node was inserted
+	///
+	public boolean insertItemAt(L item, @Nullable I value, L insertionPoint, boolean append)
+	{
+		final LeafNode insertionNode = findLeafNode(insertionPoint);
+		if (insertionNode != null)
+		{
+			insertLeafNode(item, value, insertionNode, append);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	private void insertLeafNode(L item, @Nullable I value, LeafNode insertionNode, boolean append)
+	{
+		final var parentNode = insertionNode.getParentNode();
+		final var n1 = insertionNode;
+		final var n2 = new LeafNode<>(item);
+		final var newInnerNode = append ?
+			new BinaryNode<>(n1, n2, value) :
+			new BinaryNode<>(n2, n1, value);
+		if (parentNode != null)
+		{
+			int childIndex = parentNode.getSize() - 1;
+			while (childIndex >= 0 && insertionNode != parentNode.getSubNode(childIndex))
+			{
+				childIndex--;
+			}
+			parentNode.setSubNode(childIndex, newInnerNode);
+		}
+		else
+		{
+			root = newInnerNode;
+		}
+		numLeafNodes++;
+	}
+
+	/// Removes the leaf node indicated by the given value.
+	///
+	/// @param item the given leaf value
+	/// @return the first LeafNode in iteration order with the given value found or {@code null}
+	///
+	public @Nullable
+	LeafNode<L> removeItem(L item)
+	{
+		final var leafNode = findLeafNode(item);
+		if (leafNode != null)
+		{
+			removeNode(leafNode, false);
+		}
+		return leafNode;
+	}
+
+	/// Removes the given leaf node.
+	/// Same as `removeNode(leafNode, true)`.
+	///
+	/// @see #removeNode(LeafNode, boolean)
+	///
+	public LeafNode<L> removeNode(LeafNode<L> leafNode)
+	{
+		return removeNode(leafNode, true);
+	}
+
+	/// Returns the sibling of the given node.
+	///
+	/// @return the sibling of the given node
+	/// @throws NoSuchElementException if the given node has no sibling
+	///
+	public TreeNode getSibling(TreeNode node)
+	{
+		final BinaryNode pn = (BinaryNode) node.getParentNode();
+		if (pn != null)
+		{
+			return node == pn.getFirstSubNode() ? pn.getLastSubNode() : pn.getFirstSubNode();
+		}
+		else
+		{
+			throw new NoSuchElementException();
+		}
+	}
+
+	/// Removes the given leaf node.
+	///
+	/// @param leafNode the given leaf node
+	/// @param checkTreeNode if true, check first, that the given leafNode is
+	///          part of this tree, otherwise the check is omitted, which is more
+	///          efficient, but you are own your own about correctness
+	/// @throws IllegalArgumentException if it has been checked, that the given
+	///                                  leafNode is not part of this tree
+	///
+	public LeafNode<L> removeNode(LeafNode<L> leafNode, boolean checkTreeNode)
+	{
+		if (checkTreeNode && stream().noneMatch(node -> node == leafNode))
+		{
+			throw new IllegalArgumentException(
+				"::removeNode : leafNode »%s «is not part of this tree instance"
+					.formatted(getClass().getName(), leafNode));
+		}
+		final var pn = leafNode.getParentNode();
+		if (pn != null)
+		{
+			final TreeNode sibling = getSibling(leafNode);
+			final BinaryNode ppn = (BinaryNode) pn.getParentNode();
+			if (ppn != null)
+			{
+				if (pn == ppn.getFirstSubNode())
+				{
+					ppn.setFirstSubNode(sibling);
+				}
+				else
+				{
+					ppn.setLastSubNode(sibling);
+				}
+			}
+			else
+			{
+				sibling.setParentNode(null);
+				root = sibling;
+			}
+			numLeafNodes--;
+		}
+		else
+		{
+			clear();
+		}
+		return leafNode;
+	}
+
+	/// {@inheritDoc}
+	///
+	/// This implementation removes the first leaf node found which has the given
+	/// associated value.
+	/// (That is, it will *not* remove an *inner* node directly
+	///  by its associated value!)
+	///
+	/// @param expects a value of a LeafNode
+	/// @return true, iff a leaf node was found and removed
+	///
+	@Override
+	public boolean remove(@Nullable Object leafValue)
+	{
+		final LeafNode<L> leafNode = _findLeafNode(leafValue);
+		if (leafNode != null)
+		{
+			removeNode(leafNode, false);
+			return true;
+		}
+		return false;
+	}
+
+	/// Removes the first leaf node.
+	///
+	/// @return the removed node
+	/// @throws NoSuchElementException if the tree was empty
+	///
+	public LeafNode<L> removeFirst()
+	{
+		return removeNode(getFirst());
+	}
+
+	/// Removes the last leaf node.
+	///
+	/// @return the removed node
+	/// @throws NoSuchElementException if the tree was empty
+	///
+	public LeafNode<L> removeLast()
+	{
+		return removeNode(getLast());
+	}
+
+	@Override
+	public void clear()
+	{
+		root = null;
+		numLeafNodes = 0;
+	}
+
+	void formatted(Consumer<String> consumer)
+	{
+		new SimpleTreeFormatter(getRoot()).getLines().forEach(consumer);
+	}
+
+	@Override
+	public String toString()
+	{
+		return "%s:{%s}".formatted(getClass().getSimpleName(),
+			Objects.toString(getRoot(), "·"));
+	}
+}

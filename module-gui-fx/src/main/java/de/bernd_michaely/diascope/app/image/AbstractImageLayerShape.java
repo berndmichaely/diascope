@@ -16,8 +16,6 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import de.bernd_michaely.diascope.app.image.ImageLayer.Type;
-import java.util.List;
 import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -32,23 +30,17 @@ import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.shape.StrokeType;
-import javafx.scene.text.Font;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
-import static java.lang.Math.max;
-import static java.lang.Math.round;
 import static javafx.beans.binding.Bindings.when;
 
 /// Base class to describe an ImageLayer selection shape.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLayerShapeSpot
+abstract sealed class AbstractImageLayerShape implements ImageLayerShape
+	permits AbstractImageLayerShapeStroke, ImageLayerShapeSpot
 {
-	static final List<Color> COLORS_SELECTED = List.of(Color.CORNFLOWERBLUE, Color.CORAL);
-	static final Paint COLOR_UNSELECTED = Color.ALICEBLUE;
-	static final double STROKE_WIDTH_UNSELECTED = max(1, round(Font.getDefault().getSize() / 15));
 	private final BooleanProperty selected;
 	private final BooleanProperty unselectedVisible;
 	private @Nullable Consumer<Boolean> layerSelectionHandler;
@@ -56,7 +48,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 	private final @Nullable Consumer<MouseEvent> onMouseDragged;
 	private final ReadOnlyBooleanWrapper mouseDragged = new ReadOnlyBooleanWrapper();
 
-	ImageLayerShapeBase(boolean unselectedVisible,
+	AbstractImageLayerShape(boolean unselectedVisible,
 		@Nullable Consumer<MouseEvent> onMouseDragInit,
 		@Nullable Consumer<MouseEvent> onMouseDragged)
 	{
@@ -66,17 +58,17 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 		this.onMouseDragged = onMouseDragged;
 	}
 
-	void _postInit()
+	void initShape(Shape shape)
 	{
-		getShape().setFill(Color.TRANSPARENT);
-		getShape().setStrokeLineCap(StrokeLineCap.ROUND);
-		getShape().setStrokeLineJoin(StrokeLineJoin.ROUND);
-		getShape().setStrokeType(StrokeType.INSIDE);
-		getShape().strokeProperty().bind(when(selected).then(getStrokeSelectedPaint()).otherwise(
+		shape.setFill(Color.TRANSPARENT);
+		shape.setStrokeLineCap(StrokeLineCap.ROUND);
+		shape.setStrokeLineJoin(StrokeLineJoin.ROUND);
+		shape.setStrokeType(StrokeType.INSIDE);
+		shape.strokeProperty().bind(when(selected).then(getStrokeSelectedPaint()).otherwise(
 			when(unselectedVisible).then(COLOR_UNSELECTED).otherwise(Color.TRANSPARENT)));
-		getShape().strokeWidthProperty().bind(when(selected).then(getStrokeWidthSelected()).otherwise(
+		shape.strokeWidthProperty().bind(when(selected).then(getStrokeWidthSelected()).otherwise(
 			when(unselectedVisible).then(STROKE_WIDTH_UNSELECTED).otherwise(0.0)));
-		getShape().setOnMouseDragged(event ->
+		shape.setOnMouseDragged(event ->
 		{
 			if (!mouseDragged.get())
 			{
@@ -97,7 +89,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 				onMouseDragged.accept(event);
 			}
 		});
-		getShape().setOnMouseReleased(event ->
+		shape.setOnMouseReleased(event ->
 		{
 			try
 			{
@@ -112,7 +104,7 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 			finally
 			{
 				mouseDragged.set(false);
-				if (getType() == SPOT)
+				if (this instanceof ImageLayerShapeSpot)
 				{
 					event.consume();
 				}
@@ -120,12 +112,14 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 		});
 	}
 
-	void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler)
+	@Override
+	public void setLayerSelectionHandler(Consumer<Boolean> layerSelectionHandler)
 	{
 		this.layerSelectionHandler = layerSelectionHandler;
 	}
 
-	BooleanProperty selectedProperty()
+	@Override
+	public BooleanProperty selectedProperty()
 	{
 		return selected;
 	}
@@ -138,8 +132,4 @@ abstract sealed class ImageLayerShapeBase permits ImageLayerShapeSplit, ImageLay
 	abstract ObservableObjectValue<Paint> getStrokeSelectedPaint();
 
 	abstract double getStrokeWidthSelected();
-
-	abstract Type getType();
-
-	abstract Shape getShape();
 }

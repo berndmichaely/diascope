@@ -16,11 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
-import java.lang.System.Logger;
-import java.util.function.BiConsumer;
-
 import static de.bernd_michaely.common.desktop.fx.collections.selection.Selectable.Action.*;
-import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 
 /// Class to handle the image layers for spot mode.
 ///
@@ -28,19 +24,20 @@ import static de.bernd_michaely.diascope.app.image.ImageLayer.Type.*;
 ///
 final class ImageLayersSpot extends ImageLayersBase
 {
-	private static final Logger logger = System.getLogger(ImageLayersSpot.class.getName());
-	private final BiConsumer<ImageLayer, Boolean> layerSelectionHandler;
+	private final ImageLayerShapeSpot imageLayerShapeSpot;
 
-	ImageLayersSpot(Viewport viewport, ImageTransforms imageTransforms)
+	ImageLayersSpot(Viewport viewport)
 	{
-		layerSelectionHandler = (imageLayer, _) ->
-			layers.selectAll(i -> layers.get(i) == imageLayer ? SELECTION_TOGGLE : SELECTION_UNSET);
-		final var baseLayer = ImageLayer.createInstance(BASE, viewport, layerSelectionHandler);
-		final var spotLayer = ImageLayer.createInstance(SPOT, viewport, layerSelectionHandler);
+		final var baseLayer = new ImageLayer(viewport);
+		final var spotLayer = new ImageLayer(viewport);
+		this.imageLayerShapeSpot = ImageLayerShapeSpot.createInstance(viewport);
+		imageLayerShapeSpot.setLayerSelectionHandler(_ ->
+			layers.selectAll(i -> layers.get(i) == spotLayer ? SELECTION_TOGGLE : SELECTION_UNSET));
 		layers.addAll(baseLayer, spotLayer);
 		viewport.addSpotBaseLayer(baseLayer);
-		viewport.addSpotLayer(spotLayer);
-		layers.forEach(l -> l.getImageTransforms().bindProperties(imageTransforms));
+		viewport.addSpotLayer(spotLayer, imageLayerShapeSpot);
+		spotLayer.clipProperty().bind(imageLayerShapeSpot.clipProperty());
+		imageLayerShapeSpot.selectedProperty().set(true);
 	}
 
 	private ImageLayer getSpotLayer()
@@ -50,13 +47,6 @@ final class ImageLayersSpot extends ImageLayersBase
 
 	void reset()
 	{
-		if (getSpotLayer().getImageLayerShape() instanceof ImageLayerShapeSpot imageLayerShapeSpot)
-		{
-			imageLayerShapeSpot.reset();
-		}
-		else
-		{
-			throw new IllegalStateException("Invalid ImageLayerShape in reset()");
-		}
+		imageLayerShapeSpot.reset();
 	}
 }

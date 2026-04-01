@@ -1,0 +1,329 @@
+/*
+ * Copyright (C) 2025 Bernd Michaely (info@bernd-michaely.de)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package de.bernd_michaely.diascope.app.util.collections;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import org.junit.jupiter.api.Test;
+
+import static de.bernd_michaely.diascope.app.util.collections.TreeNode.STRING_EMPTY;
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * BinaryTree Test.
+ *
+ * @author Bernd Michaely (info@bernd-michaely.de)
+ */
+public class BinaryTreeTest
+{
+	private static List<TreeNode> toList(BinaryTree binaryTree)
+	{
+		final List<TreeNode> result = new ArrayList<>();
+		_toList(result, binaryTree.getRoot());
+		return result;
+	}
+
+	private static void _toList(List<TreeNode> result, TreeNode node)
+	{
+		if (node != null)
+		{
+			result.add(node);
+			if (node instanceof InnerNode innerNode)
+			{
+				_toList(result, innerNode.getFirstSubNode());
+				_toList(result, innerNode.getLastSubNode());
+			}
+		}
+	}
+
+	private static void checkSize(int expectedNumLeafNodes, BinaryTree binaryTree)
+	{
+		assertEquals(expectedNumLeafNodes, binaryTree.getNumLeafNodes());
+		assertEquals(binaryTree.stream().count(), binaryTree.size());
+	}
+
+	@Test
+	public void test_add_leaves()
+	{
+		System.out.println(">>> test_add_leaves");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		System.out.println();
+		System.out.println("→ " + binaryTree);
+		assertEquals("BinaryTree:{·}", binaryTree.toString());
+		final List<String> listTest = List.of("one", "two", "three", "four", "five");
+		for (int i = 0; i < listTest.size(); i++)
+		{
+			if (i == 0)
+			{
+				binaryTree.append(listTest.get(i));
+			}
+			else
+			{
+				binaryTree.append(listTest.get(i), i);
+			}
+		}
+		System.out.println();
+		System.out.println("→ " + binaryTree);
+		assertEquals(
+			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:LeafNode(three)|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
+			binaryTree.toString());
+		checkSize(listTest.size(), binaryTree);
+		assertIterableEquals(toList(binaryTree), binaryTree);
+		System.out.println();
+		binaryTree.formatted(System.out::println);
+		assertTrue(binaryTree.insertItemAt("six", 789, "three", true));
+		System.out.println();
+		System.out.println("→ " + binaryTree);
+		assertEquals(
+			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:BinaryNode[<789>:LeafNode(three)|LeafNode(six)]|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
+			binaryTree.toString());
+		System.out.println();
+		binaryTree.formatted(System.out::println);
+		assertEquals("six", binaryTree.removeItem("six").getValue());
+		assertTrue(binaryTree.insertItemAt("six", 789, "three", false));
+		System.out.println();
+		System.out.println("→ " + binaryTree);
+		assertEquals(
+			"BinaryTree:{BinaryNode[<1>:LeafNode(one)|BinaryNode[<2>:LeafNode(two)|BinaryNode[<3>:BinaryNode[<789>:LeafNode(six)|LeafNode(three)]|BinaryNode[<4>:LeafNode(four)|LeafNode(five)]]]]}",
+			binaryTree.toString());
+		System.out.println();
+		binaryTree.formatted(System.out::println);
+		binaryTree.clear();
+		checkSize(0, binaryTree);
+		assertEquals("BinaryTree:{·}", binaryTree.toString());
+	}
+
+	@Test
+	public void test_add_inner()
+	{
+		System.out.println(">>> test_add_inner");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append("one");
+		assertFalse(binaryTree.containsInnerValue(7));
+		binaryTree.append("two", 7);
+		assertTrue(binaryTree.containsInnerValue(7));
+		binaryTree.removeItem("one");
+		assertFalse(binaryTree.containsInnerValue(7));
+	}
+
+	@Test
+	public void test_remove_0()
+	{
+		System.out.println(">>> test_remove_0");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		assertNull(binaryTree.removeItem(""));
+		checkSize(0, binaryTree);
+		assertEquals("BinaryTree:{·}", binaryTree.toString());
+	}
+
+	@Test
+	public void test_remove_1()
+	{
+		System.out.println(">>> test_remove_1");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append("one");
+		checkSize(1, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		binaryTree.formatted(System.out::println);
+		final LeafNode removedItem = binaryTree.removeItem("one");
+		assertEquals("one", removedItem.getValue());
+		checkSize(0, binaryTree);
+		assertFalse(binaryTree.containsLeaf("one"));
+		System.out.println("→");
+		binaryTree.formatted(System.out::println);
+		assertEquals("BinaryTree:{·}", binaryTree.toString());
+	}
+
+	@Test
+	public void test_remove_2_0()
+	{
+		System.out.println(">>> test_remove_2_0");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append("one");
+		binaryTree.append("two");
+		checkSize(2, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		assertTrue(binaryTree.containsLeaf("two"));
+		binaryTree.formatted(System.out::println);
+		final LeafNode removedItem = binaryTree.removeItem("one");
+		assertEquals("one", removedItem.getValue());
+		checkSize(1, binaryTree);
+		assertFalse(binaryTree.containsLeaf("one"));
+		assertTrue(binaryTree.containsLeaf("two"));
+		System.out.println("→");
+		binaryTree.formatted(System.out::println);
+		assertEquals("BinaryTree:{LeafNode(two)}", binaryTree.toString());
+	}
+
+	@Test
+	public void test_remove_2_1()
+	{
+		System.out.println(">>> test_remove_2_1");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append("one");
+		binaryTree.append("two");
+		checkSize(2, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		assertTrue(binaryTree.containsLeaf("two"));
+		binaryTree.formatted(System.out::println);
+		final LeafNode removedItem = binaryTree.removeItem("two");
+		assertEquals("two", removedItem.getValue());
+		checkSize(1, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		assertFalse(binaryTree.containsLeaf("two"));
+		System.out.println("→");
+		binaryTree.formatted(System.out::println);
+		assertEquals("BinaryTree:{LeafNode(one)}", binaryTree.toString());
+	}
+
+	@Test
+	public void test_remove_3_0()
+	{
+		System.out.println(">>> test_remove_3_0");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append(List.of("one", "two", "three"));
+		checkSize(3, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		assertTrue(binaryTree.containsLeaf("two"));
+		assertTrue(binaryTree.containsLeaf("three"));
+		binaryTree.formatted(System.out::println);
+		final LeafNode removedItem = binaryTree.removeItem("one");
+		assertEquals("one", removedItem.getValue());
+		checkSize(2, binaryTree);
+		assertFalse(binaryTree.containsLeaf("one"));
+		assertTrue(binaryTree.containsLeaf("two"));
+		assertTrue(binaryTree.containsLeaf("three"));
+		System.out.println("→");
+		binaryTree.formatted(System.out::println);
+		assertEquals(
+			"BinaryTree:{BinaryNode[<%1$s>:LeafNode(two)|LeafNode(three)]}".formatted(STRING_EMPTY),
+			binaryTree.toString());
+	}
+
+	@Test
+	public void test_remove_3_1()
+	{
+		System.out.println(">>> test_remove_3_1");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		binaryTree.append(List.of("one", "two", "three"));
+		checkSize(3, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		assertTrue(binaryTree.containsLeaf("two"));
+		assertTrue(binaryTree.containsLeaf("three"));
+		binaryTree.formatted(System.out::println);
+		final LeafNode removedItem = binaryTree.removeItem("two");
+		assertEquals("two", removedItem.getValue());
+		checkSize(2, binaryTree);
+		assertTrue(binaryTree.containsLeaf("one"));
+		assertFalse(binaryTree.containsLeaf("two"));
+		assertTrue(binaryTree.containsLeaf("three"));
+		System.out.println("→");
+		binaryTree.formatted(System.out::println);
+		assertEquals(
+			"BinaryTree:{BinaryNode[<%1$s>:LeafNode(one)|LeafNode(three)]}".formatted(STRING_EMPTY),
+			binaryTree.toString());
+	}
+
+	@Test
+	public void test_remove()
+	{
+		System.out.println(">>> test_remove");
+		final var binaryTree = new BinaryTree<String, String>();
+		checkSize(0, binaryTree);
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getFirst());
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getLast());
+		binaryTree.append("one");
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("one", binaryTree.getLast().getValue());
+		binaryTree.append("two", "2");
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("two", binaryTree.getLast().getValue());
+		binaryTree.append((String) null);
+		binaryTree.append("three", "3");
+		checkSize(4, binaryTree);
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("three", binaryTree.getLast().getValue());
+		final BinaryNode<String> innerNode = binaryTree.findInnerNode("2");
+		assertFalse(binaryTree.remove(innerNode));
+		assertFalse(binaryTree.remove("2"));
+		checkSize(4, binaryTree);
+		assertTrue(binaryTree.remove("two"));
+		checkSize(3, binaryTree);
+		assertTrue(binaryTree.remove(null));
+		checkSize(2, binaryTree);
+	}
+
+	@Test
+	public void test_removeNode()
+	{
+		System.out.println(">>> test_removeNode");
+		final var binaryTree1 = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree1);
+		binaryTree1.append("one");
+		checkSize(1, binaryTree1);
+		final var binaryTree2 = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree2);
+		binaryTree2.append("one");
+		checkSize(1, binaryTree2);
+		final LeafNode<String> leaf1 = binaryTree1.findLeafNode("one");
+		final LeafNode<String> leaf2 = binaryTree2.findLeafNode("one");
+		assertTrue(binaryTree1.contains(leaf1));
+		assertTrue(binaryTree2.contains(leaf2));
+		assertFalse(binaryTree1.contains(leaf2));
+		assertFalse(binaryTree2.contains(leaf1));
+		assertDoesNotThrow(() -> binaryTree2.removeNode(leaf2, true));
+		checkSize(0, binaryTree2);
+		assertThrows(IllegalArgumentException.class, () -> binaryTree1.removeNode(leaf2, true));
+		// Check, that precondition is skipped to ensure the related performance gain, but …
+		// OOPS !!! Need to check precondition in your code yourself before !!!
+		assertDoesNotThrow(() -> binaryTree1.removeNode(leaf2, false));
+		checkSize(0, binaryTree1); // this shouln't happen in real code
+	}
+
+	@Test
+	public void test_remove_first_last()
+	{
+		System.out.println(">>> test_remove_first_last");
+		final var binaryTree = new BinaryTree<Integer, String>();
+		checkSize(0, binaryTree);
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getFirst());
+		assertThrows(NoSuchElementException.class, () -> binaryTree.getLast());
+		binaryTree.append(List.of("one", "two", "three"));
+		checkSize(3, binaryTree);
+		assertEquals("one", binaryTree.getFirst().getValue());
+		assertEquals("three", binaryTree.getLast().getValue());
+		//
+		assertEquals("one", binaryTree.removeFirst().getValue());
+		checkSize(2, binaryTree);
+		assertEquals("two", binaryTree.getFirst().getValue());
+		assertEquals("three", binaryTree.getLast().getValue());
+		//
+		assertEquals("three", binaryTree.removeLast().getValue());
+		checkSize(1, binaryTree);
+		assertEquals("two", binaryTree.getFirst().getValue());
+		assertEquals("two", binaryTree.getLast().getValue());
+	}
+}

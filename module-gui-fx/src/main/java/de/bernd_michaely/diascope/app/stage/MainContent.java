@@ -24,6 +24,7 @@ import de.bernd_michaely.diascope.app.stage.concurrent.ImageLoader.TaskParameter
 import de.bernd_michaely.diascope.app.util.action.CheckedAction;
 import java.lang.System.Logger;
 import java.nio.file.Path;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
@@ -57,7 +58,7 @@ import static javafx.geometry.Pos.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class MainContent
+public class MainContent implements AutoCloseable
 {
 	private static final Logger logger = System.getLogger(MainContent.class.getName());
 	private static final int INDEX_NO_SELECTION = -1;
@@ -233,8 +234,8 @@ public class MainContent
 	{
 		final var image = taskResult.image();
 		final var path = taskResult.path();
-		multiImageView.setImageDescriptor(image != null && path != null ?
-			new ImageDescriptor(image, path) : null);
+		final var imageDescriptor = image != null && path != null ? new ImageDescriptor(image, path) : null;
+		multiImageView.setImageDescriptor(Optional.ofNullable(imageDescriptor));
 	}
 
 	private Paint getDefaultTextPaint()
@@ -330,14 +331,6 @@ public class MainContent
 		components.setFullScreenIcon(iconStage);
 	}
 
-	void onApplicationClose()
-	{
-		try (imageDirectoryReader)
-		{
-			removeSelectedPathProperty();
-		}
-	}
-
 	/**
 	 * Returns the main component to be included in surrounding environment.
 	 *
@@ -351,5 +344,19 @@ public class MainContent
 	CheckedAction getActionFullScreen()
 	{
 		return components.getActionFullScreen();
+	}
+
+	void onApplicationClose()
+	{
+		try (this; multiImageView; imageDirectoryReader)
+		{
+			removeSelectedPathProperty();
+		}
+	}
+
+	@Override
+	public void close()
+	{
+		components.close();
 	}
 }
