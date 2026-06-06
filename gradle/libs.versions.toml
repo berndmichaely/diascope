@@ -1,2 +1,7 @@
+# https://docs.gradle.org/current/userguide/version_catalogs.html#sec::toml-dependencies-format
+
+[versions]
+checker = "4.0.0"
+
 [libraries]
-checker = "org.checkerframework:checker:3.54.0"
+checker = { group = "org.checkerframework", name = "checker", version.ref = "checker" }

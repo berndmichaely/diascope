@@ -111,9 +111,9 @@ final def fileSemVer = project(':module-gui-fx').file(fileNameSemVer)
 final def fileVersionShield = file("doc/shields/version.svg")
 
 description = 'A JavaFX based image viewer with multi layer image comparison.'
-		
+
 allprojects {
-	group = 'de.bernd_michaely'
+	group = 'de.bernd-michaely'
 	version = semVer
 	
 	apply plugin: 'org.checkerframework'
@@ -127,6 +127,7 @@ allprojects {
 	ext.versionJUnit = '6.0.1'
 	// ext.versionJUnit = '5.14.1'
 	// ext.versionJUnitVintage = '4.13.2'
+	ext.versionJSemver = '2.0.0'
 	
 	repositories {
 		mavenCentral()
@@ -142,25 +143,43 @@ allprojects {
 	}
 }
 
-logger.lifecycle "Running Gradle $project.gradle.gradleVersion"
-logger.lifecycle "Java source compatibility   : ${java.sourceCompatibility}"
-logger.lifecycle "Java target compatibility   : ${java.targetCompatibility}"
-logger.lifecycle "Java toolchain              : ${java.toolchain.displayName}"
-logger.lifecycle "Compile      -> Debug-Level : ${compileJava.options.debug}"
-logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}"
-logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"
-logger.lifecycle "Using Checker Framework     : ${checkerFramework.version.get()}"
-logger.lifecycle "==> Root project »$name ($version)«"
-logger.lifecycle " -> Base dir is »${file('.')}«"
+final Map<String, ?> _map = new LinkedHashMap<>()
+_map.put ("Root project", "v${name} ${version}")
+_map.put ("Base dir", "»${file('.')}«")
+_map.put ("Running Gradle", project.gradle.gradleVersion)
+_map.put ("Java source compatibility", java.sourceCompatibility)
+_map.put ("Java target compatibility", java.targetCompatibility)
+_map.put ("Java toolchain", java.toolchain.displayName)
+_map.put ("Compile -> Debug-Level", compileJava.options.debug)
+_map.put ("Test-Compile -> Debug-Level", compileTestJava.options.debug)
+_map.put ("Modularity enabled", java.modularity.inferModulePath.get())
+_map.put ("Using Checker Framework", checkerFramework.version.get())
+_map.put ("Using JSemVer", versionJSemver)
 if (ext.has('versionJUnitVintage')) {
-	logger.lifecycle " -> Using »JUnit         ${versionJUnit}«"
-	logger.lifecycle " -> Using »JUnit vintage ${versionJUnitVintage}«"
+	_map.put ("Using JUnit", versionJUnit)
+	_map.put ("Using JUnit vintage", versionJUnitVintage)
 } else {
-	logger.lifecycle " -> Using »JUnit  ${versionJUnit}«"
+	_map.put ("Using JUnit", versionJUnit)
 }
-logger.lifecycle " -> Using »JaCoCo ${jacoco.toolVersion}«"
-logger.lifecycle " -> Included child projects : »${childProjects.keySet().stream().sorted().toList()}«"
-logger.lifecycle " -> Maven coordinates »${group}:${name}:${version}«"
+_map.put ("Using JaCoCo", jacoco.toolVersion)
+_map.put ("Included child projects", childProjects.keySet().stream().sorted().toList())
+_map.put ("Maven coordinates", "»${group}:${name}:${version}«")
+
+final int maxLenKey   = _map.keySet().stream().mapToInt(s->s.length()).max().orElse(0)
+final int maxLenValue = _map.values().stream().mapToInt(s->(""+s).length()).max().orElse(0)
+final int maxLenLine = maxLenKey + 3 + maxLenValue
+final def _line = "-" * (4 + maxLenLine)
+
+logger.lifecycle _line
+boolean isHeader = true
+_map.each { key, value ->
+	println "| %${maxLenKey}s | %-${maxLenValue}s |".formatted (key, value)
+	if (isHeader) {
+		logger.lifecycle _line
+		isHeader = false
+	}
+}
+logger.lifecycle _line
 
 subprojects {
 	tasks.withType(JavaCompile).configureEach {
@@ -193,8 +212,8 @@ automaticModule('batik-all-1.17.jar', 'batik')
 
 dependencies {
 	implementation project (':lib-common-cli-parser')
-	implementation project (':lib-common-semver')
 	implementation project (':module-gui-fx')
+	implementation "de.bernd-michaely:jsemver:${versionJSemver}"
 	//implementation 'com.github.weisj:jsvg:1.5.0'
 	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
 	//implementation 'xml-apis:xml-apis:1.4.01'
