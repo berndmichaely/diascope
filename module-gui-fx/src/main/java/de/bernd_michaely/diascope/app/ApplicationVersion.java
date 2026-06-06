@@ -16,15 +16,13 @@
  */
 package de.bernd_michaely.diascope.app;
 
+import de.bernd_michaely.common.semver.InvalidSemanticVersionException;
 import de.bernd_michaely.common.semver.SemanticVersion;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.System.Logger;
 import java.util.Optional;
 
 import static java.lang.System.Logger.Level.*;
-import static java.util.function.Predicate.not;
 
 /**
  * Class to retrieve the application version.
@@ -36,18 +34,6 @@ class ApplicationVersion
 	private static final Logger logger = System.getLogger(ApplicationVersion.class.getName());
 	private static final String FILENAME_SEMANTIC_VERSION = "semantic_version.txt";
 	private static Optional<SemanticVersion> instance = Optional.empty();
-
-	private static void setInstance(String version)
-	{
-		try
-		{
-			instance = Optional.of(new SemanticVersion(version));
-		}
-		catch (IllegalArgumentException ex)
-		{
-			instance = Optional.empty();
-		}
-	}
 
 	/**
 	 * Retrieves the application version.
@@ -62,17 +48,17 @@ class ApplicationVersion
 			{
 				if (stream != null)
 				{
-					try (var reader = new BufferedReader(new InputStreamReader(stream)))
-					{
-						reader.lines().filter(not(String::isBlank)).findFirst()
-							.ifPresentOrElse(ApplicationVersion::setInstance,
-								() -> logger.log(WARNING, "Can't find a valid application semantic version."));
-					}
+					instance = Optional.of(SemanticVersion.of(stream));
 				}
 				else
 				{
+					instance = Optional.of(SemanticVersion.of());
 					logger.log(WARNING, "Can't find resource file with application semantic version.");
 				}
+			}
+			catch (InvalidSemanticVersionException ex)
+			{
+				logger.log(WARNING, "Can't find a valid application semantic version.");
 			}
 			catch (IOException ex)
 			{

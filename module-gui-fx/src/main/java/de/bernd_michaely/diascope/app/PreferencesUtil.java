@@ -62,13 +62,10 @@ public class PreferencesUtil
 		final StringBuilder s = new StringBuilder("_");
 		if (launchType == NORMAL)
 		{
-			final var semanticVersion = state.version().orElse(new SemanticVersion());
+			final var semanticVersion = state.version().orElse(SemanticVersion.of());
 			s.append("v").append(semanticVersion.getMajor());
-			final String preRelease = semanticVersion.getPreRelease().toString();
-			if (!preRelease.isBlank())
-			{
-				s.append("_").append(preRelease.replace('.', '-'));
-			}
+			semanticVersion.getPreRelease().ifPresent(preRelease ->
+				s.append("_").append(preRelease.getPart().replace('.', '-')));
 		}
 		else
 		{

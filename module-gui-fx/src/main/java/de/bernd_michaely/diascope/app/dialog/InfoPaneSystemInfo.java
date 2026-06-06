@@ -16,6 +16,8 @@
  */
 package de.bernd_michaely.diascope.app.dialog;
 
+import de.bernd_michaely.common.filesystem.view.base.FileSystemTreeViewVersion;
+import de.bernd_michaely.common.semver.SemanticVersion;
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.util.common.JreVersionUtil;
 import javafx.application.ConditionalFeature;
@@ -63,11 +65,16 @@ class InfoPaneSystemInfo implements InfoPane
 		final Label textAppVersion = new Label();
 		ApplicationConfiguration.getState().version().ifPresentOrElse(version ->
 		{
-			textAppVersion.setText(version.toString());
+			textAppVersion.setText(version.getCanonicalForm());
 			final var tooltipAppVersion = new Tooltip(version.getDescription());
 			headerAppVersion.setTooltip(tooltipAppVersion);
 			textAppVersion.setTooltip(tooltipAppVersion);
 		}, () -> textAppVersion.setText(MSG_UNKNOWN));
+
+		final Label headerFstvVersion = new Label("Filesystem tree view:");
+		final var semVerFstv = SemanticVersion.of(FileSystemTreeViewVersion.getBaseModuleVersion());
+		final Label textFstvVersion = new Label(semVerFstv.getCanonicalForm());
+		textFstvVersion.setTooltip(new Tooltip(semVerFstv.getDescription()));
 
 		final Label headerJreVersion = new Label("Java Runtime Version:");
 		final Label textJreVersion = new Label(JreVersionUtil.getJreVersionInfo());
@@ -105,6 +112,7 @@ class InfoPaneSystemInfo implements InfoPane
 //		final Label textX3fDataFormat = new Label(LibraryVersionInfo.getSupportedX3fVersion());
 		final Font fontHeader = Font.font("", FontWeight.BOLD, DEFAULT_FONT_SIZE);
 		headerAppVersion.setFont(fontHeader);
+		headerFstvVersion.setFont(fontHeader);
 		headerJreVersion.setFont(fontHeader);
 		headerJavaFXVersion.setFont(fontHeader);
 		headerShapeClipSupport.setFont(fontHeader);
@@ -117,6 +125,7 @@ class InfoPaneSystemInfo implements InfoPane
 //		headerX3fDataFormat.setFont(fontHeader);
 		final VBox vBox = new VBox(
 			headerAppVersion, textAppVersion,
+			headerFstvVersion, textFstvVersion,
 			headerJreVersion, textJreVersion,
 			headerJavaFXVersion, textJavaFXVersion,
 			headerShapeClipSupport, textShapeClipSupport,
