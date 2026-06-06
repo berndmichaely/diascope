@@ -56,6 +56,7 @@ import javafx.scene.layout.HeaderBar;
 import javafx.scene.layout.Region;
 import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -297,6 +298,8 @@ public class MainWindow
 					"The change will take effect after restarting the application.",
 					ButtonType.OK);
 				dialog.getDialogPane().getStylesheets().setAll(scene.getStylesheets());
+				dialog.initModality(Modality.APPLICATION_MODAL);
+				dialog.initOwner(stage);
 				dialog.showAndWait();
 			}));
 			stage.show();

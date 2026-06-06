@@ -16,7 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.dialog;
 
-import de.bernd_michaely.common.filesystem.view.base.FileSystemTreeViewVersion;
+import de.bernd_michaely.common.filesystem.view.fx.FileSystemTreeViewVersionFX;
 import de.bernd_michaely.common.semver.SemanticVersion;
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.util.common.JreVersionUtil;
@@ -72,9 +72,13 @@ class InfoPaneSystemInfo implements InfoPane
 		}, () -> textAppVersion.setText(MSG_UNKNOWN));
 
 		final Label headerFstvVersion = new Label("Filesystem tree view:");
-		final var semVerFstv = SemanticVersion.of(FileSystemTreeViewVersion.getBaseModuleVersion());
-		final Label textFstvVersion = new Label(semVerFstv.getCanonicalForm());
-		textFstvVersion.setTooltip(new Tooltip(semVerFstv.getDescription()));
+		final var semVerFstv = SemanticVersion.of(FileSystemTreeViewVersionFX.getBaseModuleVersion());
+		final var semVerFstvFx = SemanticVersion.of(FileSystemTreeViewVersionFX.getFxModuleVersion());
+		final String strFstvVersion = "%s (Base-module) / %s (FX-module)"
+			.formatted(semVerFstv.getCanonicalForm(), semVerFstvFx.getCanonicalForm());
+		final Label textFstvVersion = new Label(strFstvVersion);
+		final Tooltip strFstvVersionTooltip = new Tooltip(semVerFstv.getDescription());
+		textFstvVersion.setTooltip(strFstvVersionTooltip);
 
 		final Label headerJreVersion = new Label("Java Runtime Version:");
 		final Label textJreVersion = new Label(JreVersionUtil.getJreVersionInfo());

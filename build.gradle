@@ -69,7 +69,7 @@ def String readSvnRevision()
 			logger.lifecycle "   -> Can't get subversion revision"
 		}
 		else {
-			final boolean isolateNumericBuildParts = false
+			final boolean isolateNumericBuildParts = true
 			final String urlSvnRepos = process.text.trim()
 			logger.lifecycle "   Reading subversion revision (repos-root-url: »${urlSvnRepos}«)"
 			final def process2 = [ 'svn', 'info', '--show-item', 'revision', '--no-newline', urlSvnRepos ].execute()
@@ -227,7 +227,7 @@ dependencies {
 	//implementation 'xml-apis:xml-apis-ext:1.3.04'
 	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
-	
+
 def _getVersionShield(String name, SemanticVersion version, File fileVersionShield) {
 	final def toShieldParam = { it replaceAll '-', '--' replaceAll '_', '__' replaceAll '\\s', '_'  }
 	final String label = toShieldParam name

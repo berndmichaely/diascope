@@ -8,6 +8,7 @@ dependencies {
 	implementation project (':lib-selectable-list-fx')
 	implementation libs.jsemver
 	implementation libs.bundles.filesystemview
+	testImplementation libs.assertj.core
 }
 	
 testing {
