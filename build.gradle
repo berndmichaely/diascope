@@ -1,3 +1,12 @@
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath libs.jsemver
+	}
+}
+
 plugins {
 	id 'java'
 	id 'application'
@@ -16,6 +25,8 @@ plugins {
 wrapper {
 	gradleVersion = '9.3.1'
 }
+
+import de.bernd_michaely.common.semver.*
 
 final def javaLangVersion = JavaLanguageVersion.of(25)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
@@ -98,11 +109,13 @@ def String readSvnRevision()
 }
 
 final String build_id = project.hasProperty(propBuild) ? project.getProperty(propBuild) : readSvnRevision()
-final String semVer = build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease
+final SemanticVersion semVer = SemanticVersion.of(build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease)
 
-final def regexSemVer = ~/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-if (!(semVer =~ regexSemVer)) throw new StopExecutionException("Invalid semantic version »${semVer}«")
+final var semVerFsvBase = SemanticVersion.of(libs.filesystemview.base.get().version)
+final var semVerFsvFX = SemanticVersion.of(libs.filesystemview.fx.get().version)
 
+if (semVerFsvFX < semVerFsvBase) throw new StopExecutionException("Inconsistent filesystemview library versions")
+	
 // files:
 
 final String fileNameSemVer = 'src/main/resources/de/bernd_michaely/diascope/app/semantic_version.txt'
@@ -114,21 +127,18 @@ description = 'A JavaFX based image viewer with multi layer image comparison.'
 
 allprojects {
 	group = 'de.bernd-michaely'
-	version = semVer
+	version = semVer.canonicalForm
 	
 	apply plugin: 'org.checkerframework'
 
 	checkerFramework {
 		version = libs.checker.get().version
-		checkers = [ 'org.checkerframework.checker.nullness.NullnessChecker' ]
+		checkers = [
+		'org.checkerframework.checker.nullness.NullnessChecker'
+		]
 		excludeTests = true
 	}
 
-	ext.versionJUnit = '6.0.1'
-	// ext.versionJUnit = '5.14.1'
-	// ext.versionJUnitVintage = '4.13.2'
-	ext.versionJSemver = '3.1.0'
-	
 	repositories {
 		mavenCentral()
 		//mavenLocal()
@@ -146,7 +156,7 @@ allprojects {
 final Map<String, String> _map = new LinkedHashMap<>()
 def _put = { String key, Object value -> _map.put(key, ""+value) }
 	
-_put "Root project", "v${name} ${version}"
+_put "Root project", "${name} ${semVer.description}"
 _put "Base dir", "»${file('.')}«"
 _put "Running Gradle", project.gradle.gradleVersion
 _put "Java source compatibility", java.sourceCompatibility
@@ -156,16 +166,11 @@ _put "Compile -> Debug-Level", compileJava.options.debug
 _put "Test-Compile -> Debug-Level", compileTestJava.options.debug
 _put "Modularity enabled", java.modularity.inferModulePath.get()
 _put "Using Checker Framework", checkerFramework.version.get()
-_put "Using JSemVer", versionJSemver
-if (ext.has('versionJUnitVintage')) {
-	_put "Using JUnit", versionJUnit
-	_put "Using JUnit vintage", versionJUnitVintage
-} else {
-	_put "Using JUnit", versionJUnit
-}
+_put "Using JSemVer", SemanticVersion.of(libs.jsemver.get().version).description
+_put "Using lib-filesystem-view", "base [${semVerFsvBase.canonicalForm}] fx [${semVerFsvFX.canonicalForm}]"
+_put "Using JUnit", libs.junit.jupiter.get().version
 _put "Using JaCoCo", jacoco.toolVersion
 _put "Included child projects", childProjects.keySet().stream().sorted().toList()
-_put "Maven coordinates", "»${group}:${name}:${version}«"
 
 final int maxLenKey   = _map.keySet().stream().mapToInt(s->s.length()).max().orElse(0)
 final int maxLenValue = _map.values().stream().mapToInt(s->(""+s).length()).max().orElse(0)
@@ -215,7 +220,7 @@ automaticModule('batik-all-1.17.jar', 'batik')
 dependencies {
 	implementation project (':lib-common-cli-parser')
 	implementation project (':module-gui-fx')
-	implementation "de.bernd-michaely:jsemver:${versionJSemver}"
+	implementation libs.jsemver
 	//implementation 'com.github.weisj:jsvg:1.5.0'
 	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
 	//implementation 'xml-apis:xml-apis:1.4.01'
@@ -223,10 +228,10 @@ dependencies {
 	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
 	
-def _getVersionShield(String name, String version, File fileVersionShield) {
-	final def toShieldParam = { it replaceAll "-", "--" replaceAll "_", "__" replaceAll "\\s", "_"  }
+def _getVersionShield(String name, SemanticVersion version, File fileVersionShield) {
+	final def toShieldParam = { it replaceAll '-', '--' replaceAll '_', '__' replaceAll '\\s', '_'  }
 	final String label = toShieldParam name
-	final String message = toShieldParam (version - ~/\+.*$/)
+	final String message = toShieldParam (version.getCanonicalForm(true))
 	final String color = 'blue'
 	final def url = new URI("https://img.shields.io/badge/${label}-${message}-${color}").toURL()
 	logger.lifecycle "→ getting data from URL »${url}«"
@@ -237,18 +242,28 @@ task writeSemVer {
 	description = "Write application semantic version to resource file »${fileSemVer}«"
 	group = processResources.group
 	doFirst {
-		final List<String> lines = fileSemVer.readLines()
-		final int n = lines.size()
-		String oldSemVer
-		int i = 0
-		do {
-			oldSemVer = lines.get(i++).trim()
-		} while (!(oldSemVer =~ regexSemVer) && i < n)
-		if (oldSemVer != semVer) {
+		boolean doWriteSemVer
+		boolean doWriteShield
+		if (fileSemVer) {
+			try(var stream = fileSemVer.newInputStream())
+			{
+				var oldSemVer = SemanticVersion.of(stream)
+				doWriteSemVer = oldSemVer.canonicalForm != semVer.canonicalForm
+				doWriteShield = oldSemVer != semVer
+			}
+		} else {
+			doWriteSemVer = true
+			doWriteShield = true
+		}
+		if (doWriteSemVer) {
 			logger.lifecycle "→ project version changed"
 			logger.lifecycle "→ writing SemVer resource"
-			fileSemVer.write semVer
+			fileSemVer.write semVer.canonicalForm
 			logger.lifecycle "→ writing version shield"
+		} else {
+			logger.lifecycle "→ project version unchanged"
+		}
+		if (doWriteShield) {
 			_getVersionShield(rootProject.name, semVer, fileVersionShield)
 		}
 	}

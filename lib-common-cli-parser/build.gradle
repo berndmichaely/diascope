@@ -6,13 +6,8 @@ plugins {
 testing {
 	suites {
 		test {
-			if (project.ext.has('versionJUnitVintage')) {
-				logger.lifecycle "=> Using JUnitVintage version: ${versionJUnitVintage}"
-				useJUnit(versionJUnitVintage)
-			} else {
-				logger.lifecycle "=> Using default JUnitVintage version"
-				useJUnit()
-			}
+			logger.lifecycle "=> Using default JUnitVintage version"
+			useJUnit()
 		}
 	}
 }
