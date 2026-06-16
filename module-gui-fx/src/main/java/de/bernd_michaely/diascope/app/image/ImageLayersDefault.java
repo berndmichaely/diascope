@@ -34,7 +34,7 @@ import static javafx.beans.binding.Bindings.createBooleanBinding;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayers extends ImageLayersBase
+final class ImageLayersDefault extends ImageLayersBase
 {
 	final LayerSelectionModel layerSelectionModel;
 	private final Viewport viewport;
@@ -42,7 +42,7 @@ final class ImageLayers extends ImageLayersBase
 	private final GridDividerDragControl gridDividerDragControl;
 	private final ChangeListener<Number> clippingPointsListener;
 
-	ImageLayers(Viewport viewport)
+	ImageLayersDefault(Viewport viewport)
 	{
 		this.viewport = viewport;
 		final BinaryTree<GridDivider, ImageLayer> gridTree = new BinaryTree<>();

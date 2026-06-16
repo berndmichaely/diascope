@@ -33,7 +33,7 @@ import static javafx.collections.FXCollections.unmodifiableObservableList;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLayers, ImageLayersSpot
+abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLayersDefault, ImageLayersSpot
 {
 	private static final Logger logger = System.getLogger(ImageLayersBase.class.getName());
 	final ReadOnlyDoubleWrapper layersMaxWidth, layersMaxHeight;
