@@ -189,7 +189,9 @@ _map.each { key, value ->
 }
 logger.lifecycle _line
 
-// semVer.build.ifPresent(build -> logger.lifecycle "--> Build: ${build.identifiers}")
+if (isReadingSvnRevision) {
+	semVer.build.ifPresent(build -> logger.lifecycle "--> Build: ${build.identifiers}")
+}
 
 subprojects {
 	tasks.withType(JavaCompile).configureEach {
