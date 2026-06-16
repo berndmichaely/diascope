@@ -109,12 +109,13 @@ def String readSvnRevision()
 }
 
 final String build_id = project.hasProperty(propBuild) ? project.getProperty(propBuild) : readSvnRevision()
-final SemanticVersion semVer = SemanticVersion.of(build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease)
+final var semVer = SemanticVersion.of(build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease)
 
 final var semVerFsvBase = SemanticVersion.of(libs.filesystemview.base.get().version)
 final var semVerFsvFX = SemanticVersion.of(libs.filesystemview.fx.get().version)
 
-if (semVerFsvFX < semVerFsvBase) throw new StopExecutionException("Inconsistent filesystemview library versions")
+if (semVerFsvFX < semVerFsvBase) throw new StopExecutionException(
+	"Inconsistent filesystemview library versions: ${semVerFsvFX.canonicalForm} < ${semVerFsvBase.canonicalForm}")
 	
 // files:
 
@@ -154,7 +155,7 @@ allprojects {
 }
 
 final Map<String, String> _map = new LinkedHashMap<>()
-def _put = { String key, Object value -> _map.put(key, ""+value) }
+final def _put = { String key, Object value -> _map.put(key, ""+value) }
 	
 _put "Root project", "${name} ${semVer.description}"
 _put "Base dir", "»${file('.')}«"
@@ -187,6 +188,8 @@ _map.each { key, value ->
 	}
 }
 logger.lifecycle _line
+
+// semVer.build.ifPresent(build -> logger.lifecycle "--> Build: ${build.identifiers}")
 
 subprojects {
 	tasks.withType(JavaCompile).configureEach {
