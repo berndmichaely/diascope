@@ -63,7 +63,7 @@ final class ImageLayer implements Transformable
 	private final ReadOnlyDoubleWrapper imageHeightRotated = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageWidthTransformed = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeightTransformed = new ReadOnlyDoubleWrapper();
-	private final ImageTransformsImpl imageTransforms = new ImageTransformsImpl();
+	private final DefaultImageTransforms imageTransforms = new DefaultImageTransforms();
 	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
 	private final DoubleProperty zoomFill;
 	private final ReadOnlyBooleanWrapper imageIsNull;
@@ -170,7 +170,7 @@ final class ImageLayer implements Transformable
 	}
 
 	@Override
-	public ImageTransformsImpl getImageTransforms()
+	public DefaultImageTransforms getImageTransforms()
 	{
 		return imageTransforms;
 	}

@@ -3,7 +3,7 @@
 [versions]
 junit-jupiter = "6.0.1"
 assertj-core = "3.27.7"
-checker = "4.1.0"
+checker = "4.2.0"
 jsemver = "3.1.0"
 filesystemview-base = "1.0.0-rc.1"
 filesystemview-fx   = "1.0.0-rc.1"

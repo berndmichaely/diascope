@@ -55,43 +55,49 @@ public class DiascopeApplication extends Application
 	@Override
 	public void start(Stage stage) throws Exception
 	{
-		final MainWindow mainWindow;
-		if (futureMainWindow != null)
+		try
 		{
-			mainWindow = futureMainWindow.get();
-			futureMainWindow = null;
+			final MainWindow mainWindow;
+			if (futureMainWindow != null)
+			{
+				mainWindow = futureMainWindow.get();
+				futureMainWindow = null;
+			}
+			else
+			{
+				mainWindow = new MainWindow();
+			}
+			final MainContent mainContent;
+			if (futureMainContent != null)
+			{
+				mainContent = futureMainContent.get();
+				futureMainContent = null;
+			}
+			else
+			{
+				mainContent = new MainContent();
+			}
+			mainWindow.setMainContent(mainContent);
+			mainWindow._start(stage);
+			final PaneFileSystem paneFileSystem;
+			if (futurePaneFileSystem != null)
+			{
+				paneFileSystem = futurePaneFileSystem.get();
+				futurePaneFileSystem = null;
+			}
+			else
+			{
+				paneFileSystem = new PaneFileSystem();
+			}
+			mainWindow.setFileSystemView(paneFileSystem);
 		}
-		else
+		finally
 		{
-			mainWindow = new MainWindow();
-		}
-		final MainContent mainContent;
-		if (futureMainContent != null)
-		{
-			mainContent = futureMainContent.get();
-			futureMainContent = null;
-		}
-		else
-		{
-			mainContent = new MainContent();
-		}
-		mainWindow.setMainContent(mainContent);
-		mainWindow._start(stage);
-		final PaneFileSystem paneFileSystem;
-		if (futurePaneFileSystem != null)
-		{
-			paneFileSystem = futurePaneFileSystem.get();
-			futurePaneFileSystem = null;
-		}
-		else
-		{
-			paneFileSystem = new PaneFileSystem();
-		}
-		mainWindow.setFileSystemView(paneFileSystem);
-		if (executorService != null)
-		{
-			executorService.shutdown();
-			executorService = null;
+			if (executorService != null)
+			{
+				executorService.shutdown();
+				executorService = null;
+			}
 		}
 	}
 }
