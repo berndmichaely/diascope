@@ -1,3 +1,12 @@
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath libs.jsemver
+	}
+}
+
 plugins {
 	id 'java'
 	id 'application'
@@ -16,6 +25,8 @@ plugins {
 wrapper {
 	gradleVersion = '9.3.1'
 }
+
+import de.bernd_michaely.common.semver.*
 
 final def javaLangVersion = JavaLanguageVersion.of(25)
 final def jvmVendor = JvmVendorSpec.ADOPTIUM
@@ -58,7 +69,7 @@ def String readSvnRevision()
 			logger.lifecycle "   -> Can't get subversion revision"
 		}
 		else {
-			final boolean isolateNumericBuildParts = false
+			final boolean isolateNumericBuildParts = true
 			final String urlSvnRepos = process.text.trim()
 			logger.lifecycle "   Reading subversion revision (repos-root-url: »${urlSvnRepos}«)"
 			final def process2 = [ 'svn', 'info', '--show-item', 'revision', '--no-newline', urlSvnRepos ].execute()
@@ -98,11 +109,14 @@ def String readSvnRevision()
 }
 
 final String build_id = project.hasProperty(propBuild) ? project.getProperty(propBuild) : readSvnRevision()
-final String semVer = build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease
+final var semVer = SemanticVersion.of(build_id ? "${versionPreRelease}+${build_id}" : versionPreRelease)
 
-final def regexSemVer = ~/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-if (!(semVer =~ regexSemVer)) throw new StopExecutionException("Invalid semantic version »${semVer}«")
+final var semVerFsvBase = SemanticVersion.of(libs.filesystemview.base.get().version)
+final var semVerFsvFX = SemanticVersion.of(libs.filesystemview.fx.get().version)
 
+if (semVerFsvFX < semVerFsvBase) throw new StopExecutionException(
+	"Inconsistent filesystemview library versions: ${semVerFsvFX.canonicalForm} < ${semVerFsvBase.canonicalForm}")
+	
 // files:
 
 final String fileNameSemVer = 'src/main/resources/de/bernd_michaely/diascope/app/semantic_version.txt'
@@ -111,23 +125,21 @@ final def fileSemVer = project(':module-gui-fx').file(fileNameSemVer)
 final def fileVersionShield = file("doc/shields/version.svg")
 
 description = 'A JavaFX based image viewer with multi layer image comparison.'
-		
+
 allprojects {
-	group = 'de.bernd_michaely'
-	version = semVer
+	group = 'de.bernd-michaely'
+	version = semVer.canonicalForm
 	
 	apply plugin: 'org.checkerframework'
 
 	checkerFramework {
 		version = libs.checker.get().version
-		checkers = [ 'org.checkerframework.checker.nullness.NullnessChecker' ]
+		checkers = [
+		'org.checkerframework.checker.nullness.NullnessChecker'
+		]
 		excludeTests = true
 	}
 
-	ext.versionJUnit = '6.0.1'
-	// ext.versionJUnit = '5.14.1'
-	// ext.versionJUnitVintage = '4.13.2'
-	
 	repositories {
 		mavenCentral()
 		//mavenLocal()
@@ -136,31 +148,50 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = '26'
+			version = '26.0.1'
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
 }
 
-logger.lifecycle "Running Gradle $project.gradle.gradleVersion"
-logger.lifecycle "Java source compatibility   : ${java.sourceCompatibility}"
-logger.lifecycle "Java target compatibility   : ${java.targetCompatibility}"
-logger.lifecycle "Java toolchain              : ${java.toolchain.displayName}"
-logger.lifecycle "Compile      -> Debug-Level : ${compileJava.options.debug}"
-logger.lifecycle "Test-Compile -> Debug-Level : ${compileTestJava.options.debug}"
-logger.lifecycle "Modularity enabled          : ${java.modularity.inferModulePath.get()}"
-logger.lifecycle "Using Checker Framework     : ${checkerFramework.version.get()}"
-logger.lifecycle "==> Root project »$name ($version)«"
-logger.lifecycle " -> Base dir is »${file('.')}«"
-if (ext.has('versionJUnitVintage')) {
-	logger.lifecycle " -> Using »JUnit         ${versionJUnit}«"
-	logger.lifecycle " -> Using »JUnit vintage ${versionJUnitVintage}«"
-} else {
-	logger.lifecycle " -> Using »JUnit  ${versionJUnit}«"
+final Map<String, String> _map = new LinkedHashMap<>()
+final def _put = { String key, Object value -> _map.put(key, ""+value) }
+	
+_put "Root project", "${name} ${semVer.description}"
+_put "Base dir", "»${file('.')}«"
+_put "Running Gradle", project.gradle.gradleVersion
+_put "Java source compatibility", java.sourceCompatibility
+_put "Java target compatibility", java.targetCompatibility
+_put "Java toolchain", java.toolchain.displayName
+_put "Compile -> Debug-Level", compileJava.options.debug
+_put "Test-Compile -> Debug-Level", compileTestJava.options.debug
+_put "Modularity enabled", java.modularity.inferModulePath.get()
+_put "Using Checker Framework", checkerFramework.version.get()
+_put "Using JSemVer", SemanticVersion.of(libs.jsemver.get().version).description
+_put "Using lib-filesystem-view", "base [${semVerFsvBase.canonicalForm}] fx [${semVerFsvFX.canonicalForm}]"
+_put "Using JUnit", libs.junit.jupiter.get().version
+_put "Using JaCoCo", jacoco.toolVersion
+_put "Included child projects", childProjects.keySet().stream().sorted().toList()
+
+final int maxLenKey   = _map.keySet().stream().mapToInt(s->s.length()).max().orElse(0)
+final int maxLenValue = _map.values().stream().mapToInt(s->(""+s).length()).max().orElse(0)
+final int maxLenLine = maxLenKey + 3 + maxLenValue
+final def _line = "-" * (4 + maxLenLine)
+
+logger.lifecycle _line
+boolean isHeader = true
+_map.each { key, value ->
+	println "| %${maxLenKey}s | %-${maxLenValue}s |".formatted (key, value)
+	if (isHeader) {
+		logger.lifecycle _line
+		isHeader = false
+	}
 }
-logger.lifecycle " -> Using »JaCoCo ${jacoco.toolVersion}«"
-logger.lifecycle " -> Included child projects : »${childProjects.keySet().stream().sorted().toList()}«"
-logger.lifecycle " -> Maven coordinates »${group}:${name}:${version}«"
+logger.lifecycle _line
+
+if (isReadingSvnRevision) {
+	semVer.build.ifPresent(build -> logger.lifecycle "--> Build: ${build.identifiers}")
+}
 
 subprojects {
 	tasks.withType(JavaCompile).configureEach {
@@ -193,26 +224,53 @@ automaticModule('batik-all-1.17.jar', 'batik')
 
 dependencies {
 	implementation project (':lib-common-cli-parser')
-	implementation project (':lib-common-semver')
 	implementation project (':module-gui-fx')
+	implementation libs.jsemver
 	//implementation 'com.github.weisj:jsvg:1.5.0'
 	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
 	//implementation 'xml-apis:xml-apis:1.4.01'
 	//implementation 'xml-apis:xml-apis-ext:1.3.04'
 	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
-	
+
+def _getVersionShield(String name, SemanticVersion version, File fileVersionShield) {
+	final def toShieldParam = { it replaceAll '-', '--' replaceAll '_', '__' replaceAll '\\s', '_'  }
+	final String label = toShieldParam name
+	final String message = toShieldParam (version.getCanonicalForm(true))
+	final String color = 'blue'
+	final def url = new URI("https://img.shields.io/badge/${label}-${message}-${color}").toURL()
+	logger.lifecycle "→ getting data from URL »${url}«"
+	fileVersionShield.write url.text
+}
+
 task writeSemVer {
 	description = "Write application semantic version to resource file »${fileSemVer}«"
 	group = processResources.group
 	doFirst {
-		boolean do_write
-		if (isReadingSvnRevision) {
-			final def process = [ 'svn', 'status' ].execute(null, projectDir)
-			// only write new version if svn status is NOT clean:
-			do_write = !process.waitFor() && process.text
-		} else do_write = true
-		if (do_write) fileSemVer.write(semVer)
+		boolean doWriteSemVer
+		boolean doWriteShield
+		if (fileSemVer) {
+			try(var stream = fileSemVer.newInputStream())
+			{
+				var oldSemVer = SemanticVersion.of(stream)
+				doWriteSemVer = oldSemVer.canonicalForm != semVer.canonicalForm
+				doWriteShield = oldSemVer != semVer
+			}
+		} else {
+			doWriteSemVer = true
+			doWriteShield = true
+		}
+		if (doWriteSemVer) {
+			logger.lifecycle "→ project version changed"
+			logger.lifecycle "→ writing SemVer resource"
+			fileSemVer.write semVer.canonicalForm
+			logger.lifecycle "→ writing version shield"
+		} else {
+			logger.lifecycle "→ project version unchanged"
+		}
+		if (doWriteShield) {
+			_getVersionShield(rootProject.name, semVer, fileVersionShield)
+		}
 	}
 }
 processResources.dependsOn writeSemVer
@@ -220,14 +278,8 @@ processResources.dependsOn writeSemVer
 task getVersionShield {
 	description = "Generate a version shield by accessing shields.io and write it to file »${fileVersionShield}«"
 	group = javadoc.group
-	final def toShieldParam = { it replaceAll "-", "--" replaceAll "_", "__" replaceAll "\\s", "_"  }
 	doLast {
-		final String label = toShieldParam rootProject.name
-		final String message = toShieldParam (semVer - ~/\+.*$/)
-		final String color = 'blue'
-		final def url = new URI("https://img.shields.io/badge/${label}-${message}-${color}").toURL()
-		logger.lifecycle "→ getting data from URL »${url}«"
-		fileVersionShield.write url.text
+		_getVersionShield(rootProject.name, semVer, fileVersionShield)
 	}
 }
 

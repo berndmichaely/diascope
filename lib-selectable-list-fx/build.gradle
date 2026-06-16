@@ -6,7 +6,7 @@ plugins {
 testing {
 	suites {
 		test {
-			useJUnitJupiter(versionJUnit)
+			useJUnitJupiter(libs.junit.jupiter.get().version)
 		}
 	}
 }

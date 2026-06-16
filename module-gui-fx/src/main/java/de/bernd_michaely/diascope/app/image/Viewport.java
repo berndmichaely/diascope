@@ -57,7 +57,7 @@ class Viewport implements AutoCloseable
 	private final ObservableBooleanValue multiLayerMode;
 	private final DoubleProperty focusPointX, focusPointY;
 	private final DoubleProperty layersMaxWidth, layersMaxHeight;
-	private final ReadOnlyBooleanWrapper scrollBarEnabledHorizontal, scrollBarEnabledVertical;
+	private final ReadOnlyBooleanWrapper scrollingEnabledHorizontal, scrollingEnabledVertical;
 	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
 	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
 	private final BooleanProperty dividersVisible;
@@ -127,16 +127,16 @@ class Viewport implements AutoCloseable
 		pane.setBackground(Background.fill(Color.BLACK));
 		pane.setMinSize(0, 0);
 		pane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		this.scrollBarEnabledHorizontal = new ReadOnlyBooleanWrapper();
-		scrollBarEnabledHorizontal.bind(
+		this.scrollingEnabledHorizontal = new ReadOnlyBooleanWrapper();
+		scrollingEnabledHorizontal.bind(
 			layersMaxWidth.greaterThan(pane.widthProperty()));
 		scrollBars.horizontalVisibleProperty().bind(
-			scrollBars.enabledProperty().and(scrollBarEnabledHorizontal));
-		this.scrollBarEnabledVertical = new ReadOnlyBooleanWrapper();
-		scrollBarEnabledVertical.bind(
+			scrollBars.enabledProperty().and(scrollingEnabledHorizontal));
+		this.scrollingEnabledVertical = new ReadOnlyBooleanWrapper();
+		scrollingEnabledVertical.bind(
 			layersMaxHeight.greaterThan(pane.heightProperty()));
 		scrollBars.verticalVisibleProperty().bind(
-			scrollBars.enabledProperty().and(scrollBarEnabledVertical));
+			scrollBars.enabledProperty().and(scrollingEnabledVertical));
 		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(pane.widthProperty()));
 		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(pane.heightProperty()));
 		this.viewportBounds = new ViewportBoundsGlobal(
@@ -294,14 +294,20 @@ class Viewport implements AutoCloseable
 		return layersMaxHeight;
 	}
 
-	ReadOnlyBooleanProperty scrollBarEnabledHorizontalProperty()
+	/// True, iff the maximum of all layer widths (depending on Mode) is
+	/// greater than the global viewport pane.
+	///
+	ReadOnlyBooleanProperty scrollingEnabledHorizontalProperty()
 	{
-		return scrollBarEnabledHorizontal.getReadOnlyProperty();
+		return scrollingEnabledHorizontal.getReadOnlyProperty();
 	}
 
-	ReadOnlyBooleanProperty scrollBarEnabledVerticalProperty()
+	/// True, iff the maximum of all layer heights (depending on Mode) is
+	/// greater than the global viewport pane.
+	///
+	ReadOnlyBooleanProperty scrollingEnabledVerticalProperty()
 	{
-		return scrollBarEnabledVertical.getReadOnlyProperty();
+		return scrollingEnabledVertical.getReadOnlyProperty();
 	}
 
 	BooleanProperty dividersVisibleProperty()

@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.diascope.app.util.beans.property.ConstDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.value.ObservableDoubleValue;
@@ -26,8 +27,8 @@ import javafx.beans.value.ObservableDoubleValue;
 ///
 final class ViewportBoundsGlobal implements ViewportBounds
 {
-	private final ReadOnlyDoubleWrapper x = new ReadOnlyDoubleWrapper(0d);
-	private final ReadOnlyDoubleWrapper y = new ReadOnlyDoubleWrapper(0d);
+	private final ReadOnlyDoubleProperty x = new ConstDoubleProperty(0d);
+	private final ReadOnlyDoubleProperty y = new ConstDoubleProperty(0d);
 	private final ReadOnlyDoubleWrapper width = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper height = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper scrollPosX = new ReadOnlyDoubleWrapper();
@@ -45,13 +46,13 @@ final class ViewportBoundsGlobal implements ViewportBounds
 	@Override
 	public ReadOnlyDoubleProperty xProperty()
 	{
-		return x.getReadOnlyProperty();
+		return x;
 	}
 
 	@Override
 	public ReadOnlyDoubleProperty yProperty()
 	{
-		return y.getReadOnlyProperty();
+		return y;
 	}
 
 	@Override

@@ -27,6 +27,7 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
@@ -63,7 +64,7 @@ final class ImageLayer implements Transformable
 	private final ReadOnlyDoubleWrapper imageHeightRotated = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageWidthTransformed = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeightTransformed = new ReadOnlyDoubleWrapper();
-	private final ImageTransformsImpl imageTransforms = new ImageTransformsImpl();
+	private final DefaultImageTransforms imageTransforms = new DefaultImageTransforms();
 	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
 	private final DoubleProperty zoomFill;
 	private final ReadOnlyBooleanWrapper imageIsNull;
@@ -80,8 +81,8 @@ final class ImageLayer implements Transformable
 		logger.log(TRACE, () -> "CREATE ImageLayer with mode »%s«"
 			.formatted(viewport.modeProperties().getValueOrDefault()));
 		this.viewportBoundsLocal = new ViewportBoundsLocal();
-		this.viewportBounds = new ViewportBoundsSwitch(
-			viewport.modeProperties().isValueProperty(Mode.GRID),
+		final ObservableBooleanValue isLocal = viewport.modeProperties().isValueProperty(Mode.GRID);
+		this.viewportBounds = new ViewportBoundsSwitch(isLocal,
 			viewport.getViewportBounds(), viewportBoundsLocal);
 		paneLayer.getChildren().add(imageView);
 		paneLayer.setMinSize(0, 0);
@@ -133,12 +134,18 @@ final class ImageLayer implements Transformable
 		this.focusPointY = new SimpleDoubleProperty();
 		focusPointY.bind(viewport.focusPointY());
 		this.translateScroll = new Translate();
+		final ObservableBooleanValue centerX = when(isLocal)
+			.then(imageWidthTransformed.getReadOnlyProperty().greaterThan(viewportBoundsLocal.widthProperty()))
+			.otherwise(viewport.scrollingEnabledHorizontalProperty());
 		translateScroll.xProperty().bind(viewportBounds.xProperty().add(
-			when(viewport.scrollBarEnabledHorizontalProperty())
+			when(centerX)
 				.then(negate(viewportBounds.scrollPosXProperty()))
 				.otherwise(viewportBounds.widthProperty().subtract(imageWidthTransformed).divide(2.0))));
+		final ObservableBooleanValue centerY = when(isLocal)
+			.then(imageHeightTransformed.getReadOnlyProperty().greaterThan(viewportBoundsLocal.heightProperty()))
+			.otherwise(viewport.scrollingEnabledVerticalProperty());
 		translateScroll.yProperty().bind(viewportBounds.yProperty().add(
-			when(viewport.scrollBarEnabledVerticalProperty())
+			when(centerY)
 				.then(negate(viewportBounds.scrollPosYProperty()))
 				.otherwise(viewportBounds.heightProperty().subtract(imageHeightTransformed).divide(2.0))));
 		imageView.getTransforms().addAll(
@@ -170,7 +177,7 @@ final class ImageLayer implements Transformable
 	}
 
 	@Override
-	public ImageTransformsImpl getImageTransforms()
+	public DefaultImageTransforms getImageTransforms()
 	{
 		return imageTransforms;
 	}

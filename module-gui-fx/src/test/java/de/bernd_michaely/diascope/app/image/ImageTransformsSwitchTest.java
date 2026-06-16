@@ -50,13 +50,13 @@ public class ImageTransformsSwitchTest
 	{
 		private static final double FACTOR_FIT = 0.7;
 		private static final double FACTOR_FILL = 0.8;
-		private final ImageTransformsImpl imageTransforms;
+		private final DefaultImageTransforms imageTransforms;
 		private final String name;
 
 		Transformable_(String name)
 		{
 			this.name = name;
-			this.imageTransforms = new ImageTransformsImpl();
+			this.imageTransforms = new DefaultImageTransforms();
 			final EnumProperties<ZoomMode> zoomModeProperties = imageTransforms.zoomModeProperties();
 			imageTransforms.setResultingZoomFactorBinding(
 				when(zoomModeProperties.isValueProperty(FIT)).then(FACTOR_FIT)
@@ -66,7 +66,7 @@ public class ImageTransformsSwitchTest
 		}
 
 		@Override
-		public ImageTransformsImpl getImageTransforms()
+		public DefaultImageTransforms getImageTransforms()
 		{
 			return imageTransforms;
 		}
@@ -129,7 +129,7 @@ public class ImageTransformsSwitchTest
 			.map(t -> "<LAYER_[%s]>".formatted(t))
 			.orElseGet(() ->
 			{
-				final Map<Transformable_, ImageTransformsImpl> map = its._getMapIntermediate();
+				final Map<Transformable_, DefaultImageTransforms> map = its._getMapIntermediate();
 				return map.entrySet().stream()
 					.filter(entry -> entry.getValue() == imageTransforms)
 					.findAny()
@@ -165,7 +165,7 @@ public class ImageTransformsSwitchTest
 		assertTrue(its._getMapIntermediate().isEmpty());
 		assertTrue(layers.isEmpty());
 		assertTrue(spotLayers.isEmpty());
-		Optional<ImageTransformsImpl> optional;
+		Optional<DefaultImageTransforms> optional;
 		optional = its._getSelectedImageTransforms().get();
 		assertTrue(optional.isPresent());
 		assertEquals(its._getGlobalImageTransforms(), optional.get());
@@ -181,7 +181,7 @@ public class ImageTransformsSwitchTest
 		layers.addAll(ta, tb, tc);
 		optional = its._getSelectedImageTransforms().get();
 		assertFalse(optional.isPresent());
-		ImageTransformsImpl expected, actual;
+		DefaultImageTransforms expected, actual;
 		// select layer
 		singleSelectedLayerProperty.set(Optional.of(tb));
 		optional = its._getSelectedImageTransforms().get();
@@ -364,9 +364,9 @@ public class ImageTransformsSwitchTest
 		final Transformable_ tb = new Transformable_("B");
 		final Transformable_ tc = new Transformable_("C");
 		layers.addAll(ta, tb, tc);
-		final ImageTransformsImpl it_a = ta.getImageTransforms();
-		final ImageTransformsImpl it_b = tb.getImageTransforms();
-		final ImageTransformsImpl it_c = tc.getImageTransforms();
+		final DefaultImageTransforms it_a = ta.getImageTransforms();
+		final DefaultImageTransforms it_b = tb.getImageTransforms();
+		final DefaultImageTransforms it_c = tc.getImageTransforms();
 		zoomModeRawValueProperty.set(ORIGINAL);
 		assertEquals(1.0, it_a.zoomFactorProperty().get());
 		assertEquals(1.0, it_b.zoomFactorProperty().get());
@@ -425,9 +425,9 @@ public class ImageTransformsSwitchTest
 		final Transformable_ tb = new Transformable_("B");
 		final Transformable_ tc = new Transformable_("C");
 		layers.addAll(ta, tb, tc);
-		final ImageTransformsImpl it_a = ta.getImageTransforms();
-		final ImageTransformsImpl it_b = tb.getImageTransforms();
-		final ImageTransformsImpl it_c = tc.getImageTransforms();
+		final DefaultImageTransforms it_a = ta.getImageTransforms();
+		final DefaultImageTransforms it_b = tb.getImageTransforms();
+		final DefaultImageTransforms it_c = tc.getImageTransforms();
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());

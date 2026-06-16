@@ -34,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
+final class DefaultImageTransforms implements ImageTransforms, AutoCloseable
 {
 	// control properties:
 	private final EnumProperties<ZoomMode> zoomModeProperties;
@@ -45,7 +45,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	private final ReadOnlyDoubleWrapper resultingZoomFactor;
 	private @Nullable ReadOnlyDoubleWrapper otherResultingZoomFactor;
 
-	ImageTransformsImpl()
+	DefaultImageTransforms()
 	{
 		this.zoomModeProperties = EnumProperties.createInstance(ZoomMode.getDefault());
 		this.zoomFixed = new SimpleDoubleProperty(1.0);
@@ -61,7 +61,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	/// @see #unbindControlProperties()
 	/// @see #adjustControlProperties(ImageTransformsImpl)
 	///
-	void bindControlProperties(ImageTransformsImpl other)
+	void bindControlProperties(DefaultImageTransforms other)
 	{
 		this.zoomModeProperties.rawValueProperty().bind(other.zoomModeProperties.rawValueProperty());
 		this.zoomFixed.bind(other.zoomFixed);
@@ -76,7 +76,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	/// @see #bindControlProperties(ImageTransformsImpl)
 	/// @see #unbindControlProperties()
 	///
-	void adjustControlProperties(ImageTransformsImpl other)
+	void adjustControlProperties(DefaultImageTransforms other)
 	{
 		other.zoomModeProperties.rawValueProperty().set(this.zoomModeProperties.rawValueProperty().get());
 		other.zoomFixed.set(this.zoomFixed.get());
@@ -110,7 +110,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	/// @param other the other transforms
 	/// @see #unbindCalculatedProperties()
 	///
-	void bindCalculatedProperties(ImageTransformsImpl other)
+	void bindCalculatedProperties(DefaultImageTransforms other)
 	{
 		if (!isCalculatedPropertiesBound())
 		{
@@ -147,7 +147,7 @@ final class ImageTransformsImpl implements ImageTransforms, AutoCloseable
 	/// @see #bindControlProperties(ImageTransformsImpl)
 	/// @see #bindCalculatedProperties(ImageTransformsImpl)
 	///
-	void bindAllProperties(ImageTransformsImpl other)
+	void bindAllProperties(DefaultImageTransforms other)
 	{
 		bindControlProperties(other);
 		bindCalculatedProperties(other);

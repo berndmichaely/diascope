@@ -18,7 +18,7 @@ package de.bernd_michaely.diascope.app.util.collections;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * TreeNode classes Test.
@@ -41,19 +41,23 @@ public class TreeNodeTest
 		innerNode2.setSubNode(0, leafNode3);
 		root.setSubNode(1, innerNode2);
 		root.setSubNode(3, leafNode2);
+
 		new SimpleTreeFormatter(root).getLines().forEach(System.out::println);
-		assertTrue(root.isRootNode());
-		assertEquals("inner-1", root.getValue());
-		assertEquals("inner-2", innerNode2.getValue());
-		assertEquals(7, leafNode1.getValue());
-		assertNotEquals(leafNode2, leafNode3);
-		assertEquals(leafNode2, leafNode4);
-		assertEquals(root, leafNode1.getParentNode());
-		assertEquals(root, innerNode2.getParentNode());
-		assertEquals(root, leafNode2.getParentNode());
-		assertEquals(innerNode2, leafNode3.getParentNode());
-		assertEquals(
+
+		assertThat(root.isRootNode()).isTrue();
+		assertThat(root.getValue()).isEqualTo("inner-1");
+		assertThat(innerNode2.getValue()).isEqualTo("inner-2");
+		assertThat(leafNode1.getValue()).isEqualTo(7);
+		assertThat(leafNode2)
+			.isNotEqualTo(leafNode3)
+			.isNotEqualTo(leafNode4);
+		assertThat(root)
+			.isSameAs(leafNode1.getParentNode())
+			.isSameAs(innerNode2.getParentNode())
+			.isSameAs(leafNode2.getParentNode());
+		assertThat(innerNode2).isSameAs(leafNode3.getParentNode());
+		assertThat(root).asString().isEqualTo(
 			"InnerNode[<inner-1>:LeafNode(7)|InnerNode[<inner-2>:LeafNode(9)|%1$s]|%1$s|LeafNode(8)]"
-				.formatted(TreeNode.STRING_EMPTY), root.toString());
+				.formatted(TreeNode.STRING_EMPTY));
 	}
 }

@@ -22,7 +22,7 @@ package de.bernd_michaely.diascope.app.image;
 ///
 interface Transformable extends AutoCloseable
 {
-	ImageTransformsImpl getImageTransforms();
+	DefaultImageTransforms getImageTransforms();
 
 	@Override
 	default void close()

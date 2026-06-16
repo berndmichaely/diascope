@@ -27,7 +27,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public sealed interface ImageTransforms permits ImageTransformsImpl
+public sealed interface ImageTransforms permits DefaultImageTransforms
 {
 	/// Property holding the nullable zoom mode value.
 	///

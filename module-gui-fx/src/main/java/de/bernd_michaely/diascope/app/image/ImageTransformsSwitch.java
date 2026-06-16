@@ -44,11 +44,11 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 {
-	private final ImageTransformsImpl facadeImageTransforms = new ImageTransformsImpl();
-	private final ImageTransformsImpl globalImageTransforms = new ImageTransformsImpl();
-	private final Map<T, ImageTransformsImpl> mapIntermediate = new IdentityHashMap<>();
+	private final DefaultImageTransforms facadeImageTransforms = new DefaultImageTransforms();
+	private final DefaultImageTransforms globalImageTransforms = new DefaultImageTransforms();
+	private final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
 	private final ObservableBooleanValue local;
-	private final ObjectProperty<Optional<ImageTransformsImpl>> selectedImageTransforms;
+	private final ObjectProperty<Optional<DefaultImageTransforms>> selectedImageTransforms;
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
 		ReadOnlyObjectProperty<Optional<T>> singleSelectedLayerProperty,
@@ -59,25 +59,25 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		this.selectedImageTransforms = new SimpleObjectProperty<>(Optional.empty());
 		selectedImageTransforms.addListener(onChange((oldValue, newValue) ->
 		{
-			oldValue.ifPresent(ImageTransformsImpl::unbindAllProperties);
+			oldValue.ifPresent(DefaultImageTransforms::unbindAllProperties);
 			newValue.ifPresent(selectedTransforms ->
 			{
 				selectedTransforms.adjustControlProperties(facadeImageTransforms);
 				selectedTransforms.bindAllProperties(facadeImageTransforms);
 			});
 		}));
-		selectedImageTransforms.bind(new ObjectBinding<Optional<ImageTransformsImpl>>()
+		selectedImageTransforms.bind(new ObjectBinding<Optional<DefaultImageTransforms>>()
 		{
 			{
 				@SuppressWarnings("method.invocation")
 				final Runnable init = () -> super.bind(local, singleSelectedLayerProperty);
 				init.run();
 			}
-			private final Optional<ImageTransformsImpl> optionalGlobalImageTransforms =
+			private final Optional<DefaultImageTransforms> optionalGlobalImageTransforms =
 				Optional.of(globalImageTransforms);
 
 			@Override
-			protected Optional<ImageTransformsImpl> computeValue()
+			protected Optional<DefaultImageTransforms> computeValue()
 			{
 				return local.get() ? singleSelectedLayerProperty.get().map(mapIntermediate::get) :
 					optionalGlobalImageTransforms;
@@ -85,7 +85,7 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		});
 		final Consumer<T> addLayer = layer ->
 		{
-			final var intermediateImageTransforms = new ImageTransformsImpl();
+			final var intermediateImageTransforms = new DefaultImageTransforms();
 			mapIntermediate.put(layer, intermediateImageTransforms);
 			final Consumer<Boolean> onLocalChange = isLocal ->
 			{
@@ -101,7 +101,7 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		{
 			try (layer)
 			{
-				final ImageTransformsImpl removed = mapIntermediate.remove(layer);
+				final DefaultImageTransforms removed = mapIntermediate.remove(layer);
 				if (removed != null)
 				{
 					layer.getImageTransforms().unbindAllProperties();
@@ -132,12 +132,12 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		return facadeImageTransforms;
 	}
 
-	ImageTransformsImpl _getFacadeImageTransforms()
+	DefaultImageTransforms _getFacadeImageTransforms()
 	{
 		return facadeImageTransforms;
 	}
 
-	ImageTransformsImpl _getGlobalImageTransforms()
+	DefaultImageTransforms _getGlobalImageTransforms()
 	{
 		return globalImageTransforms;
 	}
@@ -147,12 +147,12 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		return local;
 	}
 
-	Map<T, ImageTransformsImpl> _getMapIntermediate()
+	Map<T, DefaultImageTransforms> _getMapIntermediate()
 	{
 		return mapIntermediate;
 	}
 
-	ObjectProperty<Optional<ImageTransformsImpl>> _getSelectedImageTransforms()
+	ObjectProperty<Optional<DefaultImageTransforms>> _getSelectedImageTransforms()
 	{
 		return selectedImageTransforms;
 	}

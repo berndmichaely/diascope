@@ -4,24 +4,17 @@ plugins {
 	id 'jacoco'
 }
 
-final def fstv_version = '0.9.5'
-//logger.lifecycle "   -> Using common-filesystem-view version »${fstv_version}«"
-logger.lifecycle "   -> Using common-filesystem-view internal snapshot (v${fstv_version})"
-
 dependencies {
-	implementation project (':lib-common-semver')
 	implementation project (':lib-selectable-list-fx')
-	
-	//implementation "de.bernd_michaely:common-filesystem-view-base:${fstv_version}"
-	//implementation "de.bernd_michaely:common-filesystem-view-fx:${fstv_version}"
-	implementation project (':lib-filesystem-view-base')
-	implementation project (':lib-filesystem-view-fx')
+	implementation libs.jsemver
+	implementation libs.bundles.filesystemview
+	testImplementation libs.assertj.core
 }
 	
 testing {
 	suites {
 		test {
-			useJUnitJupiter(versionJUnit)
+			useJUnitJupiter(libs.junit.jupiter.get().version)
 		}
 	}
 }
