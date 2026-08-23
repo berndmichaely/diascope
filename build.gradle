@@ -69,7 +69,6 @@ def String readSvnRevision()
 			logger.lifecycle "   -> Can't get subversion revision"
 		}
 		else {
-			final boolean isolateNumericBuildParts = true
 			final String urlSvnRepos = process.text.trim()
 			logger.lifecycle "   Reading subversion revision (repos-root-url: »${urlSvnRepos}«)"
 			final def process2 = [ 'svn', 'info', '--show-item', 'revision', '--no-newline', urlSvnRepos ].execute()
@@ -100,7 +99,7 @@ def String readSvnRevision()
 				}
 			} else {
 				svnRev = process2.text.trim()
-				svnRev = (isolateNumericBuildParts ? 'r.' : 'r') + ((svnRev as Integer) + 1)
+				svnRev = 'r.' + ((svnRev as int) + 1)
 			}
 			logger.lifecycle "   -> subversion revision is »${svnRev}«"
 		}
@@ -148,7 +147,7 @@ allprojects {
 	if (project == rootProject || name.endsWith('-fx')) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = '26.0.1'
+			version = libs.versions.javafx.get()
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
@@ -252,11 +251,11 @@ task writeSemVer {
 		boolean doWriteShield = true
 		if (fileSemVer) {
 			fileSemVer.withInputStream(
-			{
-				var oldSemVer = SemanticVersion.of(it)
-				doWriteSemVer = oldSemVer.canonicalForm != semVer.canonicalForm
-				doWriteShield = oldSemVer != semVer
-			})
+				{
+					var oldSemVer = SemanticVersion.of(it)
+					doWriteSemVer = oldSemVer.canonicalForm != semVer.canonicalForm
+					doWriteShield = oldSemVer != semVer
+				})
 		}
 		if (doWriteSemVer) {
 			logger.lifecycle "→ project version changed"
