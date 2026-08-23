@@ -164,14 +164,8 @@ class ListDualSelection<T>
 			{
 				switch (selectionChangeType)
 				{
-					case SINGLE_INCREMENT ->
-					{
-						queueSelected.addFirst(change.getFrom());
-					}
-					case SINGLE_DECREMENT ->
-					{
-						queueSelected.remove((Integer) change.getFrom());
-					}
+					case SINGLE_INCREMENT -> queueSelected.addFirst(change.getFrom());
+					case SINGLE_DECREMENT -> queueSelected.removeFirstOccurrence(change.getFrom());
 					case COMPLEX_CHANGE ->
 					{
 						for (int i = change.getFrom(); i <= change.getTo(); i++)
@@ -182,12 +176,10 @@ class ListDualSelection<T>
 							}
 							else
 							{
-								queueSelected.remove((Integer) i);
+								queueSelected.removeFirstOccurrence(i);
 							}
 						}
 					}
-					default -> throw new AssertionError(getClass().getName() +
-							": Invalid SelectionChangeType!");
 				}
 			}
 			checkSelection.run();
