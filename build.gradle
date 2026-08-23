@@ -155,23 +155,24 @@ allprojects {
 }
 
 final Map<String, String> _map = new LinkedHashMap<>()
-final def _put = { String key, Object value -> _map.put(key, ""+value) }
+final def _put = { String key, Object value -> _map.put key, "${value}" }
 	
-_put "Root project", "${name} ${semVer.description}"
-_put "Base dir", "»${file('.')}«"
-_put "Running Gradle", project.gradle.gradleVersion
-_put "Java source compatibility", java.sourceCompatibility
-_put "Java target compatibility", java.targetCompatibility
-_put "Java toolchain", java.toolchain.displayName
-_put "Compile -> Debug-Level", compileJava.options.debug
-_put "Test-Compile -> Debug-Level", compileTestJava.options.debug
-_put "Modularity enabled", java.modularity.inferModulePath.get()
-_put "Using Checker Framework", checkerFramework.version.get()
-_put "Using JSemVer", SemanticVersion.of(libs.jsemver.get().version).description
-_put "Using lib-filesystem-view", "base [${semVerFsvBase.canonicalForm}] fx [${semVerFsvFX.canonicalForm}]"
-_put "Using JUnit", libs.junit.jupiter.get().version
-_put "Using JaCoCo", jacoco.toolVersion
-_put "Included child projects", childProjects.keySet().stream().sorted().toList()
+_put 'Root project', "${name} ${semVer.description}"
+_put 'Base dir', "»${file('.')}«"
+_put 'Running Gradle', project.gradle.gradleVersion
+_put 'Java source compatibility', java.sourceCompatibility
+_put 'Java target compatibility', java.targetCompatibility
+_put 'Java toolchain', java.toolchain.displayName
+_put 'Compile -> Debug-Level', compileJava.options.debug
+_put 'Test-Compile -> Debug-Level', compileTestJava.options.debug
+_put 'Modularity enabled', java.modularity.inferModulePath.get()
+_put 'Using JavaFX', javafx.version
+_put 'Included child projects', childProjects.keySet().stream().sorted().toList()
+_put 'Using lib-filesystem-view', "base [${semVerFsvBase.canonicalForm}] fx [${semVerFsvFX.canonicalForm}]"
+_put 'Using JSemVer', SemanticVersion.of(libs.jsemver.get().version).description
+_put 'Using Checker Framework', checkerFramework.version.get()
+_put 'Using JUnit', libs.junit.jupiter.get().version
+_put 'Using JaCoCo', jacoco.toolVersion
 
 final int maxLenKey   = _map.keySet().stream().mapToInt(s->s.length()).max().orElse(0)
 final int maxLenValue = _map.values().stream().mapToInt(s->(""+s).length()).max().orElse(0)
@@ -247,18 +248,15 @@ task writeSemVer {
 	description = "Write application semantic version to resource file »${fileSemVer}«"
 	group = processResources.group
 	doFirst {
-		boolean doWriteSemVer
-		boolean doWriteShield
+		boolean doWriteSemVer = true
+		boolean doWriteShield = true
 		if (fileSemVer) {
-			try(var stream = fileSemVer.newInputStream())
+			fileSemVer.withInputStream(
 			{
-				var oldSemVer = SemanticVersion.of(stream)
+				var oldSemVer = SemanticVersion.of(it)
 				doWriteSemVer = oldSemVer.canonicalForm != semVer.canonicalForm
 				doWriteShield = oldSemVer != semVer
-			}
-		} else {
-			doWriteSemVer = true
-			doWriteShield = true
+			})
 		}
 		if (doWriteSemVer) {
 			logger.lifecycle "→ project version changed"
