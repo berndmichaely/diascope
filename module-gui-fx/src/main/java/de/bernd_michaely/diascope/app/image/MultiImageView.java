@@ -78,6 +78,7 @@ public class MultiImageView implements AutoCloseable
 		this.spotImageLayers = new ImageLayersSpot(viewport);
 		this.imageTransformsSwitch = new ImageTransformsSwitch<>(
 			viewport.modeProperties(), layerSelectionModel.singleSelectedLayerProperty(),
+			layerSelectionModel.getSelectionModel(),
 			imageLayers.unmodifiableLayers, spotImageLayers.unmodifiableLayers);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
 			(int) (C / imageLayers.getSplitDividerRotationControl().getDividerMinGap()));

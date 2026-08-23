@@ -16,6 +16,9 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListFactory;
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.util.Map;
@@ -25,7 +28,6 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -78,8 +80,10 @@ public class ImageTransformsSwitchTest
 		}
 	}
 	private EnumProperties<Mode> modeProperties;
-	private ReadOnlyObjectWrapper<Optional<Transformable_>> singleSelectedLayerProperty;
-	private ObservableList<Transformable_> layers;
+	private SelectableList<Transformable_> layers;
+	private ListDualSelection<Transformable_> listDualSelection;
+	private SelectableProperties selectionModel;
+	private ReadOnlyObjectProperty<Optional<Transformable_>> singleSelectedLayerProperty;
 	private ObservableList<Transformable_> spotLayers;
 	private ImageTransformsSwitch<Transformable_> its;
 
@@ -87,11 +91,14 @@ public class ImageTransformsSwitchTest
 	public void setUp()
 	{
 		modeProperties = EnumProperties.createInstance(Mode.getInitialMode());
-		singleSelectedLayerProperty = new ReadOnlyObjectWrapper<>(Optional.empty());
-		layers = observableArrayList();
+		layers = SelectableListFactory.selectableList();
+		listDualSelection = new ListDualSelection<>(layers);
+		selectionModel = SelectableListFactory.listSelectionHandler(layers);
+		singleSelectedLayerProperty = listDualSelection.singleSelectionItemProperty();
 		spotLayers = observableArrayList();
 		its = new ImageTransformsSwitch<>(modeProperties,
-			singleSelectedLayerProperty.getReadOnlyProperty(),
+			singleSelectedLayerProperty,
+			selectionModel,
 			unmodifiableObservableList(layers),
 			unmodifiableObservableList(spotLayers));
 	}
@@ -183,7 +190,8 @@ public class ImageTransformsSwitchTest
 		assertFalse(optional.isPresent());
 		DefaultImageTransforms expected, actual;
 		// select layer
-		singleSelectedLayerProperty.set(Optional.of(tb));
+		layers.setSelected(layers.indexOf(tb), true);
+		assertEquals(tb, singleSelectedLayerProperty.get().get());
 		optional = its._getSelectedImageTransforms().get();
 		assertTrue(optional.isPresent());
 		expected = its._getMapIntermediate().get(tb);
@@ -191,7 +199,9 @@ public class ImageTransformsSwitchTest
 		assertEquals(expected, actual,
 			"expected »%s« ←→ actual »%s«".formatted(tb, findTransformable(actual)));
 		// select other layer
-		singleSelectedLayerProperty.set(Optional.of(tc));
+		layers.setSelected(layers.indexOf(tb), false);
+		layers.setSelected(layers.indexOf(tc), true);
+		assertEquals(tc, singleSelectedLayerProperty.get().get());
 		optional = its._getSelectedImageTransforms().get();
 		assertTrue(optional.isPresent());
 		expected = its._getMapIntermediate().get(tc);
@@ -302,7 +312,8 @@ public class ImageTransformsSwitchTest
 		assertTrue(zmp_b.isValue(getDefault()));
 		assertTrue(zmp_c.isValue(getDefault()));
 		// select layer b
-		singleSelectedLayerProperty.set(Optional.of(tb));
+		layers.setSelected(layers.indexOf(tb), true);
+		assertEquals(tb, singleSelectedLayerProperty.get().get());
 //		zoomModeRawValueProperty.set(null);
 		zoomModeRawValueProperty.set(ORIGINAL);
 		assertTrue(zmp_a.isValue(getDefault()));
@@ -374,16 +385,22 @@ public class ImageTransformsSwitchTest
 		setLocal(true);
 		assertTrue(isLocal());
 		assertTrue(singleSelectedLayerProperty.get().isEmpty());
-		singleSelectedLayerProperty.set(Optional.of(ta));
+		layers.setSelected(layers.indexOf(ta), true);
+		assertEquals(ta, singleSelectedLayerProperty.get().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.1);
-		singleSelectedLayerProperty.set(Optional.of(tb));
+		layers.setSelected(layers.indexOf(ta), false);
+		layers.setSelected(layers.indexOf(tb), true);
+		assertEquals(tb, singleSelectedLayerProperty.get().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.2);
-		singleSelectedLayerProperty.set(Optional.of(tc));
+		layers.setSelected(layers.indexOf(tb), false);
+		layers.setSelected(layers.indexOf(tc), true);
+		assertEquals(tc, singleSelectedLayerProperty.get().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.3);
-		singleSelectedLayerProperty.set(Optional.empty());
+		layers.selectNone();
+		assertTrue(singleSelectedLayerProperty.get().isEmpty());
 		setLocal(false);
 		assertTrue(isGlobal());
 		assertEquals(1.0, it_a.zoomFactorProperty().get());
@@ -445,7 +462,8 @@ public class ImageTransformsSwitchTest
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
-		singleSelectedLayerProperty.set(Optional.of(tb));
+		layers.setSelected(layers.indexOf(tb), true);
+		assertEquals(tb, singleSelectedLayerProperty.get().get());
 		rotateProperty.set(2.0);
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(2.0, it_b.rotateProperty().get());

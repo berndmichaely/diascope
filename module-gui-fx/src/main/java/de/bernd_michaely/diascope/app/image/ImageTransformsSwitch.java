@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
@@ -44,19 +45,81 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 {
+	private static final class TransformParams
+	{
+		private ZoomMode zoomMode = ZoomMode.getDefault();
+		private double zoomFactor = 1.0;
+		private double rotate;
+		private boolean mirrorX;
+		private boolean mirrorY;
+	}
+
+	private static final class DeltaTransformParams
+	{
+		private double trandlateX;
+		private double trandlateY;
+		private double zoomFactor = 1.0;
+		private double rotate;
+		private boolean mirrorX;
+		private boolean mirrorY;
+	}
+
+	private record TransformableParams(TransformParams local, DeltaTransformParams delta)
+	{
+		private TransformableParams()
+		{
+			this(new TransformParams(), new DeltaTransformParams());
+		}
+	}
+
 	private final DefaultImageTransforms facadeImageTransforms = new DefaultImageTransforms();
-	private final DefaultImageTransforms globalImageTransforms = new DefaultImageTransforms();
-	private final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
+	@Deprecated private final DefaultImageTransforms globalImageTransforms = new DefaultImageTransforms();
+	private final TransformParams globalTransformParams = new TransformParams();
+	@Deprecated private final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
+	private final Map<T, TransformableParams> mapTransformableParams = new IdentityHashMap<>();
 	private final ObservableBooleanValue local;
-	private final ObjectProperty<Optional<DefaultImageTransforms>> selectedImageTransforms;
+	@Deprecated private final ObjectProperty<Optional<DefaultImageTransforms>> selectedImageTransforms =
+		new SimpleObjectProperty<>(Optional.empty());
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
 		ReadOnlyObjectProperty<Optional<T>> singleSelectedLayerProperty,
+		SelectableProperties selectionModel,
 		ObservableList<T> unmodifiableLayers,
 		ObservableList<T> unmodifiableSpotLayers)
 	{
 		this.local = modeProperties.isValueProperty(Mode.GRID);
-		this.selectedImageTransforms = new SimpleObjectProperty<>(Optional.empty());
+//		final ChangeListener<Number> onZoomFactorChange = onChange((oldValue, newValue) ->
+//		{
+//			if (local.get())
+//			{
+//				final int numSelected = selectionModel.getNumSelected();
+//				if (numSelected > 0)
+//				{
+//				}
+//			}
+//			else
+//			{
+//			}
+//		});
+//		final Consumer<T> addLayer = layer ->
+//		{
+//			final var transformableParams = mapTransformableParams.put(layer, new TransformableParams());
+//			final ImageTransforms transforms = layer.getImageTransforms();
+//			transforms.zoomFixedProperty().addListener(onZoomFactorChange);
+//		};
+//		final Consumer<T> removeLayer = layer ->
+//		{
+//			final ImageTransforms transforms = layer.getImageTransforms();
+//			transforms.zoomFixedProperty().removeListener(onZoomFactorChange);
+//			mapTransformableParams.remove(layer);
+//		};
+
+//		unmodifiableLayers.forEach(addLayer);
+//		unmodifiableLayers.addListener(new ListChangeListenerBuilder<T>()
+//			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
+//			.onRemove(change -> change.getRemoved().forEach(removeLayer))
+//			.build());
+		// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		selectedImageTransforms.addListener(onChange((oldValue, newValue) ->
 		{
 			oldValue.ifPresent(DefaultImageTransforms::unbindAllProperties);

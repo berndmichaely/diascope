@@ -51,6 +51,11 @@ public class LayerSelectionModel implements SelectableProperties
 		});
 	}
 
+	SelectableProperties getSelectionModel()
+	{
+		return selectionModel;
+	}
+
 	@Override
 	public ReadOnlyBooleanProperty allSelectedProperty()
 	{
