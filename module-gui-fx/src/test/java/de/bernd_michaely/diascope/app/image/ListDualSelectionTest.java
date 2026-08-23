@@ -92,32 +92,33 @@ public class ListDualSelectionTest
 		ADD, DEL, SEL
 	}
 
-	private void _add(String item, String singleItemSelected, String first, String second)
+	private void _add(String item, String singleItemSelected, String first, String second, String oldest)
 	{
 		assertTrue(list.add(item));
-		_check(Action.ADD, -1, false, item, singleItemSelected, first, second);
+		_check(Action.ADD, -1, false, item, singleItemSelected, first, second, oldest);
 	}
 
-	private void _del(String item, String singleItemSelected, String first, String second)
+	private void _del(String item, String singleItemSelected, String first, String second, String oldest)
 	{
 		assertTrue(list.remove(item));
-		_check(Action.DEL, -1, false, item, singleItemSelected, first, second);
+		_check(Action.DEL, -1, false, item, singleItemSelected, first, second, oldest);
 	}
 
-	private void _sel(int index, boolean select, String singleItemSelected, String first, String second)
+	private void _sel(int index, boolean select, String singleItemSelected, String first, String second, String oldest)
 	{
 		list.setSelected(index, select);
-		_check(Action.SEL, index, select, null, singleItemSelected, first, second);
+		_check(Action.SEL, index, select, null, singleItemSelected, first, second, oldest);
 	}
 
 	private void _check(Action action, int index, boolean select,
-		String item, String singleItem, String first, String second)
+		String item, String singleItem, String first, String second, String oldest)
 	{
 		final boolean singleItemSelected = singleItem != null;
 		final boolean dualItemsSelected = first != null && second != null;
 		final String w0 = singleItem != null ? "»%s«".formatted(singleItem) : "–––";
 		final String w1 = first != null ? "»%s«".formatted(first) : "–––";
 		final String w2 = second != null ? "»%s«".formatted(second) : "–––";
+		final String w3 = oldest != null ? "»%s«".formatted(oldest) : "–––";
 		final Collection<Integer> selectedIndices = selection.getSelectedIndices();
 		final int n = list.size();
 		final var msg = new Supplier<String>()
@@ -140,19 +141,19 @@ public class ListDualSelectionTest
 		{
 			if (action == Action.SEL)
 			{
-				System.out.println("→ %s [%d]%s    → %s → { %s / %s } : %s → selected: %s"
-					.formatted(action, index, (select ? "+" : "-"), w0, w1, w2, list, selectedIndices));
+				System.out.println("→ %s [%d]%s    → %s → { %s / %s } < %s > : %s → selected: %s"
+					.formatted(action, index, (select ? "+" : "-"), w0, w1, w2, w3, list, selectedIndices));
 			}
 			else
 			{
-				System.out.println("· %s »%s«     → %s → { %s / %s } : %s → selected: %s"
-					.formatted(action, item, w0, w1, w2, list, selectedIndices));
+				System.out.println("· %s »%s«     → %s → { %s / %s } < %s > : %s → selected: %s"
+					.formatted(action, item, w0, w1, w2, w3, list, selectedIndices));
 			}
 		}
 		else
 		{
-			System.out.println("· %s         → %s → { %s / %s } : %s → selected: %s"
-				.formatted("–––", w0, w1, w2, list, selectedIndices));
+			System.out.println("· %s         → %s → { %s / %s } < %s > : %s → selected: %s"
+				.formatted("–––", w0, w1, w2, w3, list, selectedIndices));
 		}
 		assertEquals(singleItem, selection.singleSelectionItemProperty().get().orElse(null));
 		assertEquals(singleItemSelected, selection.singleItemSelectedProperty().getValue());
@@ -162,6 +163,7 @@ public class ListDualSelectionTest
 		assertEquals(dualItemsSelected, selection.dualItemsSelectedProperty().getValue());
 		assertEquals(dualItemsSelected, selection.dualSelectionFirstItemProperty().get().isPresent());
 		assertEquals(dualItemsSelected, selection.dualSelectionSecondItemProperty().get().isPresent());
+		assertEquals(oldest, selection.oldestSelectedItemProperty().get().orElse(null));
 	}
 
 	@Test
@@ -169,19 +171,19 @@ public class ListDualSelectionTest
 	{
 		System.out.println("test_Selection_1");
 		//
-		_check(null, -1, false, null, null, null, null);
+		_check(null, -1, false, null, null, null, null, null);
 		//
-		_add("a", null, null, null);
+		_add("a", null, null, null, null);
 		//
-		_add("b", null, "a", "b");
+		_add("b", null, "a", "b", null);
 		//
-		_add("c", null, null, null);
+		_add("c", null, null, null, null);
 		//
-		_del("a", null, "b", "c");
+		_del("a", null, "b", "c", null);
 		//
-		_del("b", null, null, null);
+		_del("b", null, null, null, null);
 		//
-		_del("c", null, null, null);
+		_del("c", null, null, null, null);
 	}
 
 	@Test
@@ -189,32 +191,32 @@ public class ListDualSelectionTest
 	{
 		System.out.println("test_Selection_2");
 		//
-		_check(null, -1, false, null, null, null, null);
+		_check(null, -1, false, null, null, null, null, null);
 		//
-		_add("a", null, null, null);
+		_add("a", null, null, null, null);
 		//
-		_sel(0, true, "a", null, null);
+		_sel(0, true, "a", null, null, "a");
 		//
-		_add("b", "a", "b", "a");
+		_add("b", "a", "b", "a", "a");
 		//
-		_sel(1, true, null, "a", "b");
+		_sel(1, true, null, "a", "b", "a");
 		//
-		_add("c", null, "a", "b");
+		_add("c", null, "a", "b", "a");
 		//
-		_sel(2, true, null, null, null);
+		_sel(2, true, null, null, null, "a");
 		//
-		_sel(0, false, null, "b", "c");
+		_sel(0, false, null, "b", "c", "b");
 		//
-		_sel(1, false, "c", null, null);
+		_sel(1, false, "c", null, null, "c");
 		//
-		_sel(1, true, null, "c", "b");
+		_sel(1, true, null, "c", "b", "c");
 		//
-		_del("c", "b", "a", "b");
+		_del("c", "b", "a", "b", "b");
 		//
-		_sel(0, true, null, "b", "a");
+		_sel(0, true, null, "b", "a", "b");
 		//
-		_del("a", "b", null, null);
+		_del("a", "b", null, null, "b");
 		//
-		_del("b", null, null, null);
+		_del("b", null, null, null, null);
 	}
 }

@@ -28,7 +28,6 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener.SelectionChange.SelectionChangeType.*;
 import static java.util.Collections.unmodifiableCollection;
-import static javafx.beans.binding.Bindings.createBooleanBinding;
 
 /// Class to handle a dual selection state of a SelectableList.
 /// Dual selection has a specific meaning in this context. It is true, iff:
@@ -50,13 +49,14 @@ import static javafx.beans.binding.Bindings.createBooleanBinding;
 ///
 class ListDualSelection<T>
 {
-	private final ReadOnlyBooleanWrapper singleItemSelected;
-	private final ReadOnlyBooleanWrapper dualItemsSelected;
-	private final ReadOnlyObjectWrapper<Optional<T>> singleSelectionItem;
-	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionFirstItem;
-	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionSecondItem;
+	private final ReadOnlyBooleanWrapper singleItemSelected = new ReadOnlyBooleanWrapper();
+	private final ReadOnlyBooleanWrapper dualItemsSelected = new ReadOnlyBooleanWrapper();
+	private final ReadOnlyObjectWrapper<Optional<T>> singleSelectionItem = new ReadOnlyObjectWrapper<>(Optional.empty());
+	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionFirstItem = new ReadOnlyObjectWrapper<>(Optional.empty());
+	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionSecondItem = new ReadOnlyObjectWrapper<>(Optional.empty());
+	private final ReadOnlyObjectWrapper<Optional<T>> oldestSelectedItem = new ReadOnlyObjectWrapper<>(Optional.empty());
 	private final LinkedList<Integer> queueSelected = new LinkedList<>();
-	private final Collection<Integer> selectedIndices;
+	private final Collection<Integer> selectedIndices = unmodifiableCollection(queueSelected);
 
 	@FunctionalInterface
 	interface BiIntConsumer
@@ -66,16 +66,8 @@ class ListDualSelection<T>
 
 	ListDualSelection(SelectableList<T> list)
 	{
-		this.singleItemSelected = new ReadOnlyBooleanWrapper();
-		this.singleSelectionItem = new ReadOnlyObjectWrapper<>(Optional.empty());
-		this.dualItemsSelected = new ReadOnlyBooleanWrapper();
-		this.dualSelectionFirstItem = new ReadOnlyObjectWrapper<>(Optional.empty());
-		this.dualSelectionSecondItem = new ReadOnlyObjectWrapper<>(Optional.empty());
-		this.selectedIndices = unmodifiableCollection(queueSelected);
 		singleItemSelected.bind(singleSelectionItem.map(Optional::isPresent));
-		dualItemsSelected.bind(createBooleanBinding(
-			() -> dualSelectionFirstItem.get().isPresent() && dualSelectionSecondItem.get().isPresent(),
-			dualSelectionFirstItem, dualSelectionSecondItem));
+		dualItemsSelected.bind(dualSelectionSecondItem.map(Optional::isPresent));
 		final Runnable checkSelection = () ->
 		{
 			final int n = list.size();
@@ -139,6 +131,9 @@ class ListDualSelection<T>
 				dualSelectionFirstItem.set(Optional.empty());
 				dualSelectionSecondItem.set(Optional.empty());
 			}
+			final Integer queueLast = queueSelected.peekLast();
+			oldestSelectedItem.set(queueLast != null ?
+				Optional.ofNullable(list.get(queueLast)) : Optional.empty());
 		};
 		final BiIntConsumer shiftIndices = (from, delta) ->
 		{
@@ -214,5 +209,10 @@ class ListDualSelection<T>
 	ReadOnlyObjectProperty<Optional<T>> dualSelectionSecondItemProperty()
 	{
 		return dualSelectionSecondItem.getReadOnlyProperty();
+	}
+
+	ReadOnlyObjectProperty<Optional<T>> oldestSelectedItemProperty()
+	{
+		return oldestSelectedItem.getReadOnlyProperty();
 	}
 }
