@@ -54,6 +54,7 @@ import static javafx.beans.binding.Bindings.when;
 final class ImageLayer implements Transformable
 {
 	private static final Logger logger = System.getLogger(ImageLayer.class.getName());
+	private boolean isClosed;
 	private final Pane paneLayer = new Pane();
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
@@ -232,7 +233,11 @@ final class ImageLayer implements Transformable
 	@Override
 	public void close()
 	{
-		imageDescriptorProperty().unbind();
-		setImageDescriptor(Optional.empty());
+		if (!isClosed)
+		{
+			isClosed = true;
+			imageDescriptorProperty().unbind();
+			setImageDescriptor(Optional.empty());
+		}
 	}
 }
