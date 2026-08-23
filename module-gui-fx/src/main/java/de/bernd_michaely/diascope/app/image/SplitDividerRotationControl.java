@@ -57,6 +57,10 @@ class SplitDividerRotationControl implements Consumer<SplitDivider>
 		return dividerMinGapProperty;
 	}
 
+	/// Returns the minimum angle difference in degrees to seperate two dividers.
+	///
+	/// @return the minimum angle difference in degrees to seperate two dividers
+	///
 	double getDividerMinGap()
 	{
 		return dividerMinGapProperty().get();
