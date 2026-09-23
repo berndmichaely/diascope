@@ -19,6 +19,7 @@ package de.bernd_michaely.diascope.app.dialog;
 import de.bernd_michaely.common.filesystem.view.fx.FileSystemTreeViewVersionFX;
 import de.bernd_michaely.common.semver.SemanticVersion;
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
+import de.bernd_michaely.diascope.app.icons.Icons;
 import de.bernd_michaely.diascope.app.util.common.JreVersionUtil;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
@@ -106,8 +107,10 @@ class InfoPaneSystemInfo implements InfoPane
 		final Label textMaxHeapSize = new Label(
 			String.format("%.1f MB", (double) Runtime.getRuntime().maxMemory() / (1 << 20)));
 
-		final Label headerDefaultFontSize = new Label("Default font size:");
-		final Label textDefaultFontSize = new Label(DEFAULT_FONT_SIZE + " points");
+		final Label headerDefaultFontSize = new Label("Default font size / Icon size");
+		final Label textDefaultFontSize = new Label("%.1f points / %dx%d (%dx%d)"
+			.formatted(DEFAULT_FONT_SIZE, Icons.getScaledWidth(), Icons.getScaledHeight(),
+				Icons.getScaledWidthSmall(), Icons.getScaledHeightSmall()));
 
 //		final Label headerX3fLibVer = new Label("X3F Extractor library version");
 //		final Label textX3fLibVer = new Label(LibraryVersionInfo.getLibraryVersionAsString());

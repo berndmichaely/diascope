@@ -22,6 +22,7 @@ import de.bernd_michaely.diascope.app.PreferencesUtil;
 import de.bernd_michaely.diascope.app.dialog.PaneInfoAbout;
 import de.bernd_michaely.diascope.app.dialog.PaneInfoSysEnv;
 import de.bernd_michaely.diascope.app.dialog.ResizableDialog;
+import de.bernd_michaely.diascope.app.util.action.ActionBase;
 import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -100,6 +101,7 @@ public class MainWindow
 	private final BooleanProperty showHeaderBarPersistedProperty;
 	private final BooleanProperty showToolBarPersistedProperty;
 	private final BooleanProperty showStatusLinePersistedProperty;
+	private final BooleanProperty iconColorModeProperty;
 	private final SplitPane splitPane;
 	private final BorderPane rootPane, toolBarPane;
 	private final TabPane tabPane;
@@ -120,13 +122,16 @@ public class MainWindow
 			PREF_KEY_SPLIT_POS_MAIN, getClass(), 1.0 / 3.0);
 		// HeaderBar
 		this.showHeaderBarPersistedProperty = newPersistedBooleanProperty(
-			PREF_KEY_SHOW_HEADERBAR, getClass(), false);
+			PREF_KEY_SHOW_HEADERBAR, getClass(), true);
 		// ToolBar
 		this.showToolBarPersistedProperty = newPersistedBooleanProperty(
 			PREF_KEY_SHOW_TOOLBAR, getClass(), true);
 		// StatusLine
 		this.showStatusLinePersistedProperty = newPersistedBooleanProperty(
-			PREF_KEY_SHOW_STATUS_LINE, getClass(), true);
+			PREF_KEY_SHOW_STATUS_LINE, getClass(), false);
+		this.iconColorModeProperty = newPersistedBooleanProperty(
+			PREF_KEY_ICON_COLOR_MODE, getClass(), true);
+		actions.actionIconColorMode.selectedProperty().bindBidirectional(iconColorModeProperty);
 		actions.actionShowStatusLine.selectedProperty().bindBidirectional(showStatusLinePersistedProperty);
 		// dialogs
 		dialogSystemEnvironment.setTitle("System Environment");
@@ -140,6 +145,7 @@ public class MainWindow
 		if (this.mainContent == null && mainContent != null)
 		{
 			this.mainContent = mainContent;
+			ActionBase.colorModeProperty().bindBidirectional(actions.actionIconColorMode.selectedProperty());
 			actions.actionFullScreen.selectedProperty().bindBidirectional(
 				mainContent.getActionFullScreen().selectedProperty());
 			mainContent.bindShowStatusLineProperty(actions.actionShowStatusLine.selectedProperty());
@@ -340,7 +346,6 @@ public class MainWindow
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private Region createHeaderBar(Stage stage)
 	{
 		final double offset = Font.getDefault().getSize() * 3 / 8;

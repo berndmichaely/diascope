@@ -1,0 +1,29 @@
+Action Name, Icon base name
+actionShowSidePane, panel-left-close
+actionFileOpen, folder-open
+actionFileClose, folder-closed
+actionFileExit, x
+actionViewFullscreen, fullscreen
+actionViewShowFirst, chevron-first
+actionViewShowPrev, chevron-left
+actionViewShowNext, chevron-right
+actionViewShowLast, chevron-last
+# actionViewLayout.SHOW_THUMBS_AND_PICTURE, panel-right-dashed
+actionLayerAdd, layers-plus
+actionLayerRemove, layers-minus
+actionShowDividers, list-filter-plus
+actionModeGrid, grid-2x2
+actionModeSplit, square-split-horizontal
+actionModeSpot, circle-slash-2
+actionZoom100, scan-search
+actionZoomFillWindow, ratio
+actionZoomFitWindow, shrink
+actionMirrorX, triangles-centerline-dashed-vertical
+actionMirrorY, triangles-centerline-dashed-horizontal
+actionSelectAll, square-check
+actionSelectNone, square
+actionSelectInvert, square-slash
+actionShowThumbs, panel-right-dashed
+actionResetControls, rotate-ccw
+actionShowToolBar, panel-top
+actionShowScrollBars, scroll

@@ -24,13 +24,21 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
+import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+
 /// Base class for Actions.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
 public abstract class ActionBase implements Action
 {
+	private static final BooleanProperty COLOR_MODE = new SimpleBooleanProperty();
 	private final BooleanProperty disableProperty = new SimpleBooleanProperty();
+
+	public static BooleanProperty colorModeProperty()
+	{
+		return COLOR_MODE;
+	}
 
 	public BooleanProperty disableProperty()
 	{
@@ -54,11 +62,19 @@ public abstract class ActionBase implements Action
 		final Image iconImage;
 		if (icon != null)
 		{
-			iconImage = icon.getIconImage();
+			iconImage = icon.getIconImage(colorModeProperty().get(), false);
 			if (iconImage != null)
 			{
 				button.setGraphic(new ImageView(iconImage));
 			}
+			colorModeProperty().addListener(onChange(colorMode ->
+			{
+				final var newIcon = icon.getIconImage(colorMode, false);
+				if (newIcon != null)
+				{
+					button.setGraphic(new ImageView(newIcon));
+				}
+			}));
 		}
 		else
 		{
@@ -86,11 +102,19 @@ public abstract class ActionBase implements Action
 		final var icon = actionItemDescriptor.icon();
 		if (icon != null)
 		{
-			final Image iconImage = icon.getIconImage(20);
+			final Image iconImage = icon.getIconImage(colorModeProperty().get(), true);
 			if (iconImage != null)
 			{
 				menuItem.setGraphic(new ImageView(iconImage));
 			}
+			colorModeProperty().addListener(onChange(colorMode ->
+			{
+				final var newIcon = icon.getIconImage(colorMode, true);
+				if (newIcon != null)
+				{
+					menuItem.setGraphic(new ImageView(newIcon));
+				}
+			}));
 		}
 	}
 }

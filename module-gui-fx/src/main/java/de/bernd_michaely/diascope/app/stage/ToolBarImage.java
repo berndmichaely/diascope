@@ -149,6 +149,8 @@ class ToolBarImage
 		// ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		this.contextMenu = new ContextMenu();
 		Stream.of(
+			actions.actionZoom,
+			SEPARATOR,
 			actions.actionToolbar,
 			actions.actionThumbnails,
 			actions.actionScrollbars,
@@ -158,8 +160,6 @@ class ToolBarImage
 			actions.actionShowDividers,
 			SEPARATOR,
 			actions.actionMode,
-			SEPARATOR,
-			actions.actionZoom,
 			SEPARATOR,
 			actions.actionSelectAll,
 			actions.actionSelectNone,

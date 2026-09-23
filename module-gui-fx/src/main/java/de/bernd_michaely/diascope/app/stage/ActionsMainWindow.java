@@ -64,6 +64,7 @@ class ActionsMainWindow
 	final CheckedAction actionShowHeaderBar;
 	final CheckedAction actionShowToolBar;
 	final CheckedAction actionShowStatusLine;
+	final CheckedAction actionIconColorMode;
 	final CheckedAction actionDevelopmentMode;
 	// menuHelp
 	final TriggerAction actionSysEnv;
@@ -79,9 +80,9 @@ class ActionsMainWindow
 		this.actionOpen = new TriggerAction(new ActionItemDescriptor(
 			Icons.FileOpen, "Open", "Open directory …", null));
 		this.actionClose = new TriggerAction(new ActionItemDescriptor(
-			null, "Close", "Close directory", null));
+			Icons.FileClose, "Close", "Close directory", null));
 		this.actionExit = new TriggerAction(new ActionItemDescriptor(
-			null, "Exit", "Exit", "Exit application"));
+			Icons.FileExit, "Exit", "Exit", "Exit application"));
 		// MenuBar
 		final var menuFile = new Menu("File");
 		final var menuView = new Menu("View");
@@ -135,6 +136,8 @@ class ActionsMainWindow
 		menuOptions.getItems().addAll(actionShowToolBar.createMenuItems());
 		this.actionShowStatusLine = new CheckedAction(new ActionItemDescriptor("Show status line"));
 		menuOptions.getItems().addAll(actionShowStatusLine.createMenuItems());
+		this.actionIconColorMode = new CheckedAction(new ActionItemDescriptor("Icon color mode"));
+		menuOptions.getItems().addAll(actionIconColorMode.createMenuItems());
 		// menuHelp
 		this.actionSysEnv = new TriggerAction(new ActionItemDescriptor("System Environment"));
 		this.actionInfoAbout = new TriggerAction(new ActionItemDescriptor("About"));

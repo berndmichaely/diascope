@@ -16,12 +16,16 @@
  */
 package de.bernd_michaely.diascope.app.icons;
 
+import io.brunoborges.jairosvg.JairoSVG;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.System.Logger;
 import javafx.scene.image.Image;
+import javafx.stage.Screen;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static java.lang.Math.round;
 import static java.lang.System.Logger.Level.*;
 
 /**
@@ -32,13 +36,13 @@ import static java.lang.System.Logger.Level.*;
 public enum Icons
 {
 	// File:
-	FileOpen,
+	FileOpen, FileClose, FileExit,
 	// Edit:
 	SelectAll, SelectInvert, SelectNone,
 	// View:
 	ShowThumbs,
 	ViewFullscreen, // ViewFullscreenPane,
-	ShowSidePane,
+	ShowSidePane, ShowToolBar, ShowScrollBars,
 	ZoomFitWindow, ZoomFillWindow, Zoom100,
 	MirrorX, MirrorY,
 	ViewRotateByExif, ViewDisplayMetaData,
@@ -47,47 +51,91 @@ public enum Icons
 	// Layer
 	LayerAdd, LayerRemove, ShowDividers,
 	// Multi image modes
-	ModeGrid, ModeSplit, ModeSpot;
+	ModeGrid, ModeSplit, ModeSpot,
+	// Image context menu
+	ResetControls;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());
+	private static final String ICONS_RESOURCE_PACKAGE_BASE = "/de/bernd_michaely/diascope/app/icons";
 
-	public @Nullable
-	Image getIconImage()
+	private static final int scaledWidth, scaledHeight;
+	private static final int scaledWidthSmall, scaledHeightSmall;
+	private static final int BASE_SIZE = 24;
+//	private static final float FACTOR_SIZE_SMALL = 2f / 3f;
+	private static final float FACTOR_SIZE_SMALL = 0.75f;
+
+	static
 	{
-		return getIconImage(0);
+		final var screen = Screen.getPrimary();
+		scaledWidth = (int) round(BASE_SIZE * screen.getOutputScaleX());
+		scaledHeight = (int) round(BASE_SIZE * screen.getOutputScaleY());
+		scaledWidthSmall = round(scaledWidth * FACTOR_SIZE_SMALL);
+		scaledHeightSmall = round(scaledHeight * FACTOR_SIZE_SMALL);
+	}
+
+	public static int getScaledWidth()
+	{
+		return scaledWidth;
+	}
+
+	public static int getScaledHeight()
+	{
+		return scaledHeight;
+	}
+
+	public static int getScaledWidthSmall()
+	{
+		return scaledWidthSmall;
+	}
+
+	public static int getScaledHeightSmall()
+	{
+		return scaledHeightSmall;
+	}
+
+	private @Nullable
+	Image readImage(final InputStream stream, boolean small)
+	{
+		final double width = small ? scaledWidthSmall : scaledWidth;
+		final double height = small ? scaledHeightSmall : scaledHeight;
+		try
+		{
+			final byte[] bufferPng = JairoSVG.builder()
+				.fromStream(stream).outputWidth(width).outputHeight(height).toPng();
+			try (final var byteArrayInputStream = new ByteArrayInputStream(bufferPng))
+			{
+				return new Image(byteArrayInputStream);
+			}
+		}
+		catch (Exception ex)
+		{
+			logger.log(WARNING, "Error reading SVG from JairoSVG", ex);
+			return null;
+		}
 	}
 
 	/// Get an Image object from resources.
 	///
-	/// @param size request specified size (assuming square aspect ratio)
+	/// @param colorMode true to request a color icon, false for monochrome icons
+	/// @param small false to request a default toolbar icon size,
+	///							 true for smaller menu item icons
 	///
 	public @Nullable
-	Image getIconImage(double size)
+	Image getIconImage(boolean colorMode, boolean small)
 	{
-		final String resourceName = "action" + name() + ".png";
-		try (final InputStream resourceStream = getClass().getResourceAsStream(resourceName))
+		final String nameIconSet = "lucide_" + (colorMode ? "color" : "mono");
+		final String resourceName = "%s/%s/action%s.svg".formatted(
+			ICONS_RESOURCE_PACKAGE_BASE, nameIconSet, name());
+		Image result;
+		try (final InputStream stream = getClass().getResourceAsStream(resourceName))
 		{
-			if (resourceStream != null)
-			{
-				if (size > 0)
-				{
-					return new Image(resourceStream, size, size, true, true);
-				}
-				else
-				{
-					return new Image(resourceStream);
-				}
-			}
-			else
-			{
-				logger.log(TRACE, () -> "Resource not found: " + resourceName);
-				return null;
-			}
+			result = stream != null ? readImage(stream, small) : null;
 		}
 		catch (IOException ex)
 		{
 			logger.log(WARNING, () -> "Resource not found: " + resourceName, ex);
-			return null;
+			result = null;
 		}
+		return result;
 	}
 }

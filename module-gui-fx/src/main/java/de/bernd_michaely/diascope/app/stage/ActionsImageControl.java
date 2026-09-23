@@ -121,12 +121,14 @@ class ActionsImageControl implements AutoCloseable
 		actionMirrorY.disableProperty().bind(emptyProperty);
 		actionMirrorY.selectedProperty().bindBidirectional(multiImageView.getImageTransforms().mirrorYProperty());
 		// ContextMenu specific
-		this.actionToolbar = new CheckedAction(new ActionItemDescriptor("Show/Hide Toolbar"));
+		this.actionToolbar = new CheckedAction(
+			new ActionItemDescriptor(Icons.ShowToolBar, "Toolbar", "Show/Hide Toolbar", "Show/Hide Toolbar"));
 		actionToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
 		this.actionThumbnails = new CheckedAction(new ActionItemDescriptor(
 			Icons.ShowThumbs, "Thumbs", "Show/Hide Thumbnails", "Show/Hide Thumbnails"));
 		actionThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
-		this.actionScrollbars = new CheckedAction(new ActionItemDescriptor("Show/Hide Scrollbars"));
+		this.actionScrollbars = new CheckedAction(
+			new ActionItemDescriptor(Icons.ShowScrollBars, "Scrollbars", "Show/Hide Scrollbars", "Show/Hide Scrollbars"));
 		actionScrollbars.selectedProperty().bindBidirectional(properties.scrollBarsVisibleProperty());
 		// Layer Selection
 		this.actionSelectAll = new TriggerAction(selectionModel::selectAll, new ActionItemDescriptor(
@@ -140,7 +142,7 @@ class ActionsImageControl implements AutoCloseable
 		actionSelectToggle.disableProperty().bind(notMultiLayerMode);
 		// misc
 		this.actionResetControls = new TriggerAction(multiImageView::resetControls,
-			new ActionItemDescriptor("Reset controls"));
+			new ActionItemDescriptor(Icons.ResetControls, "Reset", "Reset controls", "Reset controls"));
 		actionResetControls.disableProperty().bind(notMultiLayerMode);
 		this.actionFullScreen = new CheckedAction(ACTION_ITEM_DESCRIPTOR_FULLSCREEN);
 		actionFullScreen.selectedProperty().bindBidirectional(imageControlProperties.getFullScreen().enabledProperty());
