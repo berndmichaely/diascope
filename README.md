@@ -33,9 +33,9 @@ to run the application immediately or
 
 to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 25.
 
-Since this version uses preview features of JavaFX 26, you might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
+You might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
-    export JAVA_OPTS='-Djavafx.enablePreview=true -Djavafx.suppressPreviewWarning=true --enable-native-access=javafx.graphics'
+    export JAVA_OPTS='--enable-native-access=javafx.graphics'
 
 ### Full Screen Mode
 
