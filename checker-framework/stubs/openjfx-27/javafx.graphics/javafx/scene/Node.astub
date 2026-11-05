@@ -1,0 +1,1345 @@
+/*
+ * Copyright (c) 2010, 2026, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+package javafx.scene;
+
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+/*
+import com.sun.javafx.geometry.BoundsUtils;
+import com.sun.javafx.scene.traversal.TraversalMethod;
+import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
+import javafx.beans.binding.BooleanExpression;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.BooleanPropertyBase;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.DoublePropertyBase;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ObjectPropertyBase;
+import javafx.beans.property.Property;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanPropertyBase;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.ReadOnlyObjectPropertyBase;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.StringProperty;
+import javafx.beans.property.StringPropertyBase;
+import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener.Change;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableMap;
+import javafx.collections.ObservableSet;
+import javafx.css.CssMetaData;
+import javafx.css.ParsedValue;
+import javafx.css.PseudoClass;
+import javafx.css.StyleConverter;
+import javafx.css.StyleOrigin;
+import javafx.css.Styleable;
+import javafx.css.StyleableBooleanProperty;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleableObjectProperty;
+import javafx.css.StyleableProperty;
+import javafx.event.Event;
+import javafx.event.EventDispatchChain;
+import javafx.event.EventDispatcher;
+import javafx.event.EventHandler;
+import javafx.event.EventTarget;
+import javafx.event.EventType;
+import javafx.geometry.BoundingBox;
+import javafx.geometry.Bounds;
+import javafx.geometry.NodeOrientation;
+import javafx.geometry.Orientation;
+import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.effect.BlendMode;
+import javafx.scene.effect.Effect;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.InputEvent;
+import javafx.scene.input.InputMethodEvent;
+import javafx.scene.input.InputMethodRequests;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseDragEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.PickResult;
+import javafx.scene.input.RotateEvent;
+import javafx.scene.input.ScrollEvent;
+import javafx.scene.input.SwipeEvent;
+import javafx.scene.input.TouchEvent;
+import javafx.scene.input.TransferMode;
+import javafx.scene.input.ZoomEvent;
+import javafx.scene.shape.Shape;
+import javafx.scene.text.Font;
+import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Transform;
+import javafx.stage.Window;
+import javafx.util.Callback;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import com.sun.glass.ui.Accessible;
+import com.sun.glass.ui.Application;
+import com.sun.javafx.util.Logging;
+import com.sun.javafx.util.TempState;
+import com.sun.javafx.util.Utils;
+import com.sun.javafx.beans.IDProperty;
+import com.sun.javafx.beans.event.AbstractNotifyListener;
+import com.sun.javafx.collections.TrackableObservableList;
+import com.sun.javafx.collections.UnmodifiableListSet;
+import com.sun.javafx.css.PseudoClassState;
+import com.sun.javafx.css.TransitionDefinition;
+import com.sun.javafx.css.TransitionDefinitionConverter;
+import com.sun.javafx.css.TransitionDefinitionCssMetaData;
+import com.sun.javafx.css.TransitionTimer;
+import com.sun.javafx.css.media.MediaQueryContext;
+import javafx.css.Selector;
+import javafx.css.Style;
+import javafx.css.converter.BooleanConverter;
+import javafx.css.converter.CursorConverter;
+import javafx.css.converter.EffectConverter;
+import javafx.css.converter.EnumConverter;
+import javafx.css.converter.SizeConverter;
+import com.sun.javafx.effect.EffectDirtyBits;
+import com.sun.javafx.geom.BaseBounds;
+import com.sun.javafx.geom.BoxBounds;
+import com.sun.javafx.geom.PickRay;
+import com.sun.javafx.geom.RectBounds;
+import com.sun.javafx.geom.Vec3d;
+import com.sun.javafx.geom.transform.Affine3D;
+import com.sun.javafx.geom.transform.BaseTransform;
+import com.sun.javafx.geom.transform.GeneralTransform3D;
+import com.sun.javafx.geom.transform.NoninvertibleTransformException;
+import com.sun.javafx.perf.PerformanceTracker;
+import com.sun.javafx.scene.AbstractNode;
+import com.sun.javafx.scene.BoundsAccessor;
+import com.sun.javafx.scene.CameraHelper;
+import com.sun.javafx.scene.CssFlags;
+import com.sun.javafx.scene.DirtyBits;
+import com.sun.javafx.scene.EventHandlerProperties;
+import com.sun.javafx.scene.LayoutFlags;
+import com.sun.javafx.scene.NodeEventDispatcher;
+import com.sun.javafx.scene.NodeHelper;
+import com.sun.javafx.scene.SceneHelper;
+import com.sun.javafx.scene.SceneUtils;
+import com.sun.javafx.scene.input.PickResultChooser;
+import com.sun.javafx.scene.transform.TransformHelper;
+import com.sun.javafx.scene.transform.TransformUtils;
+import com.sun.javafx.scene.traversal.Direction;
+import com.sun.javafx.sg.prism.NGNode;
+import com.sun.javafx.tk.Toolkit;
+import com.sun.prism.impl.PrismSettings;
+import com.sun.scenario.effect.EffectHelper;
+import javafx.scene.shape.Shape3D;
+import com.sun.javafx.logging.PlatformLogger;
+import com.sun.javafx.logging.PlatformLogger.Level;
+*/
+
+// @IDProperty("id")
+public abstract sealed class Node implements EventTarget, Styleable permits AbstractNode, Camera, LightBase, Parent, SubScene, Canvas, ImageView, Shape, Shape3D {
+
+    final boolean isDirty(DirtyBits dirtyBit);
+
+    final void clearDirty(DirtyBits dirtyBit);
+
+    final void syncPeer();
+
+    void updateBounds();
+
+    public final ObservableMap<Object, Object> getProperties();
+
+    public boolean hasProperties();
+
+    public void setUserData(Object value);
+
+    public Object getUserData();
+
+    final void setParent(Parent value);
+
+    public final Parent getParent();
+
+    public final ReadOnlyObjectProperty<Parent> parentProperty();
+
+    private class ReadOnlyObjectWrapperManualFire<T> extends ReadOnlyObjectWrapper<T> {
+
+        @Override
+        public Object getBean();
+
+        @Override
+        public String getName();
+
+        @Override
+        protected void fireValueChangedEvent();
+
+        public void fireSuperValueChangedEvent();
+    }
+
+    final void setScenes(Scene newScene, SubScene newSubScene);
+
+    final SubScene getSubScene();
+
+    public final Scene getScene();
+
+    public final ReadOnlyObjectProperty<Scene> sceneProperty();
+
+    void scenesChanged(final Scene newScene, final SubScene newSubScene, final Scene oldScene, final SubScene oldSubScene);
+
+    public final void setId(String value);
+
+    @Override
+    public final String getId();
+
+    public final StringProperty idProperty();
+
+    @Override
+    public final ObservableList<String> getStyleClass();
+
+    public final void setStyle(String value);
+
+    @Override
+    public final String getStyle();
+
+    public final StringProperty styleProperty();
+
+    public final void setVisible(boolean value);
+
+    public final boolean isVisible();
+
+    public final BooleanProperty visibleProperty();
+
+    public final void setCursor(Cursor value);
+
+    public final Cursor getCursor();
+
+    public final ObjectProperty<Cursor> cursorProperty();
+
+    public final void setOpacity(double value);
+
+    public final double getOpacity();
+
+    public final DoubleProperty opacityProperty();
+
+    public final void setBlendMode(BlendMode value);
+
+    public final BlendMode getBlendMode();
+
+    public final ObjectProperty<BlendMode> blendModeProperty();
+
+    public final void setClip(Node value);
+
+    public final Node getClip();
+
+    public final ObjectProperty<Node> clipProperty();
+
+    public final void setCache(boolean value);
+
+    public final boolean isCache();
+
+    public final BooleanProperty cacheProperty();
+
+    public final void setCacheHint(CacheHint value);
+
+    public final CacheHint getCacheHint();
+
+    public final ObjectProperty<CacheHint> cacheHintProperty();
+
+    public final void setEffect(Effect value);
+
+    public final Effect getEffect();
+
+    public final ObjectProperty<Effect> effectProperty();
+
+    public final void setDepthTest(DepthTest value);
+
+    public final DepthTest getDepthTest();
+
+    public final ObjectProperty<DepthTest> depthTestProperty();
+
+    void computeDerivedDepthTest();
+
+    void setDerivedDepthTest(boolean value);
+
+    boolean isDerivedDepthTest();
+
+    public final void setDisable(boolean value);
+
+    public final boolean isDisable();
+
+    public final BooleanProperty disableProperty();
+
+    public final void setPickOnBounds(boolean value);
+
+    public final boolean isPickOnBounds();
+
+    public final BooleanProperty pickOnBoundsProperty();
+
+    protected final void setDisabled(boolean value);
+
+    public final boolean isDisabled();
+
+    public final ReadOnlyBooleanProperty disabledProperty();
+
+    public Node lookup(String selector);
+
+    public Set<Node> lookupAll(String selector);
+
+    List<Node> lookupAll(Selector selector, List<Node> results);
+
+    public void toBack();
+
+    public void toFront();
+
+    public WritableImage snapshot(SnapshotParameters params, WritableImage image);
+
+    public void snapshot(Callback<SnapshotResult, Void> callback, SnapshotParameters params, WritableImage image);
+
+    public final void setOnDragEntered(EventHandler<? super DragEvent> value);
+
+    public final EventHandler<? super DragEvent> getOnDragEntered();
+
+    public final ObjectProperty<EventHandler<? super DragEvent>> onDragEnteredProperty();
+
+    public final void setOnDragExited(EventHandler<? super DragEvent> value);
+
+    public final EventHandler<? super DragEvent> getOnDragExited();
+
+    public final ObjectProperty<EventHandler<? super DragEvent>> onDragExitedProperty();
+
+    public final void setOnDragOver(EventHandler<? super DragEvent> value);
+
+    public final EventHandler<? super DragEvent> getOnDragOver();
+
+    public final ObjectProperty<EventHandler<? super DragEvent>> onDragOverProperty();
+
+    public final void setOnDragDropped(EventHandler<? super DragEvent> value);
+
+    public final EventHandler<? super DragEvent> getOnDragDropped();
+
+    public final ObjectProperty<EventHandler<? super DragEvent>> onDragDroppedProperty();
+
+    public final void setOnDragDone(EventHandler<? super DragEvent> value);
+
+    public final EventHandler<? super DragEvent> getOnDragDone();
+
+    public final ObjectProperty<EventHandler<? super DragEvent>> onDragDoneProperty();
+
+    public Dragboard startDragAndDrop(TransferMode... transferModes);
+
+    public void startFullDrag();
+
+    final Node getClipParent();
+
+    boolean isConnected();
+
+    boolean wouldCreateCycle(Node parent, Node child);
+
+    <P extends NGNode> P getPeer();
+
+    protected Node() {
+    }
+
+    public final void setManaged(boolean value);
+
+    public final boolean isManaged();
+
+    public final BooleanProperty managedProperty();
+
+    void notifyManagedChanged();
+
+    public final void setLayoutX(double value);
+
+    public final double getLayoutX();
+
+    public final DoubleProperty layoutXProperty();
+
+    public final void setLayoutY(double value);
+
+    public final double getLayoutY();
+
+    public final DoubleProperty layoutYProperty();
+
+    public void relocate(double x, double y);
+
+    public boolean isResizable();
+
+    public Orientation getContentBias();
+
+    public double minWidth(double height);
+
+    public double minHeight(double width);
+
+    public double prefWidth(double height);
+
+    public double prefHeight(double width);
+
+    public double maxWidth(double height);
+
+    public double maxHeight(double width);
+
+    public void resize(double width, double height);
+
+    public final void autosize();
+
+    double boundedSize(double value, double min, double max);
+
+    public void resizeRelocate(double x, double y, double width, double height);
+
+    public static final double BASELINE_OFFSET_SAME_AS_HEIGHT;
+
+    public double getBaselineOffset();
+
+    public double computeAreaInScreen();
+
+    public final Bounds getBoundsInParent();
+
+    public final ReadOnlyObjectProperty<Bounds> boundsInParentProperty();
+
+    public final Bounds getBoundsInLocal();
+
+    public final ReadOnlyObjectProperty<Bounds> boundsInLocalProperty();
+
+    public final Bounds getLayoutBounds();
+
+    public final ReadOnlyObjectProperty<Bounds> layoutBoundsProperty();
+
+    final void layoutBoundsChanged();
+
+    BaseBounds getTransformedBounds(BaseBounds bounds, BaseTransform tx);
+
+    BaseBounds getLocalBounds(BaseBounds bounds, BaseTransform tx);
+
+    BaseBounds getGeomBounds(BaseBounds bounds, BaseTransform tx);
+
+    void updateGeomBounds();
+
+    void updateTxBounds();
+
+    void localBoundsChanged();
+
+    void transformedBoundsChanged();
+
+    void notifyParentOfBoundsChange();
+
+    public boolean contains(double localX, double localY);
+
+    public boolean contains(Point2D localPoint);
+
+    public boolean intersects(double localX, double localY, double localWidth, double localHeight);
+
+    public boolean intersects(Bounds localBounds);
+
+    public Point2D screenToLocal(double screenX, double screenY);
+
+    public Point2D screenToLocal(Point2D screenPoint);
+
+    public Bounds screenToLocal(Bounds screenBounds);
+
+    public Point2D sceneToLocal(double x, double y, boolean rootScene);
+
+    public Point2D sceneToLocal(Point2D point, boolean rootScene);
+
+    public Bounds sceneToLocal(Bounds bounds, boolean rootScene);
+
+    public Point2D sceneToLocal(double sceneX, double sceneY);
+
+    public Point2D sceneToLocal(Point2D scenePoint);
+
+    public Point3D sceneToLocal(Point3D scenePoint);
+
+    public Point3D sceneToLocal(double sceneX, double sceneY, double sceneZ);
+
+    public Bounds sceneToLocal(Bounds sceneBounds);
+
+    public Point2D localToScreen(double localX, double localY);
+
+    public Point2D localToScreen(Point2D localPoint);
+
+    public Point2D localToScreen(double localX, double localY, double localZ);
+
+    public Point2D localToScreen(Point3D localPoint);
+
+    public Bounds localToScreen(Bounds localBounds);
+
+    public Point2D localToScene(double localX, double localY);
+
+    public Point2D localToScene(Point2D localPoint);
+
+    public Point3D localToScene(Point3D localPoint);
+
+    public Point3D localToScene(double x, double y, double z);
+
+    public Point3D localToScene(Point3D localPoint, boolean rootScene);
+
+    public Point3D localToScene(double x, double y, double z, boolean rootScene);
+
+    public Point2D localToScene(Point2D localPoint, boolean rootScene);
+
+    public Point2D localToScene(double x, double y, boolean rootScene);
+
+    public Bounds localToScene(Bounds localBounds, boolean rootScene);
+
+    public Bounds localToScene(Bounds localBounds);
+
+    public Point2D parentToLocal(double parentX, double parentY);
+
+    public Point2D parentToLocal(Point2D parentPoint);
+
+    public Point3D parentToLocal(Point3D parentPoint);
+
+    public Point3D parentToLocal(double parentX, double parentY, double parentZ);
+
+    public Bounds parentToLocal(Bounds parentBounds);
+
+    public Point2D localToParent(double localX, double localY);
+
+    public Point2D localToParent(Point2D localPoint);
+
+    public Point3D localToParent(Point3D localPoint);
+
+    public Point3D localToParent(double x, double y, double z);
+
+    public Bounds localToParent(Bounds localBounds);
+
+    BaseTransform getLocalToParentTransform(BaseTransform tx);
+
+    final BaseTransform getLeafTransform();
+
+    final double getPivotX();
+
+    final double getPivotY();
+
+    final double getPivotZ();
+
+    void updateLocalToParentTransform();
+
+    void parentToLocal(com.sun.javafx.geom.Point2D pt) throws NoninvertibleTransformException;
+
+    void parentToLocal(com.sun.javafx.geom.Vec3d pt) throws NoninvertibleTransformException;
+
+    void sceneToLocal(com.sun.javafx.geom.Point2D pt) throws NoninvertibleTransformException;
+
+    void sceneToLocal(com.sun.javafx.geom.Vec3d pt) throws NoninvertibleTransformException;
+
+    void localToScene(com.sun.javafx.geom.Point2D pt);
+
+    void localToScene(com.sun.javafx.geom.Vec3d pt);
+
+    void localToParent(com.sun.javafx.geom.Point2D pt);
+
+    void localToParent(com.sun.javafx.geom.Vec3d pt);
+
+    final void pickNode(PickRay pickRay, PickResultChooser result);
+
+    final boolean intersects(PickRay pickRay, PickResultChooser pickResult);
+
+    final double intersectsBounds(PickRay pickRay);
+
+    static boolean almostZero(double a);
+
+    public final DoubleProperty viewOrderProperty();
+
+    public final void setViewOrder(double value);
+
+    public final double getViewOrder();
+
+    public final ObservableList<Transform> getTransforms();
+
+    public final void setTranslateX(double value);
+
+    public final double getTranslateX();
+
+    public final DoubleProperty translateXProperty();
+
+    public final void setTranslateY(double value);
+
+    public final double getTranslateY();
+
+    public final DoubleProperty translateYProperty();
+
+    public final void setTranslateZ(double value);
+
+    public final double getTranslateZ();
+
+    public final DoubleProperty translateZProperty();
+
+    public final void setScaleX(double value);
+
+    public final double getScaleX();
+
+    public final DoubleProperty scaleXProperty();
+
+    public final void setScaleY(double value);
+
+    public final double getScaleY();
+
+    public final DoubleProperty scaleYProperty();
+
+    public final void setScaleZ(double value);
+
+    public final double getScaleZ();
+
+    public final DoubleProperty scaleZProperty();
+
+    public final void setRotate(double value);
+
+    public final double getRotate();
+
+    public final DoubleProperty rotateProperty();
+
+    public final void setRotationAxis(Point3D value);
+
+    public final Point3D getRotationAxis();
+
+    public final ObjectProperty<Point3D> rotationAxisProperty();
+
+    public final ReadOnlyObjectProperty<Transform> localToParentTransformProperty();
+
+    public final Transform getLocalToParentTransform();
+
+    public final ReadOnlyObjectProperty<Transform> localToSceneTransformProperty();
+
+    public final Transform getLocalToSceneTransform();
+
+    Transform getCurrentLocalToSceneTransformState();
+
+    private final class NodeTransformation {
+
+        public void incListenerReasons();
+
+        public void decListenerReasons();
+
+        public final Transform getLocalToParentTransform();
+
+        public final ReadOnlyObjectProperty<Transform> localToParentTransformProperty();
+
+        public void invalidateLocalToParentTransform();
+
+        public final Transform getLocalToSceneTransform();
+
+        class LocalToSceneTransformProperty extends LazyTransformProperty {
+
+            @Override
+            protected Transform computeTransform(Transform reuse);
+
+            @Override
+            public Object getBean();
+
+            @Override
+            public String getName();
+
+            @Override
+            protected boolean validityKnown();
+
+            @Override
+            protected int computeValidity();
+
+            @Override
+            public void addListener(InvalidationListener listener);
+
+            @Override
+            public void addListener(ChangeListener<? super Transform> listener);
+
+            @Override
+            public void removeListener(InvalidationListener listener);
+
+            @Override
+            public void removeListener(ChangeListener<? super Transform> listener);
+        }
+
+        public final ReadOnlyObjectProperty<Transform> localToSceneTransformProperty();
+
+        public void invalidateLocalToSceneTransform();
+
+        public double getTranslateX();
+
+        public final DoubleProperty translateXProperty();
+
+        public double getTranslateY();
+
+        public final DoubleProperty translateYProperty();
+
+        public double getTranslateZ();
+
+        public final DoubleProperty translateZProperty();
+
+        public double getScaleX();
+
+        public final DoubleProperty scaleXProperty();
+
+        public double getScaleY();
+
+        public final DoubleProperty scaleYProperty();
+
+        public double getScaleZ();
+
+        public final DoubleProperty scaleZProperty();
+
+        public double getRotate();
+
+        public final DoubleProperty rotateProperty();
+
+        public Point3D getRotationAxis();
+
+        public final ObjectProperty<Point3D> rotationAxisProperty();
+
+        public ObservableList<Transform> getTransforms();
+
+        public boolean canSetTranslateX();
+
+        public boolean canSetTranslateY();
+
+        public boolean canSetTranslateZ();
+
+        public boolean canSetScaleX();
+
+        public boolean canSetScaleY();
+
+        public boolean canSetScaleZ();
+
+        public boolean canSetRotate();
+
+        public boolean hasTransforms();
+
+        public boolean hasScaleOrRotate();
+    }
+
+    public final void setNodeOrientation(NodeOrientation orientation);
+
+    public final NodeOrientation getNodeOrientation();
+
+    public final ObjectProperty<NodeOrientation> nodeOrientationProperty();
+
+    public final NodeOrientation getEffectiveNodeOrientation();
+
+    public final ReadOnlyObjectProperty<NodeOrientation> effectiveNodeOrientationProperty();
+
+    public boolean usesMirroring();
+
+    final void parentResolvedOrientationInvalidated();
+
+    final void nodeResolvedOrientationInvalidated();
+
+    void nodeResolvedOrientationChanged();
+
+    final boolean hasMirroring();
+
+    private final class EffectiveOrientationProperty extends ReadOnlyObjectPropertyBase<NodeOrientation> {
+
+        @Override
+        public NodeOrientation get();
+
+        @Override
+        public Object getBean();
+
+        @Override
+        public String getName();
+
+        public void invalidate();
+    }
+
+    private final class MiscProperties {
+
+        public double getViewOrder();
+
+        public final DoubleProperty viewOrderProperty();
+
+        public final Bounds getBoundsInParent();
+
+        public final ReadOnlyObjectProperty<Bounds> boundsInParentProperty();
+
+        public void invalidateBoundsInParent();
+
+        public final Bounds getBoundsInLocal();
+
+        public final ReadOnlyObjectProperty<Bounds> boundsInLocalProperty();
+
+        public void invalidateBoundsInLocal();
+
+        public final boolean isCache();
+
+        public final BooleanProperty cacheProperty();
+
+        public final CacheHint getCacheHint();
+
+        public final ObjectProperty<CacheHint> cacheHintProperty();
+
+        public final Node getClip();
+
+        public final ObjectProperty<Node> clipProperty();
+
+        public final Cursor getCursor();
+
+        public final ObjectProperty<Cursor> cursorProperty();
+
+        public final DepthTest getDepthTest();
+
+        public final ObjectProperty<DepthTest> depthTestProperty();
+
+        public final boolean isDisable();
+
+        public final BooleanProperty disableProperty();
+
+        public final Effect getEffect();
+
+        public final ObjectProperty<Effect> effectProperty();
+
+        public final InputMethodRequests getInputMethodRequests();
+
+        public ObjectProperty<InputMethodRequests> inputMethodRequestsProperty();
+
+        public final boolean isMouseTransparent();
+
+        public final BooleanProperty mouseTransparentProperty();
+
+        public boolean canSetCursor();
+
+        public boolean canSetEffect();
+    }
+
+    public final void setMouseTransparent(boolean value);
+
+    public final boolean isMouseTransparent();
+
+    public final BooleanProperty mouseTransparentProperty();
+
+    protected final void setHover(boolean value);
+
+    public final boolean isHover();
+
+    public final ReadOnlyBooleanProperty hoverProperty();
+
+    protected final void setPressed(boolean value);
+
+    public final boolean isPressed();
+
+    public final ReadOnlyBooleanProperty pressedProperty();
+
+    public final void setOnContextMenuRequested(EventHandler<? super ContextMenuEvent> value);
+
+    public final EventHandler<? super ContextMenuEvent> getOnContextMenuRequested();
+
+    public final ObjectProperty<EventHandler<? super ContextMenuEvent>> onContextMenuRequestedProperty();
+
+    public final void setOnMouseClicked(EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMouseClicked();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMouseClickedProperty();
+
+    public final void setOnMouseDragged(@Nullable EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMouseDragged();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMouseDraggedProperty();
+
+    public final void setOnMouseEntered(EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMouseEntered();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMouseEnteredProperty();
+
+    public final void setOnMouseExited(EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMouseExited();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMouseExitedProperty();
+
+    public final void setOnMouseMoved(EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMouseMoved();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMouseMovedProperty();
+
+    public final void setOnMousePressed(EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMousePressed();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMousePressedProperty();
+
+    public final void setOnMouseReleased(@Nullable EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnMouseReleased();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onMouseReleasedProperty();
+
+    public final void setOnDragDetected(EventHandler<? super MouseEvent> value);
+
+    public final EventHandler<? super MouseEvent> getOnDragDetected();
+
+    public final ObjectProperty<EventHandler<? super MouseEvent>> onDragDetectedProperty();
+
+    public final void setOnMouseDragOver(EventHandler<? super MouseDragEvent> value);
+
+    public final EventHandler<? super MouseDragEvent> getOnMouseDragOver();
+
+    public final ObjectProperty<EventHandler<? super MouseDragEvent>> onMouseDragOverProperty();
+
+    public final void setOnMouseDragReleased(EventHandler<? super MouseDragEvent> value);
+
+    public final EventHandler<? super MouseDragEvent> getOnMouseDragReleased();
+
+    public final ObjectProperty<EventHandler<? super MouseDragEvent>> onMouseDragReleasedProperty();
+
+    public final void setOnMouseDragEntered(EventHandler<? super MouseDragEvent> value);
+
+    public final EventHandler<? super MouseDragEvent> getOnMouseDragEntered();
+
+    public final ObjectProperty<EventHandler<? super MouseDragEvent>> onMouseDragEnteredProperty();
+
+    public final void setOnMouseDragExited(EventHandler<? super MouseDragEvent> value);
+
+    public final EventHandler<? super MouseDragEvent> getOnMouseDragExited();
+
+    public final ObjectProperty<EventHandler<? super MouseDragEvent>> onMouseDragExitedProperty();
+
+    public final void setOnMouseDragDone(EventHandler<? super MouseDragEvent> value);
+
+    public final EventHandler<? super MouseDragEvent> getOnMouseDragDone();
+
+    public final ObjectProperty<EventHandler<? super MouseDragEvent>> onMouseDragDoneProperty();
+
+    public final void setOnScrollStarted(EventHandler<? super ScrollEvent> value);
+
+    public final EventHandler<? super ScrollEvent> getOnScrollStarted();
+
+    public final ObjectProperty<EventHandler<? super ScrollEvent>> onScrollStartedProperty();
+
+    public final void setOnScroll(EventHandler<? super ScrollEvent> value);
+
+    public final EventHandler<? super ScrollEvent> getOnScroll();
+
+    public final ObjectProperty<EventHandler<? super ScrollEvent>> onScrollProperty();
+
+    public final void setOnScrollFinished(EventHandler<? super ScrollEvent> value);
+
+    public final EventHandler<? super ScrollEvent> getOnScrollFinished();
+
+    public final ObjectProperty<EventHandler<? super ScrollEvent>> onScrollFinishedProperty();
+
+    public final void setOnRotationStarted(EventHandler<? super RotateEvent> value);
+
+    public final EventHandler<? super RotateEvent> getOnRotationStarted();
+
+    public final ObjectProperty<EventHandler<? super RotateEvent>> onRotationStartedProperty();
+
+    public final void setOnRotate(EventHandler<? super RotateEvent> value);
+
+    public final EventHandler<? super RotateEvent> getOnRotate();
+
+    public final ObjectProperty<EventHandler<? super RotateEvent>> onRotateProperty();
+
+    public final void setOnRotationFinished(EventHandler<? super RotateEvent> value);
+
+    public final EventHandler<? super RotateEvent> getOnRotationFinished();
+
+    public final ObjectProperty<EventHandler<? super RotateEvent>> onRotationFinishedProperty();
+
+    public final void setOnZoomStarted(EventHandler<? super ZoomEvent> value);
+
+    public final EventHandler<? super ZoomEvent> getOnZoomStarted();
+
+    public final ObjectProperty<EventHandler<? super ZoomEvent>> onZoomStartedProperty();
+
+    public final void setOnZoom(EventHandler<? super ZoomEvent> value);
+
+    public final EventHandler<? super ZoomEvent> getOnZoom();
+
+    public final ObjectProperty<EventHandler<? super ZoomEvent>> onZoomProperty();
+
+    public final void setOnZoomFinished(EventHandler<? super ZoomEvent> value);
+
+    public final EventHandler<? super ZoomEvent> getOnZoomFinished();
+
+    public final ObjectProperty<EventHandler<? super ZoomEvent>> onZoomFinishedProperty();
+
+    public final void setOnSwipeUp(EventHandler<? super SwipeEvent> value);
+
+    public final EventHandler<? super SwipeEvent> getOnSwipeUp();
+
+    public final ObjectProperty<EventHandler<? super SwipeEvent>> onSwipeUpProperty();
+
+    public final void setOnSwipeDown(EventHandler<? super SwipeEvent> value);
+
+    public final EventHandler<? super SwipeEvent> getOnSwipeDown();
+
+    public final ObjectProperty<EventHandler<? super SwipeEvent>> onSwipeDownProperty();
+
+    public final void setOnSwipeLeft(EventHandler<? super SwipeEvent> value);
+
+    public final EventHandler<? super SwipeEvent> getOnSwipeLeft();
+
+    public final ObjectProperty<EventHandler<? super SwipeEvent>> onSwipeLeftProperty();
+
+    public final void setOnSwipeRight(EventHandler<? super SwipeEvent> value);
+
+    public final EventHandler<? super SwipeEvent> getOnSwipeRight();
+
+    public final ObjectProperty<EventHandler<? super SwipeEvent>> onSwipeRightProperty();
+
+    public final void setOnTouchPressed(EventHandler<? super TouchEvent> value);
+
+    public final EventHandler<? super TouchEvent> getOnTouchPressed();
+
+    public final ObjectProperty<EventHandler<? super TouchEvent>> onTouchPressedProperty();
+
+    public final void setOnTouchMoved(EventHandler<? super TouchEvent> value);
+
+    public final EventHandler<? super TouchEvent> getOnTouchMoved();
+
+    public final ObjectProperty<EventHandler<? super TouchEvent>> onTouchMovedProperty();
+
+    public final void setOnTouchReleased(EventHandler<? super TouchEvent> value);
+
+    public final EventHandler<? super TouchEvent> getOnTouchReleased();
+
+    public final ObjectProperty<EventHandler<? super TouchEvent>> onTouchReleasedProperty();
+
+    public final void setOnTouchStationary(EventHandler<? super TouchEvent> value);
+
+    public final EventHandler<? super TouchEvent> getOnTouchStationary();
+
+    public final ObjectProperty<EventHandler<? super TouchEvent>> onTouchStationaryProperty();
+
+    public final void setOnKeyPressed(EventHandler<? super KeyEvent> value);
+
+    public final EventHandler<? super KeyEvent> getOnKeyPressed();
+
+    public final ObjectProperty<EventHandler<? super KeyEvent>> onKeyPressedProperty();
+
+    public final void setOnKeyReleased(EventHandler<? super KeyEvent> value);
+
+    public final EventHandler<? super KeyEvent> getOnKeyReleased();
+
+    public final ObjectProperty<EventHandler<? super KeyEvent>> onKeyReleasedProperty();
+
+    public final void setOnKeyTyped(EventHandler<? super KeyEvent> value);
+
+    public final EventHandler<? super KeyEvent> getOnKeyTyped();
+
+    public final ObjectProperty<EventHandler<? super KeyEvent>> onKeyTypedProperty();
+
+    public final void setOnInputMethodTextChanged(EventHandler<? super InputMethodEvent> value);
+
+    public final EventHandler<? super InputMethodEvent> getOnInputMethodTextChanged();
+
+    public final ObjectProperty<EventHandler<? super InputMethodEvent>> onInputMethodTextChangedProperty();
+
+    public final void setInputMethodRequests(InputMethodRequests value);
+
+    public final InputMethodRequests getInputMethodRequests();
+
+    public final ObjectProperty<InputMethodRequests> inputMethodRequestsProperty();
+
+    abstract class FocusPropertyBase extends ReadOnlyBooleanPropertyBase {
+
+        protected abstract PseudoClass getPseudoClass();
+
+        @Override
+        public Object getBean();
+
+        @Override
+        public boolean get();
+
+        public void set(boolean value);
+
+        protected boolean notifyListeners();
+    }
+
+    final void setFocusQuietly(boolean focused, boolean focusVisible);
+
+    final void notifyFocusListeners();
+
+    protected final void setFocused(boolean value);
+
+    public final boolean isFocused();
+
+    public final ReadOnlyBooleanProperty focusedProperty();
+
+    public final boolean isFocusVisible();
+
+    public final ReadOnlyBooleanProperty focusVisibleProperty();
+
+    private class FocusWithinProperty extends FocusPropertyBase {
+
+        @Override
+        protected PseudoClass getPseudoClass();
+
+        @Override
+        public String getName();
+
+        void adjust(int change);
+    }
+
+    public final boolean isFocusWithin();
+
+    public final ReadOnlyBooleanProperty focusWithinProperty();
+
+    public final void setFocusTraversable(boolean value);
+
+    public final boolean isFocusTraversable();
+
+    public final BooleanProperty focusTraversableProperty();
+
+    public void requestFocus();
+
+    final boolean traverse(Direction dir, TraversalMethod method);
+
+    public final boolean requestFocusTraversal(TraversalDirection direction);
+
+    @Override
+    public String toString();
+
+    void markDirtyLayoutBranch();
+
+    final boolean isTreeShowing();
+
+    final void setTreeVisible(boolean value);
+
+    final boolean isTreeVisible();
+
+    final ReadOnlyBooleanProperty treeVisibleProperty();
+
+    class TreeVisibleProperty extends ReadOnlyBooleanPropertyBase {
+
+        @Override
+        public Object getBean();
+
+        @Override
+        public String getName();
+
+        protected void invalidate();
+
+        @Override
+        public boolean get();
+    }
+
+    final boolean isCanReceiveFocus();
+
+    String indent();
+
+    final void setShowMnemonics(boolean value);
+
+    final boolean isShowMnemonics();
+
+    final BooleanProperty showMnemonicsProperty();
+
+    public final void setEventDispatcher(EventDispatcher value);
+
+    public final EventDispatcher getEventDispatcher();
+
+    public final ObjectProperty<EventDispatcher> eventDispatcherProperty();
+
+    @Override
+    public final <T extends Event> void addEventHandler(final EventType<T> eventType, final EventHandler<? super T> eventHandler);
+
+    @Override
+    public final <T extends Event> void removeEventHandler(final EventType<T> eventType, final EventHandler<? super T> eventHandler);
+
+    @Override
+    public final <T extends Event> void addEventFilter(final EventType<T> eventType, final EventHandler<? super T> eventFilter);
+
+    @Override
+    public final <T extends Event> void removeEventFilter(final EventType<T> eventType, final EventHandler<? super T> eventFilter);
+
+    protected final <T extends Event> void setEventHandler(final EventType<T> eventType, final EventHandler<? super T> eventHandler);
+
+    @Override
+    public EventDispatchChain buildEventDispatchChain(EventDispatchChain tail);
+
+    public final void fireEvent(Event event);
+
+    private static class TransitionTimerCollection extends HashMap<String, TransitionTimer> {
+
+        public Map<String, TransitionTimer> getAll(StyleableProperty<?> property);
+    }
+
+    void completeTransitionTimers();
+
+    Map<String, TransitionTimer> getTransitionTimers();
+
+    private static class TransitionDefinitionCollection extends ArrayList<TransitionDefinition> implements StyleableProperty<TransitionDefinition[]> {
+
+        public TransitionDefinition find(CssMetaData<? extends Styleable, ?> metadata);
+
+        public Map<CssMetaData<? extends Styleable, ?>, TransitionDefinition> findAll(CssMetaData<? extends Styleable, ?> metadata);
+
+        @Override
+        public TransitionDefinition[] getValue();
+
+        @Override
+        public void setValue(TransitionDefinition[] value);
+
+        @Override
+        public void applyStyle(StyleOrigin origin, TransitionDefinition[] value);
+
+        @Override
+        public StyleOrigin getStyleOrigin();
+
+        @Override
+        public CssMetaData<? extends Styleable, TransitionDefinition[]> getCssMetaData();
+    }
+
+    List<TransitionDefinition> getTransitionDefinitions();
+
+    @Override
+    public String getTypeSelector();
+
+    @Override
+    public Styleable getStyleableParent();
+
+    protected Boolean getInitialFocusTraversable();
+
+    protected Cursor getInitialCursor();
+
+    private static class StyleableProperties {
+    }
+
+    public static List<CssMetaData<? extends Styleable, ?>> getClassCssMetaData();
+
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getCssMetaData();
+
+    static List<Style> getMatchingStyles(CssMetaData cssMetaData, Styleable styleable);
+
+    final ObservableMap<StyleableProperty<?>, List<Style>> getStyleMap();
+
+    final void setStyleMap(ObservableMap<StyleableProperty<?>, List<Style>> styleMap);
+
+    Map<StyleableProperty<?>, List<Style>> findStyles(Map<StyleableProperty<?>, List<Style>> styleMap);
+
+    final CssFlags getCSSFlags();
+
+    public final void pseudoClassStateChanged(PseudoClass pseudoClass, boolean active);
+
+    @Override
+    public final ObservableSet<PseudoClass> getPseudoClassStates();
+
+    final void notifyParentsOfInvalidatedCSS();
+
+    final void recalculateRelativeSizeProperties(Font fontForRelativeSizes);
+
+    final void reapplyCSS();
+
+    void processCSS();
+
+    public final void applyCss();
+
+    void clearInitialCssStateFlag();
+
+    private static abstract class LazyTransformProperty extends ReadOnlyObjectPropertyBase<Transform> {
+
+        protected static final int VALID;
+
+        protected static final int INVALID;
+
+        protected static final int VALIDITY_UNKNOWN;
+
+        protected int valid;
+
+        protected Transform getInternalValue();
+
+        @Override
+        public Transform get();
+
+        public void validityUnknown();
+
+        public void invalidate();
+
+        protected abstract boolean validityKnown();
+
+        protected abstract int computeValidity();
+
+        protected abstract Transform computeTransform(Transform reuse);
+    }
+
+    private static abstract class LazyBoundsProperty extends ReadOnlyObjectPropertyBase<Bounds> {
+
+        @Override
+        public Bounds get();
+
+        public void invalidate();
+
+        protected abstract Bounds computeBounds();
+    }
+
+    public final void setAccessibleRole(AccessibleRole value);
+
+    public final AccessibleRole getAccessibleRole();
+
+    public final ObjectProperty<AccessibleRole> accessibleRoleProperty();
+
+    public final void setAccessibleRoleDescription(String value);
+
+    public final String getAccessibleRoleDescription();
+
+    public final ObjectProperty<String> accessibleRoleDescriptionProperty();
+
+    public final void setAccessibleText(String value);
+
+    public final String getAccessibleText();
+
+    public final ObjectProperty<String> accessibleTextProperty();
+
+    public final void setAccessibleHelp(String value);
+
+    public final String getAccessibleHelp();
+
+    public final ObjectProperty<String> accessibleHelpProperty();
+
+    private class AccessibilityProperties {
+
+        ObjectProperty<String> getAccessibleRoleDescription();
+
+        ObjectProperty<String> getAccessibleText();
+
+        ObjectProperty<String> getAccessibleHelp();
+    }
+
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters);
+
+    public void executeAccessibleAction(AccessibleAction action, Object... parameters);
+
+    public final void notifyAccessibleAttributeChanged(AccessibleAttribute attributes);
+
+    Accessible getAccessible();
+
+    void releaseAccessible();
+}
