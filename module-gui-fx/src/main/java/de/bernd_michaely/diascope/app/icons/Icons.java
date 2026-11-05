@@ -22,10 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.System.Logger;
 import javafx.scene.image.Image;
-import javafx.stage.Screen;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static java.lang.Math.round;
+import static de.bernd_michaely.diascope.app.util.scene.ScreenUtil.*;
 import static java.lang.System.Logger.Level.*;
 
 /**
@@ -41,11 +40,13 @@ public enum Icons
 	SelectAll, SelectInvert, SelectNone,
 	// View:
 	ShowThumbs,
-	ViewFullscreen, // ViewFullscreenPane,
+	ViewFullscreen,
 	ShowSidePane, ShowToolBar, ShowScrollBars,
 	ZoomFitWindow, ZoomFillWindow, Zoom100,
 	MirrorX, MirrorY,
-	ViewRotateByExif, ViewDisplayMetaData,
+	// Meta data:
+	//	ViewRotateByExif, ViewDisplayMetaData,
+
 	// Navigation
 	ViewShowFirst, ViewShowPrev, ViewShowNext, ViewShowLast,
 	// Layer
@@ -56,48 +57,12 @@ public enum Icons
 	ResetControls;
 
 	private static final Logger logger = System.getLogger(Icons.class.getName());
-	private static final String ICONS_RESOURCE_PACKAGE_BASE = "/de/bernd_michaely/diascope/app/icons";
-
-	private static final int scaledWidth, scaledHeight;
-	private static final int scaledWidthSmall, scaledHeightSmall;
-	private static final int BASE_SIZE = 24;
-//	private static final float FACTOR_SIZE_SMALL = 2f / 3f;
-	private static final float FACTOR_SIZE_SMALL = 0.75f;
-
-	static
-	{
-		final var screen = Screen.getPrimary();
-		scaledWidth = (int) round(BASE_SIZE * screen.getOutputScaleX());
-		scaledHeight = (int) round(BASE_SIZE * screen.getOutputScaleY());
-		scaledWidthSmall = round(scaledWidth * FACTOR_SIZE_SMALL);
-		scaledHeightSmall = round(scaledHeight * FACTOR_SIZE_SMALL);
-	}
-
-	public static int getScaledWidth()
-	{
-		return scaledWidth;
-	}
-
-	public static int getScaledHeight()
-	{
-		return scaledHeight;
-	}
-
-	public static int getScaledWidthSmall()
-	{
-		return scaledWidthSmall;
-	}
-
-	public static int getScaledHeightSmall()
-	{
-		return scaledHeightSmall;
-	}
+	private static final String ICONS_RESOURCE_PACKAGE_BASE =
+		"/" + Icons.class.getPackageName().replace('.', '/');
 
 	private @Nullable
-	Image readImage(final InputStream stream, boolean small)
+	Image readImage(final InputStream stream, double width, double height)
 	{
-		final double width = small ? scaledWidthSmall : scaledWidth;
-		final double height = small ? scaledHeightSmall : scaledHeight;
 		try
 		{
 			final byte[] bufferPng = JairoSVG.builder()
@@ -114,6 +79,30 @@ public enum Icons
 		}
 	}
 
+	String getResourceName(boolean colorMode)
+	{
+		final String nameIconSet = "lucide_" + (colorMode ? "color" : "mono");
+		return "%s/%s/action%s.svg".formatted(
+			ICONS_RESOURCE_PACKAGE_BASE, nameIconSet, name());
+	}
+
+	@Nullable
+	Image getIconImage(boolean colorMode, double width, double height)
+	{
+		final String resourceName = getResourceName(colorMode);
+		Image result;
+		try (final InputStream stream = getClass().getResourceAsStream(resourceName))
+		{
+			result = stream != null ? readImage(stream, width, height) : null;
+		}
+		catch (IOException ex)
+		{
+			logger.log(WARNING, () -> "Resource not found: " + resourceName, ex);
+			result = null;
+		}
+		return result;
+	}
+
 	/// Get an Image object from resources.
 	///
 	/// @param colorMode true to request a color icon, false for monochrome icons
@@ -123,19 +112,6 @@ public enum Icons
 	public @Nullable
 	Image getIconImage(boolean colorMode, boolean small)
 	{
-		final String nameIconSet = "lucide_" + (colorMode ? "color" : "mono");
-		final String resourceName = "%s/%s/action%s.svg".formatted(
-			ICONS_RESOURCE_PACKAGE_BASE, nameIconSet, name());
-		Image result;
-		try (final InputStream stream = getClass().getResourceAsStream(resourceName))
-		{
-			result = stream != null ? readImage(stream, small) : null;
-		}
-		catch (IOException ex)
-		{
-			logger.log(WARNING, () -> "Resource not found: " + resourceName, ex);
-			result = null;
-		}
-		return result;
+		return getIconImage(colorMode, getScaledWidth(small), getScaledHeight(small));
 	}
 }
