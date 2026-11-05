@@ -16,7 +16,9 @@
  */
 package de.bernd_michaely.diascope.app.dialog;
 
+import javafx.geometry.Insets;
 import javafx.scene.layout.Region;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 
 /**
@@ -25,10 +27,28 @@ import javafx.scene.text.Font;
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
-interface InfoPane
+sealed interface InfoPane permits InfoPaneSystemInfo, PaneInfoAbout
 {
 	double DEFAULT_FONT_SIZE = Font.getDefault().getSize();
 	double DEFAULT_INSET_SIZE = DEFAULT_FONT_SIZE * 15 / 13;
+	Insets DEFAULT_INSETS = new Insets(DEFAULT_FONT_SIZE * 3);
+	String STR_URL_APPLICATION = "https://github.com/berndmichaely/diascope";
+	String STR_URL_DEVELOPER = "https://bernd-michaely.de";
+	String MSG_UNKNOWN = "<unknown>";
+	Color COLOR_HEADER = Color.STEELBLUE.brighter();
+	Color COLOR_HYPERLINK = Color.LIGHTSKYBLUE;
+
+//	private static final Color COLOR_YES = Color.MEDIUMSPRINGGREEN;
+//	private static final Color COLOR_YES = Color.PALEGREEN;
+//	private static final Color COLOR_YES = Color.LAWNGREEN;
+//	private static final Color COLOR_YES = Color.LIME;
+//	private static final Color COLOR_YES = Color.SPRINGGREEN;
+	Color COLOR_YES = Color.LIGHTGREEN;
+
+//	private static final Color COLOR_NO = Color.LIGHTCORAL;
+//	private static final Color COLOR_NO = Color.ORANGERED;
+//	private static final Color COLOR_NO = Color.TOMATO;
+	Color COLOR_NO = Color.DARKORANGE;
 
 	/**
 	 * Returns a title to display as a Tab or Window title.

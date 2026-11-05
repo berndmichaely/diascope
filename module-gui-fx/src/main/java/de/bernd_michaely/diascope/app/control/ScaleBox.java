@@ -20,7 +20,6 @@ import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.control.ScaleBox.SpaceGainingMode.*;
@@ -69,6 +68,14 @@ public class ScaleBox
 		}
 	}
 
+	private ScaleBox(Region region, boolean upscaling, @Nullable SpaceGainingMode spaceGainingMode)
+	{
+		this.region = requireNonNull(region, "Region is null");
+		this.upscaling = upscaling;
+		this.spaceGainingMode = (spaceGainingMode != null) ? spaceGainingMode : getDefaultSpaceGainingMode();
+		this.root = SCALING.equals(this.spaceGainingMode) ? new Pane(region) : new ScrollPane(region);
+	}
+
 	/**
 	 * Creates an instance encapsulating a region to scale down if resized below
 	 * its min size. The regions minSize and prefSize must be set before. The
@@ -76,9 +83,9 @@ public class ScaleBox
 	 *
 	 * @param region the Region to encapsulate
 	 */
-	public ScaleBox(Region region)
+	public static ScaleBox create(Region region)
 	{
-		this(region, true, false);
+		return create(region, true, false, null);
 	}
 
 	/**
@@ -92,9 +99,9 @@ public class ScaleBox
 	 * @param upsize                true to also scale up when growing over
 	 *                              preferred size
 	 */
-	public ScaleBox(Region region, boolean initializeImmediately, boolean upsize)
+	public static ScaleBox create(Region region, boolean initializeImmediately, boolean upsize)
 	{
-		this(region, initializeImmediately, upsize, null);
+		return create(region, initializeImmediately, upsize, null);
 	}
 
 	/**
@@ -111,29 +118,24 @@ public class ScaleBox
 	 *                              defaults to
 	 *                              {@link SpaceGainingMode#SCALING SCALING})
 	 */
-	public ScaleBox(Region region, boolean initializeImmediately,
+	public static ScaleBox create(Region region, boolean initializeImmediately,
 		boolean upscaling, @Nullable SpaceGainingMode spaceGainingMode)
 	{
-		this.region = requireNonNull(region, "Region is null");
-		this.upscaling = upscaling;
-		this.spaceGainingMode = (spaceGainingMode != null) ? spaceGainingMode : getDefaultSpaceGainingMode();
-		this.root = SCALING.equals(this.spaceGainingMode) ? new Pane(region) : new ScrollPane(region);
+		final var scaleBox = new ScaleBox(region, upscaling, spaceGainingMode);
 		if (initializeImmediately)
 		{
-			initialize();
+			scaleBox.initialize();
 		}
+		return scaleBox;
 	}
 
 	/**
 	 * Performs initializations based on properties of the encapsulated region.
 	 * (Calling this method more than once has no effect.)
 	 */
-	public final void initialize(
-
-
-		@UnknownInitialization(ScaleBox.class) ScaleBox this)
-  {
-    if (!initialized)
+	public final void initialize()
+	{
+		if (!initialized)
 		{
 			try
 			{
@@ -144,27 +146,22 @@ public class ScaleBox
 					// minimum size:
 					final double minWidthChildren;
 					final double minHeightChildren;
-					if (contentBias == null)
+					switch (contentBias)
 					{
-						minWidthChildren = region.minWidth(-1.0);
-						minHeightChildren = region.minHeight(-1.0);
-					}
-					else
-					{
-						switch (contentBias)
+						case null ->
 						{
-							case HORIZONTAL ->
-							{
-								minWidthChildren = region.minWidth(-1.0);
-								minHeightChildren = region.minHeight(minWidthChildren);
-							}
-							case VERTICAL ->
-							{
-								minHeightChildren = region.minHeight(-1.0);
-								minWidthChildren = region.minWidth(minHeightChildren);
-							}
-							default ->
-								throw new AssertionError("Invalid content bias");
+							minWidthChildren = region.minWidth(-1.0);
+							minHeightChildren = region.minHeight(-1.0);
+						}
+						case HORIZONTAL ->
+						{
+							minWidthChildren = region.minWidth(-1.0);
+							minHeightChildren = region.minHeight(minWidthChildren);
+						}
+						case VERTICAL ->
+						{
+							minHeightChildren = region.minHeight(-1.0);
+							minWidthChildren = region.minWidth(minHeightChildren);
 						}
 					}
 					this.minWidth = max(1.0, minWidthChildren);
@@ -172,27 +169,22 @@ public class ScaleBox
 					// preferred size:
 					final double prefWidthChildren;
 					final double prefHeightChildren;
-					if (contentBias == null)
+					switch (contentBias)
 					{
-						prefWidthChildren = region.prefWidth(-1.0);
-						prefHeightChildren = region.prefHeight(-1.0);
-					}
-					else
-					{
-						switch (contentBias)
+						case null ->
 						{
-							case HORIZONTAL ->
-							{
-								prefWidthChildren = region.prefWidth(-1.0);
-								prefHeightChildren = region.prefHeight(prefWidthChildren);
-							}
-							case VERTICAL ->
-							{
-								prefHeightChildren = region.prefHeight(-1.0);
-								prefWidthChildren = region.prefWidth(prefHeightChildren);
-							}
-							default ->
-								throw new AssertionError("Invalid content bias");
+							prefWidthChildren = region.prefWidth(-1.0);
+							prefHeightChildren = region.prefHeight(-1.0);
+						}
+						case HORIZONTAL ->
+						{
+							prefWidthChildren = region.prefWidth(-1.0);
+							prefHeightChildren = region.prefHeight(prefWidthChildren);
+						}
+						case VERTICAL ->
+						{
+							prefHeightChildren = region.prefHeight(-1.0);
+							prefWidthChildren = region.prefWidth(prefHeightChildren);
 						}
 					}
 					this.prefWidth = max(1.0, prefWidthChildren);

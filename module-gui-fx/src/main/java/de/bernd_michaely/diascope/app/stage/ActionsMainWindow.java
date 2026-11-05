@@ -61,7 +61,6 @@ class ActionsMainWindow
 	final TriggerAction actionShowNext;
 	final TriggerAction actionShowLast;
 	// menuOptions
-	final CheckedAction actionShowHeaderBar;
 	final CheckedAction actionShowToolBar;
 	final CheckedAction actionShowStatusLine;
 	final CheckedAction actionIconColorMode;
@@ -130,8 +129,6 @@ class ActionsMainWindow
 		{
 			this.actionDevelopmentMode = new CheckedAction();
 		}
-		this.actionShowHeaderBar = new CheckedAction(new ActionItemDescriptor("Show header bar"));
-		menuOptions.getItems().addAll(actionShowHeaderBar.createMenuItems());
 		this.actionShowToolBar = new CheckedAction(new ActionItemDescriptor("Show tool bar"));
 		menuOptions.getItems().addAll(actionShowToolBar.createMenuItems());
 		this.actionShowStatusLine = new CheckedAction(new ActionItemDescriptor("Show status line"));

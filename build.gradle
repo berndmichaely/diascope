@@ -61,7 +61,7 @@ final String propBuild = 'diascope.build.identifier'
 final String propReadSvnRevision = 'diascope.build.readSvnRevision'
 ext.isReadingSvnRevision = project.hasProperty(propReadSvnRevision) ? Boolean.valueOf(project.getProperty(propReadSvnRevision)) : false
 	
-logger.lifecycle "-> Getting semantic version build number from subversion revision (user property »${propReadSvnRevision}«) : " + isReadingSvnRevision
+logger.lifecycle "-> Getting semantic version »build« part from subversion revision (user property »${propReadSvnRevision}«) : " + isReadingSvnRevision
 
 def String readSvnRevision()
 {

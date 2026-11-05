@@ -17,7 +17,7 @@
 package de.bernd_michaely.diascope.app.control;
 
 import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.Pane;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -53,14 +53,6 @@ public class TextFactory
 		ds.setOffsetY(5);
 		ds.setColor(Color.GRAY);
 		text.setEffect(ds);
-		final double widthTextMax = text.getBoundsInLocal().getWidth();
-		final Pane pane = new Pane(text);
-		pane.widthProperty().addListener((observable, oldValue, newValue) ->
-		{
-			final double width = newValue.doubleValue();
-			text.setTranslateX(Math.max(0.0, (width - widthTextMax) / 2.0));
-			text.setWrappingWidth(width);
-		});
-		return pane;
+		return new BorderPane(text);
 	}
 }

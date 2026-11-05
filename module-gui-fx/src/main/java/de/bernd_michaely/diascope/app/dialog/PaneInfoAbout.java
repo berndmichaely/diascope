@@ -16,19 +16,19 @@
  */
 package de.bernd_michaely.diascope.app.dialog;
 
+import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.control.TextFactory;
-import javafx.geometry.Insets;
-import javafx.scene.Node;
+import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
-import javafx.scene.paint.Color;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static de.bernd_michaely.diascope.app.dialog.InfoPane.*;
+import static de.bernd_michaely.diascope.app.dialog.InfoPaneSystemInfo.*;
+import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static javafx.scene.control.TabPane.TabClosingPolicy.UNAVAILABLE;
 
 /**
@@ -36,40 +36,41 @@ import static javafx.scene.control.TabPane.TabClosingPolicy.UNAVAILABLE;
  *
  * @author Bernd Michaely
  */
-public class PaneInfoAbout implements InfoPane
+public final class PaneInfoAbout implements InfoPane
 {
-	private final BorderPane pane;
 	private final String title;
+	private final Region textNode;
+	private final Region contentNode;
+	private final ReadOnlyBooleanWrapper readOnlyBooleanWrapper = new ReadOnlyBooleanWrapper(false);
 
 	public PaneInfoAbout(String title, @Nullable Image iconStage)
 	{
 		this.title = title;
-//		final InfoPaneAbout infoPaneAbout = new InfoPaneAbout();
-		final InfoPaneSystemInfo infoPaneSystemInfo = new InfoPaneSystemInfo();
-		final TabPane tabPane = new TabPane(
-			//			new Tab(infoPaneAbout.getTitle(), infoPaneAbout.getDisplay()),
-			new Tab(infoPaneSystemInfo.getTitle(), infoPaneSystemInfo.getDisplay()));
+		final var infoPaneSystemInfo = new InfoPaneSystemInfo();
+		final var tabSystemInfo = new Tab(infoPaneSystemInfo.getTitle(), infoPaneSystemInfo.getDisplay());
+		final var tabDevelopmentInfo = new Tab("Development Info", createTable(getDevelopmentInfo()));
+		final var tabPane = new TabPane(tabSystemInfo);
+		readOnlyBooleanWrapper.getReadOnlyProperty().addListener(onChange(visible ->
+		{
+			final var tabs = tabPane.getTabs();
+			if (visible)
+			{
+				tabs.addLast(tabDevelopmentInfo);
+			}
+			else
+			{
+				tabs.remove(tabDevelopmentInfo);
+			}
+		}));
+		readOnlyBooleanWrapper.bind(ApplicationConfiguration.getState().developmentModeProperty());
 		tabPane.setTabClosingPolicy(UNAVAILABLE);
-		this.pane = new BorderPane(tabPane);
+//		final var pane = new BorderPane(tabPane);
+		final var pane = new BorderPane(tabPane);
+		BorderPane.setMargin(tabPane, DEFAULT_INSETS);
+		this.contentNode = pane;
 		final double sizeText = (DEFAULT_FONT_SIZE * 32 / 13);
-		final TextFactory textFactory = new TextFactory(Color.STEELBLUE.brighter(), sizeText);
-		final Node textNode = textFactory.createTextNode(this.title);
-		if (iconStage != null)
-		{
-			final var imageView = new ImageView(iconStage);
-			final double sizeImage = sizeText * 1.2;
-			imageView.setFitWidth(sizeImage);
-			imageView.setFitHeight(sizeImage);
-			final var paneTop = new HBox(sizeImage * 0.5, imageView, textNode);
-			this.pane.setTop(paneTop);
-		}
-		else
-		{
-			this.pane.setTop(textNode);
-		}
-		final double vgap = DEFAULT_FONT_SIZE * 8 / 13;
-		final double hgap = DEFAULT_FONT_SIZE * 8;
-		BorderPane.setMargin(pane.getTop(), new Insets(vgap, hgap, vgap, hgap));
+		final var textFactory = new TextFactory(COLOR_HEADER, sizeText);
+		this.textNode = textFactory.createTextNode(this.title);
 	}
 
 	@Override
@@ -81,6 +82,11 @@ public class PaneInfoAbout implements InfoPane
 	@Override
 	public Region getDisplay()
 	{
-		return this.pane;
+		return this.contentNode;
+	}
+
+	public Region getTextNode()
+	{
+		return textNode;
 	}
 }

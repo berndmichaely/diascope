@@ -23,6 +23,7 @@ import de.bernd_michaely.diascope.app.dialog.PaneInfoAbout;
 import de.bernd_michaely.diascope.app.dialog.PaneInfoSysEnv;
 import de.bernd_michaely.diascope.app.dialog.ResizableDialog;
 import de.bernd_michaely.diascope.app.util.action.ActionBase;
+import de.bernd_michaely.diascope.app.util.scene.HeaderBarUtil;
 import de.bernd_michaely.diascope.app.util.scene.SceneStylesheetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -37,27 +38,18 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.ToolBar;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HeaderBar;
 import javafx.scene.layout.Region;
-import javafx.scene.text.Font;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -70,6 +62,7 @@ import static de.bernd_michaely.diascope.app.dialog.ResizableDialog.DialogType.*
 import static de.bernd_michaely.diascope.app.stage.PreferencesKeys.*;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.*;
 import static de.bernd_michaely.diascope.app.util.beans.property.PersistedProperties.*;
+import static de.bernd_michaely.diascope.app.util.scene.HeaderBarUtil.createResourcePngImage;
 import static java.lang.System.Logger.Level.*;
 import static javafx.beans.binding.Bindings.not;
 
@@ -81,7 +74,6 @@ public class MainWindow
 {
 	private static final Logger logger = System.getLogger(MainWindow.class.getName());
 	private static final String FILE_RES_ICON_STAGE = "diascope.png";
-	private static final String FILE_RES_ICON_STAGE_2 = "diascope_t.png";
 	private static final String FILE_RES_ICON_STAGE_FULLSCREEN = "diascope_fullscreen2.png";
 	private final @MonotonicNonNull Image iconStage;
 	private final @MonotonicNonNull Image iconStageFullScreen;
@@ -98,7 +90,6 @@ public class MainWindow
 	private final BooleanProperty sidePaneVisibleProperty;
 	private final BooleanProperty sidePaneVisiblePersistedProperty;
 	private final DoubleProperty mainSplitPosPersistedProperty;
-	private final BooleanProperty showHeaderBarPersistedProperty;
 	private final BooleanProperty showToolBarPersistedProperty;
 	private final BooleanProperty showStatusLinePersistedProperty;
 	private final BooleanProperty iconColorModeProperty;
@@ -120,9 +111,6 @@ public class MainWindow
 		actions.actionShowSidePane.selectedProperty().bindBidirectional(this.sidePaneVisiblePersistedProperty);
 		this.mainSplitPosPersistedProperty = newPersistedDoubleProperty(
 			PREF_KEY_SPLIT_POS_MAIN, getClass(), 1.0 / 3.0);
-		// HeaderBar
-		this.showHeaderBarPersistedProperty = newPersistedBooleanProperty(
-			PREF_KEY_SHOW_HEADERBAR, getClass(), true);
 		// ToolBar
 		this.showToolBarPersistedProperty = newPersistedBooleanProperty(
 			PREF_KEY_SHOW_TOOLBAR, getClass(), true);
@@ -136,8 +124,8 @@ public class MainWindow
 		// dialogs
 		dialogSystemEnvironment.setTitle("System Environment");
 		dialogInfoAbout.setTitle("Info About");
-		this.iconStage = createResourceImage(FILE_RES_ICON_STAGE);
-		this.iconStageFullScreen = createResourceImage(FILE_RES_ICON_STAGE_FULLSCREEN);
+		this.iconStage = createResourcePngImage(FILE_RES_ICON_STAGE);
+		this.iconStageFullScreen = createResourcePngImage(FILE_RES_ICON_STAGE_FULLSCREEN);
 	}
 
 	public void setMainContent(MainContent mainContent)
@@ -262,10 +250,6 @@ public class MainWindow
 				throw new IllegalStateException("PaneFileSystem not initialized");
 			}
 		};
-		final EventHandler<ActionEvent> actionSysEnv = e ->
-			dialogSystemEnvironment.show(stage, new PaneInfoSysEnv().getDisplay());
-		final EventHandler<ActionEvent> actionInfoAbout = e ->
-			dialogInfoAbout.show(stage, new PaneInfoAbout(getApplicationName(), null).getDisplay());
 		actions.actionExit.setOnAction(_ ->
 		{
 			try
@@ -278,8 +262,6 @@ public class MainWindow
 			}
 		});
 		actions.actionOpen.setOnAction(actionOpen);
-		actions.actionSysEnv.setOnAction(actionSysEnv);
-		actions.actionInfoAbout.setOnAction(actionInfoAbout);
 		final var scene = new Scene(rootPane);
 		SceneStylesheetUtil.setStylesheet(scene);
 		final var stageBounds = new StageBounds(stage, new StageBounds.PrefKeys(
@@ -294,20 +276,15 @@ public class MainWindow
 		else
 		{
 			stage.setScene(scene);
-			// HeaderBar
-			final BooleanProperty showHeaderBarProperty = actions.actionShowHeaderBar.selectedProperty();
-			showHeaderBarProperty.bindBidirectional(showHeaderBarPersistedProperty);
-			rootPane.setTop(showHeaderBarProperty.get() ? createHeaderBar(stage) : menuBar);
-			showHeaderBarProperty.addListener(onChange(_ ->
+			actions.actionSysEnv.setOnAction(e ->
+				dialogSystemEnvironment.show(stage, new PaneInfoSysEnv().getDisplay()));
+			actions.actionInfoAbout.setOnAction(e ->
 			{
-				final var dialog = new Alert(AlertType.INFORMATION,
-					"The change will take effect after restarting the application.",
-					ButtonType.OK);
-				dialog.getDialogPane().getStylesheets().setAll(scene.getStylesheets());
-				dialog.initModality(Modality.APPLICATION_MODAL);
-				dialog.initOwner(stage);
-				dialog.showAndWait();
-			}));
+				final var paneInfoAbout = new PaneInfoAbout(getApplicationName(), null);
+				dialogInfoAbout.show(stage, paneInfoAbout.getDisplay(), paneInfoAbout.getTextNode());
+			});
+			// HeaderBar
+			rootPane.setTop(createMainWindowHeaderBar(stage));
 			stage.show();
 			this.sidePaneVisibleProperty.addListener(onChange(visible ->
 			{
@@ -346,104 +323,41 @@ public class MainWindow
 		}
 	}
 
-	private Region createHeaderBar(Stage stage)
+	private Region createMainWindowHeaderBar(Stage stage)
 	{
-		final double offset = Font.getDefault().getSize() * 3 / 8;
 		stage.initStyle(StageStyle.EXTENDED);
 		menuBar.setBorder(Border.EMPTY);
 		final Label title = new Label();
 		title.textProperty().bind(titleProperty);
-		title.setAlignment(Pos.CENTER);
-		final var headerBarMain = new HeaderBar();
-		headerBarMain.setLeft(menuBar);
-		final boolean centerTitleToHeaderBar = true;
-		if (centerTitleToHeaderBar)
-		{
-			title.setMouseTransparent(true);
-			headerBarMain.setCenter(title);
-		}
-		else
-		{
-			final var titlePane = new BorderPane(title);
-			titlePane.setMouseTransparent(true);
-			headerBarMain.setCenter(titlePane);
-		}
-		HeaderBar.setAlignment(menuBar, Pos.CENTER_LEFT);
-		HeaderBar.setMargin(menuBar, new Insets(offset));
-		HeaderBar.setMargin(title, new Insets(offset));
-		// final Image icon = null;
-		final Image icon = createResourceImage(FILE_RES_ICON_STAGE_2);
-		if (icon != null)
-		{
-			final var imageView = new ImageView(icon);
-			imageView.setPreserveRatio(true);
-			menuBar.heightProperty().addListener(onChange(newValue ->
-			{
-				final double height = newValue.doubleValue();
-				imageView.fitWidthProperty().set(height);
-				imageView.fitHeightProperty().set(height);
-			}));
-			imageView.setMouseTransparent(true);
-			HeaderBar.setAlignment(imageView, Pos.CENTER);
-			HeaderBar.setMargin(imageView, new Insets(0, offset, 0, offset));
-			final var headerBarIcon = new HeaderBar();
-			headerBarIcon.setCenter(imageView);
-			headerBarIcon.setRightSystemPadding(false);
-			headerBarMain.setLeftSystemPadding(false);
-			final var pane = new BorderPane(headerBarMain);
-			pane.setLeft(headerBarIcon);
-			pane.setBorder(Border.EMPTY);
-			pane.setPadding(Insets.EMPTY);
-			return pane;
-		}
-		else
-		{
-			return headerBarMain;
-		}
-	}
-
-	private static @Nullable
-	Image createResourceImage(String fileName)
-	{
-		Image icon = null;
-		try (var inputStream = MainWindow.class.getResourceAsStream(fileName))
-		{
-			if (inputStream != null)
-			{
-				icon = new Image(inputStream);
-			}
-		}
-		catch (IOException ex)
-		{
-			logger.log(TRACE, "Can't find stage icon »%s«".formatted(fileName), ex);
-			icon = null;
-		}
-		if (icon == null)
-		{
-			logger.log(WARNING, "Can't find stage icon (ignoring…)");
-		}
-		return icon;
+		return HeaderBarUtil.createHeaderBar(stage, title, menuBar);
 	}
 
 	private void onApplicationClose()
 	{
-		logger.log(TRACE, "Closing main window …");
-		if (paneFileSystem != null)
-		{
-			paneFileSystem.selectedPathPersistedProperty().unbind();
-		}
-		getMainContent().onApplicationClose();
 		try
 		{
-			final var fileSystemTreeView = getFileSystemTreeView();
-			if (fileSystemTreeView != null)
+			logger.log(TRACE, "Closing main window …");
+			if (paneFileSystem != null)
 			{
-				fileSystemTreeView.close();
+				paneFileSystem.selectedPathPersistedProperty().unbind();
+			}
+			getMainContent().onApplicationClose();
+			try
+			{
+				final var fileSystemTreeView = getFileSystemTreeView();
+				if (fileSystemTreeView != null)
+				{
+					fileSystemTreeView.close();
+				}
+			}
+			catch (IOException ex)
+			{
+				logger.log(WARNING, ex);
 			}
 		}
-		catch (IOException ex)
+		finally
 		{
-			logger.log(WARNING, ex);
+			ApplicationConfiguration.clearShowDocumentCallback();
 		}
 	}
 }

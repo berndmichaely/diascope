@@ -16,12 +16,16 @@
  */
 package de.bernd_michaely.diascope.app.application;
 
+import de.bernd_michaely.diascope.app.ApplicationConfiguration;
 import de.bernd_michaely.diascope.app.stage.MainContent;
 import de.bernd_michaely.diascope.app.stage.MainWindow;
 import de.bernd_michaely.diascope.app.stage.PaneFileSystem;
+import java.lang.ref.WeakReference;
+import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -90,6 +94,20 @@ public class DiascopeApplication extends Application
 				paneFileSystem = new PaneFileSystem();
 			}
 			mainWindow.setFileSystemView(paneFileSystem);
+			ApplicationConfiguration.setShowDocumentCallback(new Consumer<URI>()
+			{
+				private final WeakReference<Application> appRef = new WeakReference<>(DiascopeApplication.this);
+
+				@Override
+				public void accept(URI uri)
+				{
+					final var app = appRef.get();
+					if (app != null)
+					{
+						app.getHostServices().showDocument(uri.toString());
+					}
+				}
+			});
 		}
 		finally
 		{

@@ -17,8 +17,10 @@
 package de.bernd_michaely.diascope.app;
 
 import de.bernd_michaely.common.semver.SemanticVersion;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -36,6 +38,7 @@ public class ApplicationConfiguration
 	private static final String STR_APP_NAME = "Diascope";
 	private static @MonotonicNonNull ApplicationConfiguration instance;
 	private final State state;
+	private static @Nullable Consumer<URI> showDocumentCallback;
 
 	public static String getApplicationName()
 	{
@@ -153,6 +156,59 @@ public class ApplicationConfiguration
 		{
 			throw new IllegalStateException(ApplicationConfiguration.class.getName() +
 				"::initInstance called twice!");
+		}
+	}
+
+	/**
+	 * Sets a callback to show a document in an external browser.
+	 *
+	 * <h2>Important:</h2>
+	 *
+	 * It is necessary to call {@link #clearShowDocumentCallback()} before exiting
+	 * the application. Otherwise the application may hang after calling
+	 * {@link #showDocument(URI)}.
+	 *
+	 * @param showDocumentCallback the callback
+	 */
+	public static void setShowDocumentCallback(Consumer<URI> showDocumentCallback)
+	{
+		if (ApplicationConfiguration.showDocumentCallback == null)
+		{
+			ApplicationConfiguration.showDocumentCallback = showDocumentCallback;
+		}
+		else
+		{
+			throw new IllegalStateException(ApplicationConfiguration.class.getName() +
+				"::setShowDocumentCallback called twice!");
+		}
+	}
+
+	/**
+	 * Clears the 'show document' callback, thereby removing references to the
+	 * {@link javafx.application.Application Application} object. It is necessary
+	 * to call this method before exiting the application. Otherwise the
+	 * application may hang after calling {@link #showDocument(URI)}.
+	 */
+	public static void clearShowDocumentCallback()
+	{
+		ApplicationConfiguration.showDocumentCallback = null;
+	}
+
+	/**
+	 * Show a document in an external browser.
+	 *
+	 * @param uri the document to show
+	 */
+	public static void showDocument(URI uri)
+	{
+		if (showDocumentCallback != null)
+		{
+			showDocumentCallback.accept(uri);
+		}
+		else
+		{
+			throw new IllegalStateException(ApplicationConfiguration.class.getName() +
+				"::showDocumentCallback not initialized!");
 		}
 	}
 }

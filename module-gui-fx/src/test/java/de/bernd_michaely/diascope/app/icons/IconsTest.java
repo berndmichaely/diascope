@@ -16,6 +16,8 @@
  */
 package de.bernd_michaely.diascope.app.icons;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -35,16 +37,33 @@ public class IconsTest
 	public void testGetIconImage()
 	{
 		System.out.println("=== Check availability of icon resources ===");
+		System.out.println();
+		final List<String> listPresent = new ArrayList<>();
+		final List<String> listMissing = new ArrayList<>();
 		for (Icons icon : Icons.values())
 		{
 			for (var isColorMode : Set.of(false, true))
 			{
 				final String resourceName = icon.getResourceName(isColorMode);
-				System.out.println("· %s".formatted(resourceName));
-				assertThat(icon.getIconImage(isColorMode, 7, 8))
-					.withFailMessage("Icon resource »%s« not found!", resourceName)
-					.isNotNull();
+				final var iconImage = icon.getIconImage(isColorMode, 7, 8);
+				if (iconImage != null)
+				{
+					listPresent.add(resourceName);
+				}
+				else
+				{
+					listMissing.add(resourceName);
+				}
 			}
 		}
+		listPresent.forEach(name -> System.out.println("✔ %s".formatted(name)));
+		if (!listMissing.isEmpty())
+		{
+			System.out.println();
+			listMissing.forEach(name -> System.out.println("❌ %s".formatted(name)));
+		}
+		assertThat(listMissing)
+			.withFailMessage("%d icon resources missing : %s", listMissing.size(), listMissing)
+			.isEmpty();
 	}
 }

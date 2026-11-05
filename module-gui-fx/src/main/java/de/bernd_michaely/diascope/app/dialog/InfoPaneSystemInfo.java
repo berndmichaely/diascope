@@ -19,135 +19,147 @@ package de.bernd_michaely.diascope.app.dialog;
 import de.bernd_michaely.common.filesystem.view.fx.FileSystemTreeViewVersionFX;
 import de.bernd_michaely.common.semver.SemanticVersion;
 import de.bernd_michaely.diascope.app.ApplicationConfiguration;
-import de.bernd_michaely.diascope.app.icons.Icons;
 import de.bernd_michaely.diascope.app.util.common.JreVersionUtil;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javafx.application.ConditionalFeature;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyBooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanWrapper;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+
+import static de.bernd_michaely.diascope.app.util.scene.ScreenUtil.*;
 
 /**
  * InfoPane to display system info.
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
-class InfoPaneSystemInfo implements InfoPane
+final class InfoPaneSystemInfo implements InfoPane
 {
-	private static final String MSG_UNKNOWN = "<unknown>";
-	private final ReadOnlyBooleanWrapper showDefaultFontSizeProperty;
-
-	public InfoPaneSystemInfo()
-	{
-		this.showDefaultFontSizeProperty = new ReadOnlyBooleanWrapper(false);
-	}
+	private static final String STR_TITLE = "System Info";
 
 	@Override
 	public String getTitle()
 	{
-		return "System Info";
+		return STR_TITLE;
 	}
 
-	private ReadOnlyBooleanProperty showDefaultFontSizeProperty()
+	private static Map<String, ?> getSystemInfo()
 	{
-		return this.showDefaultFontSizeProperty.getReadOnlyProperty();
-	}
+		final Map<String, Object> map = new LinkedHashMap<>();
+		map.put("App Version",
+			ApplicationConfiguration.getState().version().orElse(SemanticVersion.of()));
 
-	@Override
-	public Region getDisplay()
-	{
-		final Label headerAppVersion = new Label("App Version:");
-		final Label textAppVersion = new Label();
-		ApplicationConfiguration.getState().version().ifPresentOrElse(version ->
+		final String strTitleUrl = "Available at:";
+		try
 		{
-			textAppVersion.setText(version.getCanonicalForm());
-			final var tooltipAppVersion = new Tooltip(version.getDescription());
-			headerAppVersion.setTooltip(tooltipAppVersion);
-			textAppVersion.setTooltip(tooltipAppVersion);
-		}, () -> textAppVersion.setText(MSG_UNKNOWN));
+			map.put(strTitleUrl, new URI(STR_URL_APPLICATION));
+		}
+		catch (URISyntaxException ex)
+		{
+			map.put(strTitleUrl, STR_URL_APPLICATION);
+		}
 
-		final Label headerFstvVersion = new Label("Filesystem tree view:");
-		final var semVerFstv = SemanticVersion.of(FileSystemTreeViewVersionFX.getBaseModuleVersion());
-		final var semVerFstvFx = SemanticVersion.of(FileSystemTreeViewVersionFX.getFxModuleVersion());
-		final String strFstvVersion = "%s (Base-module) / %s (FX-module)"
-			.formatted(semVerFstv.getCanonicalForm(), semVerFstvFx.getCanonicalForm());
-		final Label textFstvVersion = new Label(strFstvVersion);
-		final Tooltip strFstvVersionTooltip = new Tooltip(semVerFstv.getDescription());
-		textFstvVersion.setTooltip(strFstvVersionTooltip);
+		map.put("Filesystem tree view (Base-module)",
+			SemanticVersion.of(FileSystemTreeViewVersionFX.getBaseModuleVersion()));
+		map.put("Filesystem tree view (FX-module)",
+			SemanticVersion.of(FileSystemTreeViewVersionFX.getFxModuleVersion()));
 
-		final Label headerJreVersion = new Label("Java Runtime Version:");
-		final Label textJreVersion = new Label(JreVersionUtil.getJreVersionInfo());
+		map.put("Java Runtime Version", JreVersionUtil.getJreVersionInfo());
 
-		final Label headerJavaFXVersion = new Label("JavaFX Version:");
 		final String versionJavafx = System.getProperty("javafx.version");
-		final Label textJavaFXVersion = new Label(versionJavafx != null ?
-			versionJavafx : MSG_UNKNOWN);
+		map.put("JavaFX Version", versionJavafx != null ? versionJavafx : MSG_UNKNOWN);
 
-		final Label headerShapeClipSupport = new Label("Shape clipping support:");
 		final boolean isShapeClipSupported = Platform.isSupported(ConditionalFeature.SHAPE_CLIP);
-		final Label textShapeClipSupport = new Label(isShapeClipSupported ?
-			"yes" : "no (multi layer mode not available)");
+		map.put("Shape clipping support", isShapeClipSupported);
 
-		final Label headerOSName = new Label("Operating system name:");
-		final Label textOSName = new Label(System.getProperty("os.name"));
-
-		final Label headerOSArch = new Label("Operating system architecture:");
-		final Label textOSArch = new Label(System.getProperty("os.arch"));
-
-		final Label headerAvailableProcessors = new Label("Number of available processors:");
-		final Label textAvailableProcessors = new Label("" + Runtime.getRuntime().availableProcessors());
-
-		final Label headerMaxHeapSize = new Label("Maximum heap memory size:");
-		final Label textMaxHeapSize = new Label(
-			String.format("%.1f MB", (double) Runtime.getRuntime().maxMemory() / (1 << 20)));
-
-		final Label headerDefaultFontSize = new Label("Default font size / Icon size");
-		final Label textDefaultFontSize = new Label("%.1f points / %dx%d (%dx%d)"
-			.formatted(DEFAULT_FONT_SIZE, Icons.getScaledWidth(), Icons.getScaledHeight(),
-				Icons.getScaledWidthSmall(), Icons.getScaledHeightSmall()));
+		map.put("Operating system name", System.getProperty("os.name"));
+		map.put("Operating system architecture", System.getProperty("os.arch"));
+		final var runtime = Runtime.getRuntime();
+		map.put("Number of available processors", "%d".formatted(runtime.availableProcessors()));
+		map.put("Maximum heap memory size", "%d MB".formatted(runtime.maxMemory() / (1 << 20)));
 
 //		final Label headerX3fLibVer = new Label("X3F Extractor library version");
 //		final Label textX3fLibVer = new Label(LibraryVersionInfo.getLibraryVersionAsString());
 //
 //		final Label headerX3fDataFormat = new Label("Supported X3F data format");
 //		final Label textX3fDataFormat = new Label(LibraryVersionInfo.getSupportedX3fVersion());
-		final Font fontHeader = Font.font("", FontWeight.BOLD, DEFAULT_FONT_SIZE);
-		headerAppVersion.setFont(fontHeader);
-		headerFstvVersion.setFont(fontHeader);
-		headerJreVersion.setFont(fontHeader);
-		headerJavaFXVersion.setFont(fontHeader);
-		headerShapeClipSupport.setFont(fontHeader);
-		headerOSName.setFont(fontHeader);
-		headerOSArch.setFont(fontHeader);
-		headerAvailableProcessors.setFont(fontHeader);
-		headerMaxHeapSize.setFont(fontHeader);
-		headerDefaultFontSize.setFont(fontHeader);
-//		headerX3fLibVer.setFont(fontHeader);
-//		headerX3fDataFormat.setFont(fontHeader);
-		final VBox vBox = new VBox(
-			headerAppVersion, textAppVersion,
-			headerFstvVersion, textFstvVersion,
-			headerJreVersion, textJreVersion,
-			headerJavaFXVersion, textJavaFXVersion,
-			headerShapeClipSupport, textShapeClipSupport,
-			headerOSName, textOSName,
-			headerOSArch, textOSArch,
-			headerAvailableProcessors, textAvailableProcessors,
-			headerMaxHeapSize, textMaxHeapSize,
-			//			headerX3fLibVer, textX3fLibVer,
-			//			headerX3fDataFormat, textX3fDataFormat,
-			headerDefaultFontSize, textDefaultFontSize);
-		vBox.setPadding(new Insets(DEFAULT_INSET_SIZE, DEFAULT_INSET_SIZE, 0, DEFAULT_INSET_SIZE));
-		vBox.setSpacing(DEFAULT_FONT_SIZE / 3);
-		headerDefaultFontSize.visibleProperty().bind(showDefaultFontSizeProperty());
-		textDefaultFontSize.visibleProperty().bind(showDefaultFontSizeProperty());
-		this.showDefaultFontSizeProperty.bind(ApplicationConfiguration.getState().developmentModeProperty());
-		return vBox;
+		return map;
+	}
+
+	static Map<String, ?> getDevelopmentInfo()
+	{
+		final Map<String, Object> map = new LinkedHashMap<>();
+		map.put("Default font size", "%.1f points".formatted(DEFAULT_FONT_SIZE));
+		map.put("Default icon size", "%dx%d".formatted(
+			getScaledWidth(false), getScaledHeight(false)));
+		map.put("Small icon size", "%dx%d".formatted(
+			getScaledWidth(true), getScaledHeight(true)));
+		return map;
+	}
+
+	static Region createTable(Map<String, ?> map)
+	{
+		final var gridPane = new GridPane(DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE / 2);
+		final var fontBold = Font.font("", FontWeight.BOLD, DEFAULT_FONT_SIZE);
+		int i = 0;
+		for (var entry : map.entrySet())
+		{
+			final String key = entry.getKey();
+			final var value = entry.getValue();
+			final var labelKey = new Label(key);
+			labelKey.setFont(fontBold);
+			gridPane.add(labelKey, 0, i);
+			GridPane.setHalignment(labelKey, HPos.RIGHT);
+			final Node nodeValue = switch (value)
+			{
+				case null -> new Label();
+				case URI uri ->
+				{
+					final var hyperlink = new Hyperlink(uri.getHost() + uri.getPath());
+					final var strURI = uri.toString();
+					hyperlink.setTooltip(new Tooltip(strURI));
+					hyperlink.setTextFill(COLOR_HYPERLINK);
+					hyperlink.setOnAction(_ -> ApplicationConfiguration.showDocument(uri));
+					yield hyperlink;
+				}
+				case SemanticVersion sv ->
+				{
+					final var label = new Label(sv.getCanonicalForm());
+					label.setTooltip(new Tooltip(sv.getDescription()));
+					yield label;
+				}
+				case Boolean b ->
+				{
+					final var label = new Label(b ? "yes" : "no");
+					label.setTextFill(b ? COLOR_YES : COLOR_NO);
+					yield label;
+				}
+				default -> new Label(value.toString());
+			};
+			gridPane.add(nodeValue, 1, i++);
+		}
+		final var borderPane = new BorderPane(gridPane);
+		BorderPane.setMargin(gridPane, new Insets(3 * DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE, 0, DEFAULT_FONT_SIZE));
+		BorderPane.setAlignment(gridPane, Pos.CENTER);
+		return borderPane;
+	}
+
+	@Override
+	public Region getDisplay()
+	{
+		return createTable(getSystemInfo());
 	}
 }

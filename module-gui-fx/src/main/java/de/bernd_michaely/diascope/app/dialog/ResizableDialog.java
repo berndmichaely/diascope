@@ -27,8 +27,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.HeaderBar;
 import javafx.scene.layout.Region;
 import javafx.scene.text.Font;
 import javafx.stage.Modality;
@@ -37,11 +39,11 @@ import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
-import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.diascope.app.control.ScaleBox.SpaceGainingMode.NONE;
+import static de.bernd_michaely.diascope.app.util.scene.HeaderBarUtil.createHeaderBar;
 import static java.util.Objects.requireNonNull;
 import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
 
@@ -50,7 +52,7 @@ import static javafx.scene.layout.Region.USE_COMPUTED_SIZE;
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
-public class ResizableDialog
+public class ResizableDialog implements AutoCloseable
 {
 	private static final String RESOURCE_PROPERTIES_NAME = "dialogs";
 	private static final double GAP = Font.getDefault().getSize();
@@ -62,7 +64,6 @@ public class ResizableDialog
 	private @Nullable BorderPane paneOuter;
 	private @Nullable Stage stage;
 	private @MonotonicNonNull String initialTitle;
-	private @Nullable Scene scene;
 	private @MonotonicNonNull Region root;
 	private final HBox paneButtons;
 	private @MonotonicNonNull ScaleBox scaleBox;
@@ -108,31 +109,29 @@ public class ResizableDialog
 				buttonClose.setText("Close");
 				buttonClose.setDefaultButton(true);
 				buttonClose.setCancelButton(true);
-				buttonClose.setOnAction(e -> close());
+				buttonClose.setOnAction(_ -> _close(stage));
 				setButtons(buttonClose);
 			}
 			case OK_CANCEL_DIALOG ->
 			{
 				buttonOK = new Button();
 				buttonOK.setText("OK");
-				buttonOK.setOnAction(e ->
+				buttonOK.setOnAction(_ ->
 				{
 					committed = true;
 					if (onOkAction != null)
 					{
 						onOkAction.run();
 					}
-					close();
+					_close(stage);
 				});
 				buttonCancel = new Button();
 				buttonCancel.setText("Cancel");
 				buttonOK.setDefaultButton(true);
 				buttonCancel.setCancelButton(true);
-				buttonCancel.setOnAction(e -> close());
+				buttonCancel.setOnAction(_ -> _close(stage));
 				setButtons(buttonOK, buttonCancel);
 			}
-			default ->
-				throw new AssertionError("Invalid DialogType »" + dialogType + "«");
 		}
 	}
 
@@ -179,70 +178,79 @@ public class ResizableDialog
 	/**
 	 * Show the content node in a dialog window with {@link Modality#NONE}.
 	 *
-	 * @param owner   the owner of the dialog
-	 * @param content the content node to show
+	 * @param owner           the owner of the dialog
+	 * @param content         the content node to show
+	 * @param createHeaderBar true to use a {@link HeaderBar}
 	 */
 	public void show(Window owner, Region content)
 	{
-		show(owner, content, Modality.NONE);
+		show(owner, content, null);
+	}
+
+	public void show(Window owner, Region content, @Nullable Region headerBarCtrl)
+	{
+		show(owner, content, headerBarCtrl, null);
 	}
 
 	/**
 	 * Show the content node in a dialog window.
 	 *
-	 * @param owner    the owner of the dialog
-	 * @param content  the content node to show
-	 * @param modality the given modality
+	 * @param owner           the owner of the dialog
+	 * @param content         the content node to show
+	 * @param createHeaderBar true to use a {@link HeaderBar}
+	 * @param modality        the given modality ({@code null} defaults to
+	 *                        {@link Modality#NONE})
 	 */
-	public void show(Window owner, Region content, Modality modality)
+	void show(Window owner, Region content,
+		@Nullable Region headerBarCtrl, @Nullable Modality modality)
 	{
 		if (this.stage == null)
 		{
-			final Stage s = new Stage(StageStyle.DECORATED);
+			final Stage s = new Stage(StageStyle.EXTENDED);
 			this.stage = s;
-			if (initialTitle != null)
-			{
-				s.setTitle(initialTitle);
-			}
 			s.initOwner(owner);
-			s.initModality(modality);
+			s.initModality(modality != null ? modality : Modality.NONE);
 			final BorderPane po = new BorderPane();
 			this.paneOuter = po;
-			switch (spaceGainingMode)
+			final Region r = switch (spaceGainingMode)
 			{
 				case NONE ->
 				{
 					po.setCenter(content);
 					po.setBottom(this.paneButtons);
-					this.root = po;
+					yield po;
 				}
 				case SCALING ->
 				{
 					po.setCenter(content);
 					po.setBottom(this.paneButtons);
-					this.scaleBox = new ScaleBox(po, false, upsize, spaceGainingMode);
-					this.root = this.scaleBox.getDisplay();
+					this.scaleBox = ScaleBox.create(po, false, upsize, spaceGainingMode);
+					yield this.scaleBox.getDisplay();
 				}
 				case SCROLLING ->
 				{
-					this.scaleBox = new ScaleBox(content, false, upsize, spaceGainingMode);
+					this.scaleBox = ScaleBox.create(content, false, upsize, spaceGainingMode);
 					po.setCenter(scaleBox.getDisplay());
 					po.setBottom(this.paneButtons);
-					this.root = po;
+					yield po;
 				}
-				default ->
-				{
-					throw new IllegalArgumentException(getClass().getName() +
-						"Unknown spaceGainingMode");
-				}
-			}
+			};
 			paneButtons.setAlignment(Pos.CENTER);
 			s.setOnShown(e -> postLayout());
 			s.setOnCloseRequest(e -> onWindowCloseRequest());
-			final Scene sc = new Scene(this.root);
-			this.scene = sc;
-			SceneStylesheetUtil.setStylesheet(sc);
-			s.setScene(sc);
+			if (initialTitle == null)
+			{
+				initialTitle = "Dialog";
+			}
+			s.setTitle(initialTitle);
+			final var rootPane = new BorderPane(r);
+			rootPane.setTop((headerBarCtrl != null) ?
+				createHeaderBar(s, headerBarCtrl) :
+				createHeaderBar(s, new Label(initialTitle)));
+			this.root = rootPane;
+			final var scene = new Scene(this.root);
+			SceneStylesheetUtil.setStylesheet(scene);
+			s.setScene(scene);
 		}
 		if (this.stage != null)
 		{
@@ -256,21 +264,23 @@ public class ResizableDialog
 		}
 	}
 
-	public void close(
-
-
-		@UnknownInitialization(ResizableDialog.class) ResizableDialog this)
-  {
-    if (stage != null)
+	private static void _close(@Nullable Stage stage)
+	{
+		if (stage != null)
 		{
 			stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
 		}
 	}
 
+	@Override
+	public void close()
+	{
+		_close(stage);
+	}
+
 	private void onWindowCloseRequest()
 	{
 		stage = null;
-		scene = null;
 		paneOuter = null;
 	}
 
