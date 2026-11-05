@@ -17,6 +17,8 @@ package de.bernd_michaely.common.desktop.fx.collections.selection;
 
 import java.util.Collection;
 import javafx.collections.transformation.TransformationList;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
@@ -27,65 +29,67 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public class SelectableListFactory
 {
-  /**
-   * Private constructor, this class contains static factory methods only.
-   */
-  private SelectableListFactory()
-  {
-  }
+	/**
+	 * Private constructor, this class contains static factory methods only.
+	 */
+	private SelectableListFactory()
+	{
+	}
 
-  /**
-   * Returns a SelectableList implementation.
-   *
-   * @param <E> the list element type
-   * @return a SelectableList instance
-   */
-  public static <E> SelectableList<E> selectableList()
-  {
-    return new SelectableListImpl<>();
-  }
+	/**
+	 * Returns a SelectableList implementation.
+	 *
+	 * @param <E> the list element type
+	 * @return a SelectableList instance
+	 */
+	public static @Modifiable @IteratorPolyMod
+	<E> SelectableList<E> selectableList()
+	{
+		return new SelectableListImpl<>();
+	}
 
-  /**
-   * Returns a SelectableList implementation.
-   *
-   * @param <E> the list element type
-   * @param src a given collection the list is initially filled with
-   * @return a SelectableList instance
-   * @throws NullPointerException if src is null
-   */
-  public static <E> SelectableList<E> selectableList(Collection<? extends E> src)
-  {
-    final SelectableList<E> selectableList = new SelectableListImpl<>();
-    selectableList.addAll(src);
-    return selectableList;
-  }
+	/**
+	 * Returns a SelectableList implementation.
+	 *
+	 * @param <E> the list element type
+	 * @param src a given collection the list is initially filled with
+	 * @return a SelectableList instance
+	 * @throws NullPointerException if src is null
+	 */
+	public static @Modifiable @IteratorPolyMod
+	<E> SelectableList<E> selectableList(Collection<? extends E> src)
+	{
+		final SelectableList<E> selectableList = new SelectableListImpl<>();
+		selectableList.addAll(src);
+		return selectableList;
+	}
 
-  /**
-   * Returns a SelectableListSelectionHandler implementation.
-   *
-   * @param <E>        the list element type
-   * @param sourceList a given list the returned instance is based on
-   * @return a SelectableListSelectionHandler instance
-   * @throws NullPointerException if sourceList is null
-   */
-  public static <E> ListSelectionHandler<E> listSelectionHandler(SelectableList<E> sourceList)
-  {
-    return listSelectionHandler(sourceList, null);
-  }
+	/**
+	 * Returns a SelectableListSelectionHandler implementation.
+	 *
+	 * @param <E>        the list element type
+	 * @param sourceList a given list the returned instance is based on
+	 * @return a SelectableListSelectionHandler instance
+	 * @throws NullPointerException if sourceList is null
+	 */
+	public static <E> ListSelectionHandler<E> listSelectionHandler(SelectableList<E> sourceList)
+	{
+		return listSelectionHandler(sourceList, null);
+	}
 
-  /**
-   * Returns a SelectableListSelectionHandler implementation.
-   *
-   * @param <E>                the list element type
-   * @param sourceList         a given list the returned instance is based on
-   * @param transformationList a transformation list (or a chain thereof) to be
-   *                           applied to the source list
-   * @return a ListSelectionHandler instance
-   * @throws NullPointerException if sourceList is null
-   */
-  public static <E> ListSelectionHandler<E> listSelectionHandler(SelectableList<E> sourceList,
-    @Nullable TransformationList<E, E> transformationList)
-  {
-    return ListSelectionHandlerImpl.createInstance(sourceList, transformationList);
-  }
+	/**
+	 * Returns a SelectableListSelectionHandler implementation.
+	 *
+	 * @param <E>                the list element type
+	 * @param sourceList         a given list the returned instance is based on
+	 * @param transformationList a transformation list (or a chain thereof) to be
+	 *                           applied to the source list
+	 * @return a ListSelectionHandler instance
+	 * @throws NullPointerException if sourceList is null
+	 */
+	public static <E> ListSelectionHandler<E> listSelectionHandler(SelectableList<E> sourceList,
+		@Nullable TransformationList<E, E> transformationList)
+	{
+		return ListSelectionHandlerImpl.createInstance(sourceList, transformationList);
+	}
 }

@@ -19,6 +19,7 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChange
 import java.lang.ref.WeakReference;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -36,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 class SelectionControl<E>
 {
 	private final WeakReference<SelectableList<E>> selectableList;
-	private final Map<SelectionChangeListener<? super E>, Boolean> selectionChangeListeners;
+	private final @Modifiable Map<SelectionChangeListener<? super E>, Boolean> selectionChangeListeners;
 	private int stackCounter;
 	private int selectionCounter;
 	private @Nullable SelectionChange<E> selectionChange;

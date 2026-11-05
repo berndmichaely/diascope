@@ -27,13 +27,16 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
+import org.checkerframework.checker.modifiability.qual.Growable;
+import org.checkerframework.checker.modifiability.qual.Replaceable;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import static de.bernd_michaely.common.cli.parser.AnsiColorEscapeCodesUtil.*;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Simple reimplementation of a GNU getopt style command line argument parsing.
+ * Simple implementation of a GNU getopt style command line argument parsing.
  * The command line arguments must be given as follows:
  * <ul>
  * <li>Each command line option has a mandatory long form, prefixed with '--',
@@ -68,10 +71,9 @@ public class CommandLineArguments
 {
 	static final String FORMATTED_DESCRIPTION_HEADER = "OPTIONS:";
 	private final BiConsumer<String, @Nullable String> callback;
-	private final SortedMap<String, OptionDescriptor> mapLongOptions = new TreeMap<>();
-	private final SortedMap<Character, OptionDescriptor> mapShortOptions = new TreeMap<>();
-	private final List<OptionInstance> optionInstances = new ArrayList<>();
-	private final Map<String, Matcher> mapMatchers = new TreeMap<>();
+	private final @Growable @Replaceable SortedMap<String, OptionDescriptor> mapLongOptions = new TreeMap<>();
+	private final @Growable @Replaceable SortedMap<Character, OptionDescriptor> mapShortOptions = new TreeMap<>();
+	private final @Growable @Replaceable Map<String, Matcher> mapMatchers = new TreeMap<>();
 
 	/**
 	 * Constructs a command line argument parser.
@@ -227,10 +229,10 @@ public class CommandLineArguments
 	 *                                               options or parameters are
 	 *                                               detected
 	 */
-	public List<String> parse(String... args) throws
-		InvalidCommandLineParametersException
+	public @Unmodifiable
+	List<String> parse(String... args) throws InvalidCommandLineParametersException
 	{
-		this.optionInstances.clear();
+		final List<OptionInstance> optionInstances = new ArrayList<>();
 		final LinkedList<String> nonOptionParameters = new LinkedList<>();
 		if (args != null)
 		{
@@ -281,7 +283,7 @@ public class CommandLineArguments
 							{
 								optionInstance.setParameter(param);
 							}
-							this.optionInstances.add(optionInstance);
+							optionInstances.add(optionInstance);
 						}
 						else if (isShortOption)
 						{
@@ -295,7 +297,7 @@ public class CommandLineArguments
 										"Invalid option : " + option);
 								}
 								final OptionInstance optionInstance = new OptionInstance(optionDescriptor);
-								this.optionInstances.add(optionInstance);
+								optionInstances.add(optionInstance);
 								if (optionDescriptor.isParameterRequired())
 								{
 									queueRequiredParams.add(optionInstance);
@@ -334,7 +336,7 @@ public class CommandLineArguments
 				throw new InvalidCommandLineParametersException(
 					"Missing required option parameters!");
 			}
-			for (OptionInstance oi : this.optionInstances)
+			for (OptionInstance oi : optionInstances)
 			{
 				if (!oi.checkParamRegExpr())
 				{
@@ -348,7 +350,7 @@ public class CommandLineArguments
 					mapMatchers.put(oi.getOptionDescriptor().getLongOption(), matcher);
 				}
 			}
-			this.optionInstances.forEach(oi -> callback.accept(
+			optionInstances.forEach(oi -> callback.accept(
 				oi.getOptionDescriptor().getLongOption(), oi.getParameter()));
 		}
 		return Collections.unmodifiableList(nonOptionParameters);

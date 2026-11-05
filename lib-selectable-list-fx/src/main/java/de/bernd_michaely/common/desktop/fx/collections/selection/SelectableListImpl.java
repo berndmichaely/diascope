@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.function.IntFunction;
 import javafx.collections.ModifiableObservableListBase;
+import org.checkerframework.checker.modifiability.qual.IteratorPolyMod;
+import org.checkerframework.checker.modifiability.qual.Modifiable;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -82,9 +84,10 @@ class SelectableListImpl<E> extends ModifiableObservableListBase<E>
 		}
 	}
 
-	private final List<SelectableItem<E>> delegate;
+	private final @Modifiable @IteratorPolyMod List<SelectableItem<E>> delegate;
 	private @MonotonicNonNull SelectionControl<E> selectionControl;
 
+	@Modifiable @IteratorPolyMod
 	SelectableListImpl()
 	{
 		this.delegate = new ArrayList<>();

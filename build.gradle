@@ -134,12 +134,21 @@ allprojects {
 	group = 'de.bernd-michaely'
 	version = semVer.canonicalForm
 	
+	final boolean isJavaFxSubProject = name.endsWith('-fx') // by naming convention
+	
 	apply plugin: 'org.checkerframework'
 
 	checkerFramework {
 		version = libs.checker.get().version
 		checkers = [
-		'org.checkerframework.checker.nullness.NullnessChecker'
+			'org.checkerframework.checker.nullness.NullnessChecker',
+			// 'org.checkerframework.checker.optional.OptionalChecker',
+		]
+		if (!isJavaFxSubProject) {
+			checkers.add 'org.checkerframework.checker.modifiability.ModifiabilityChecker'
+		}
+		extraJavacArgs = [
+			//"-Astubs=${rootProject.file('checker-framework/stubs')}"
 		]
 		excludeTests = true
 	}
@@ -149,18 +158,43 @@ allprojects {
 		//mavenLocal()
 	}
 
-	if (project == rootProject || name.endsWith('-fx')) {
+	if (project == rootProject || isJavaFxSubProject) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
 			version = libs.versions.javafx.get()
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
+	
+	tasks.withType(JavaCompile).configureEach {
+		javaCompiler = javaToolchains.compilerFor {
+			languageVersion = javaLangVersion
+			vendor = jvmVendor
+		}
+	}
+	tasks.withType(Test).configureEach {
+		javaLauncher = javaToolchains.launcherFor {
+			languageVersion = javaLangVersion
+			vendor = jvmVendor
+		}
+	}
+	logger.lifecycle "==> Configuring sub-project »$name ($version)«"
+	tasks.withType(JavaCompile) {
+		logger.lifecycle "=> Configuring task »$name«"
+		options.compilerArgs += '-Xlint:unchecked'
+		options.compilerArgs += '-Xlint:deprecation'
+		options.compilerArgs += '-Xdiags:verbose'
+		logger.lifecycle "   -> compiler args : ${options.compilerArgs}"
+	}
 }
 
-def printMapAsTable(Map map) {
-	final int maxLenKey   = map.keySet().stream().mapToInt(s->s.length()).max().orElse(0)
-	final int maxLenValue = map.values().stream().mapToInt(s->(""+s).length()).max().orElse(0)
+def int maxLength(Collection<String> strings) {
+	strings.stream().mapToInt(s->s.length()).max().orElse(0)
+}
+
+def printMapAsTable(Map<String, String> map) {
+	final int maxLenKey   = maxLength map.keySet()
+	final int maxLenValue = maxLength map.values()
 	final int maxLenLine = maxLenKey + 3 + maxLenValue
 	final def _line = "-" * (4 + maxLenLine)
 
@@ -201,29 +235,6 @@ printMapAsTable(mapEnv)
 
 if (isReadingSvnRevision) {
 	semVer.build.ifPresent(build -> logger.lifecycle "--> Build: ${build.identifiers}")
-}
-
-subprojects {
-	tasks.withType(JavaCompile).configureEach {
-		javaCompiler = javaToolchains.compilerFor {
-			languageVersion = javaLangVersion
-			vendor = jvmVendor
-		}
-	}
-	tasks.withType(Test).configureEach {
-		javaLauncher = javaToolchains.launcherFor {
-			languageVersion = javaLangVersion
-			vendor = jvmVendor
-		}
-	}
-	logger.lifecycle "==> Configuring sub-project »$name ($version)«"
-	tasks.withType(JavaCompile) {
-		logger.lifecycle "=> Configuring task »$name«"
-		options.compilerArgs += '-Xlint:unchecked'
-		options.compilerArgs += '-Xlint:deprecation'
-		options.compilerArgs += '-Xdiags:verbose'
-		logger.lifecycle "   -> compiler args : ${options.compilerArgs}"
-	}
 }
 
 /*
@@ -367,11 +378,13 @@ application {
 	mainModule = 'de.bernd_michaely.diascope'
 	mainClass  = 'de.bernd_michaely.diascope.Launcher'
 	
+	final int javaLangVer = javaLangVersion.asInt()
+	logger.lifecycle " -> Java language version is »${javaLangVer}«"
 	int javafxVer
 	final def m = javafx.version =~ /(\d+)(\.\d+(\.\d+)?)?(-.+)?(\+.+)?/
 	if (m) {
 		javafxVer = m.group(1) as int
-		logger.lifecycle " -> JavaFX major version is ${javafxVer}"
+		logger.lifecycle " -> JavaFX  major version is »${javafxVer}«"
 	} else {
 		throw new StopExecutionException("Can't get JavaFX major version.")
 	}
@@ -381,11 +394,15 @@ application {
 		throw new StopExecutionException(msg)
 	}
 	
-	final int javaLangVer = javaLangVersion.asInt()
 	if (javaLangVer >= 24) {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 	}
-	if ([25..26].contains(javafxVer)) {
+	if (javaLangVer >= 25 && javaLangVer <= 26) {
+		// optional performance improvement:
+		applicationDefaultJvmArgs += '-XX:+UseCompactObjectHeaders'
+	}
+	if (javafxVer >= 25 && javafxVer <= 26) {
+		// for HeaderBar preview feature:
 		applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
 		applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	}
