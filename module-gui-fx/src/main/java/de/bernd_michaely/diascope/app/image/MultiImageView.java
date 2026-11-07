@@ -73,12 +73,11 @@ public class MultiImageView implements AutoCloseable
 	{
 		this.viewport = new Viewport();
 		this.imageLayers = new ImageLayersDefault(viewport);
-		final var layerSelectionModel = imageLayers.layerSelectionModel;
+		final var layerSelectionModel = imageLayers.getLayerSelectionModel();
 		viewport.setLayerSelectionModel(layerSelectionModel);
 		this.spotImageLayers = new ImageLayersSpot(viewport);
-		this.imageTransformsSwitch = new ImageTransformsSwitch<>(
-			viewport.modeProperties(), layerSelectionModel.singleSelectedLayerProperty(),
-			layerSelectionModel.getSelectionModel(),
+		this.imageTransformsSwitch = new ImageTransformsSwitch<>(viewport.modeProperties(),
+			layerSelectionModel.getSelectionModel(), layerSelectionModel.getListDualSelection(),
 			imageLayers.unmodifiableLayers, spotImageLayers.unmodifiableLayers);
 		this.maximumNumberOfLayers = new ReadOnlyIntegerWrapper(
 			(int) (C / imageLayers.getSplitDividerRotationControl().getDividerMinGap()));
@@ -116,9 +115,9 @@ public class MultiImageView implements AutoCloseable
 		return imageTransformsSwitch.getFacadeImageTransforms();
 	}
 
-	public LayerSelectionModel getLayerSelectionModel()
+	public LayerSelectionModel<ImageLayer> getLayerSelectionModel()
 	{
-		return imageLayers.layerSelectionModel;
+		return imageLayers.getLayerSelectionModel();
 	}
 
 	/// Resets the multi image layer controls by setting a default layout,
@@ -156,9 +155,8 @@ public class MultiImageView implements AutoCloseable
 		{
 			setMode(getDefaultMultiImageMode());
 		}
-		imageLayers.createImageLayer(
-			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get()
-				.map(layer -> layers.indexOf(layer) + 1).orElse(layers.size()));
+		imageLayers.createImageLayer(getLayerSelectionModel().singleSelectedLayerProperty().get()
+			.map(layer -> layers.indexOf(layer) + 1).orElse(layers.size()));
 	}
 
 	/// Returns a property indicating the number of layers.
@@ -167,7 +165,7 @@ public class MultiImageView implements AutoCloseable
 	///
 	public ReadOnlyIntegerProperty numLayersProperty()
 	{
-		return imageLayers.layerSelectionModel.sizeProperty();
+		return getLayerSelectionModel().sizeProperty();
 	}
 
 	/// Returns the number of layers.
@@ -220,7 +218,7 @@ public class MultiImageView implements AutoCloseable
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
 		if (!viewport.modeProperties().isValue(SPOT))
 		{
-			imageLayers.layerSelectionModel.singleSelectedLayerProperty().get().ifPresent(
+			getLayerSelectionModel().singleSelectedLayerProperty().get().ifPresent(
 				imageLayer -> imageLayer.setImageDescriptor(imageDescriptor));
 		}
 	}

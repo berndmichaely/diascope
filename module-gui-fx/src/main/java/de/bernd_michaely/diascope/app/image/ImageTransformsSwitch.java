@@ -20,18 +20,23 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectablePrope
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+import java.lang.System.Logger;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import javafx.beans.binding.ObjectBinding;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static java.lang.System.Logger.Level.*;
 
 /// Class for connecting facade with image layer ImageTransforms.
 ///
@@ -45,136 +50,215 @@ import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onCha
 ///
 class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 {
-	private static final class TransformParams
-	{
-		private ZoomMode zoomMode = ZoomMode.getDefault();
-		private double zoomFactor = 1.0;
-		private double rotate;
-		private boolean mirrorX;
-		private boolean mirrorY;
-	}
+	private static final Logger logger = System.getLogger(ImageTransformsSwitch.class.getName());
 
-	private static final class DeltaTransformParams
+	private record TransformableParams<L extends Transformable>(TransformParams local, DeltaTransformParams delta)
 	{
-		private double trandlateX;
-		private double trandlateY;
-		private double zoomFactor = 1.0;
-		private double rotate;
-		private boolean mirrorX;
-		private boolean mirrorY;
-	}
-
-	private record TransformableParams(TransformParams local, DeltaTransformParams delta)
-	{
-		private TransformableParams()
+		private TransformableParams(L layer)
 		{
-			this(new TransformParams(), new DeltaTransformParams());
+			final var imageTransforms = layer.getImageTransforms();
+			this(TransformParams.createFrom(imageTransforms), DeltaTransformParams.createFrom(imageTransforms));
 		}
 	}
 
 	private final DefaultImageTransforms facadeImageTransforms = new DefaultImageTransforms();
 	@Deprecated private final DefaultImageTransforms globalImageTransforms = new DefaultImageTransforms();
-	private final TransformParams globalTransformParams = new TransformParams();
+	private final TransformParams bufferGlobalParams = new TransformParams();
 	@Deprecated private final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
-	private final Map<T, TransformableParams> mapTransformableParams = new IdentityHashMap<>();
+	private final Map<T, TransformableParams> mapBufferLocalParams = new IdentityHashMap<>(); // WeakHashMap?
 	private final ObservableBooleanValue local;
+	private final ChangeListener<Boolean> localModeListener;
 	@Deprecated private final ObjectProperty<Optional<DefaultImageTransforms>> selectedImageTransforms =
 		new SimpleObjectProperty<>(Optional.empty());
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
-		ReadOnlyObjectProperty<Optional<T>> singleSelectedLayerProperty,
-		SelectableProperties selectionModel,
-		ObservableList<T> unmodifiableLayers,
-		ObservableList<T> unmodifiableSpotLayers)
+		SelectableProperties selectionModel, ListDualSelection<T> listDualSelection,
+		ObservableList<T> unmodifiableLayers, ObservableList<T> unmodifiableSpotLayers)
 	{
+		// on view mode change:
 		this.local = modeProperties.isValueProperty(Mode.GRID);
-//		final ChangeListener<Number> onZoomFactorChange = onChange((oldValue, newValue) ->
-//		{
-//			if (local.get())
-//			{
-//				final int numSelected = selectionModel.getNumSelected();
-//				if (numSelected > 0)
-//				{
-//				}
-//			}
-//			else
-//			{
-//			}
-//		});
-//		final Consumer<T> addLayer = layer ->
-//		{
-//			final var transformableParams = mapTransformableParams.put(layer, new TransformableParams());
-//			final ImageTransforms transforms = layer.getImageTransforms();
-//			transforms.zoomFixedProperty().addListener(onZoomFactorChange);
-//		};
-//		final Consumer<T> removeLayer = layer ->
-//		{
-//			final ImageTransforms transforms = layer.getImageTransforms();
-//			transforms.zoomFixedProperty().removeListener(onZoomFactorChange);
-//			mapTransformableParams.remove(layer);
-//		};
-
-//		unmodifiableLayers.forEach(addLayer);
-//		unmodifiableLayers.addListener(new ListChangeListenerBuilder<T>()
-//			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
-//			.onRemove(change -> change.getRemoved().forEach(removeLayer))
-//			.build());
-		// –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-		selectedImageTransforms.addListener(onChange((oldValue, newValue) ->
+		this.localModeListener = onChange(isLocal ->
 		{
-			oldValue.ifPresent(DefaultImageTransforms::unbindAllProperties);
-			newValue.ifPresent(selectedTransforms ->
+			if (isLocal) // switch from global to local
 			{
-				selectedTransforms.adjustControlProperties(facadeImageTransforms);
-				selectedTransforms.bindAllProperties(facadeImageTransforms);
-			});
-		}));
-		selectedImageTransforms.bind(new ObjectBinding<Optional<DefaultImageTransforms>>()
-		{
-			{
-				@SuppressWarnings("method.invocation")
-				final Runnable init = () -> super.bind(local, singleSelectedLayerProperty);
-				init.run();
+				// save global state:
+				bufferGlobalParams.readFrom(facadeImageTransforms);
+				// recall local layer specific params:
+				mapBufferLocalParams.entrySet().forEach(entry ->
+				{
+					final T layer = entry.getKey();
+					final TransformableParams buffer = entry.getValue();
+					buffer.local().writeTo(layer.getImageTransforms());
+				});
+				// determine a selected layer and set facade control params to it, if present,
+				// or otherwise use defaults:
+				listDualSelection.oldestSelectedItemProperty().get().map(mapBufferLocalParams::get)
+					.ifPresentOrElse(
+						buffer -> buffer.local().writeTo(facadeImageTransforms),
+						() -> TransformParams.initDefaultsOf(facadeImageTransforms));
 			}
-			private final Optional<DefaultImageTransforms> optionalGlobalImageTransforms =
-				Optional.of(globalImageTransforms);
-
-			@Override
-			protected Optional<DefaultImageTransforms> computeValue()
+			else // switch from local to global
 			{
-				return local.get() ? singleSelectedLayerProperty.get().map(mapIntermediate::get) :
-					optionalGlobalImageTransforms;
+				// save local layer specific params:
+				mapBufferLocalParams.entrySet().forEach(entry ->
+				{
+					final T layer = entry.getKey();
+					final TransformableParams buffer = entry.getValue();
+					buffer.local().readFrom(layer.getImageTransforms());
+				});
+				// recall global state and set facade control params to it:
+				bufferGlobalParams.writeTo(facadeImageTransforms);
 			}
 		});
+		local.addListener(localModeListener);
+		// on layer selection change:
+		listDualSelection.oldestSelectedItemProperty().addListener(onChange(optionalLayer ->
+		{
+			if (local.get())
+			{
+				logger.log(TRACE, () -> "→ oldestSelectedItem : %s".formatted(optionalLayer
+					.map(Object::toString).orElse("<NO LAYER>")));
+				logger.log(TRACE, () -> "→ BUFFER content     : %s".formatted(optionalLayer
+					.map(mapBufferLocalParams::get)
+					.map(TransformableParams::local)
+					.map(Object::toString).orElse("<NO LAYER>")));
+				optionalLayer.map(mapBufferLocalParams::get)
+					.ifPresentOrElse(
+						buffer -> buffer.local().writeTo(facadeImageTransforms),
+						() -> TransformParams.initDefaultsOf(facadeImageTransforms));
+			}
+		}));
+		// on zoom mode change:
+		facadeImageTransforms.zoomModeOrDefaultProperty().addListener(onChange(newValue ->
+		{
+			if (local.get())
+			{
+				final int n = unmodifiableLayers.size();
+				for (int i = 0; i < n; i++)
+				{
+					if (selectionModel.isSelected(i))
+					{
+						unmodifiableLayers.get(i).getImageTransforms().zoomModeRawValueProperty().set(newValue);
+					}
+				}
+			}
+			else
+			{
+				Stream.concat(unmodifiableLayers.stream(), unmodifiableSpotLayers.stream()).forEach(t ->
+					t.getImageTransforms().zoomModeRawValueProperty().set(newValue));
+			}
+		}));
+		// on image transform property change:
+		enum TransformOp
+		{
+			ZoomMode, ZoomFactor, Rotate, MirrorX, MirrorY
+		}
+		@FunctionalInterface
+		interface AdjustmentFunction<V>
+		{
+			V apply(V propertyValue, V oldValue, V newValue);
+		}
+		class ImageTransformPropertyChangeListener<V, P extends Property<V>>
+			implements ChangeListener<V>
+		{
+			private final TransformOp transformOp;
+			private final AdjustmentFunction<V> adjustmentFunction;
+			private final Function<ImageTransforms, P> transformsToProperty;
+
+			ImageTransformPropertyChangeListener(TransformOp transformOp,
+				AdjustmentFunction<V> adjustmentFunction, Function<ImageTransforms, P> transformsToProperty)
+			{
+				this.transformOp = transformOp;
+				this.adjustmentFunction = adjustmentFunction;
+				this.transformsToProperty = transformsToProperty;
+			}
+
+			@Override
+			public void changed(ObservableValue<? extends V> observable, V oldValue, V newValue)
+			{
+				if (local.get())
+				{
+					listDualSelection.oldestSelectedItemProperty().get().ifPresent(oldestLayer ->
+					{
+						// at least one layer is selected
+						final int n = unmodifiableLayers.size();
+						for (int i = 0; i < n; i++)
+						{
+							if (selectionModel.isSelected(i))
+							{
+								final T layer = unmodifiableLayers.get(i);
+								final P layerProperty = transformsToProperty.apply(layer.getImageTransforms());
+								final V value = layer == oldestLayer ? newValue :
+									adjustmentFunction.apply(layerProperty.getValue(), oldValue, newValue);
+								layerProperty.setValue(value);
+								final var transformableParams = mapBufferLocalParams.get(layer);
+								if (transformableParams != null && value != null)
+								{
+									final var transformParams = transformableParams.local();
+									switch (transformOp)
+									{
+										case ZoomMode -> transformParams.zoomMode = (ZoomMode) value;
+										case ZoomFactor -> transformParams.zoomFactor = (double) value;
+										case Rotate -> transformParams.rotate = (double) value;
+										case MirrorX -> transformParams.mirrorX = (boolean) value;
+										case MirrorY -> transformParams.mirrorY = (boolean) value;
+										default -> throw new IllegalStateException(
+												"%s : missing case for %s :: %s".formatted(
+													getClass().getName(), TransformOp.class.getName(), transformOp.name()));
+									}
+								}
+								else
+								{
+									throw new IllegalStateException(getClass().getName());
+								}
+							}
+						}
+					});
+				}
+				else // global
+				{
+					Stream.concat(unmodifiableLayers.stream(), unmodifiableSpotLayers.stream())
+						.map(Transformable::getImageTransforms)
+						.map(transformsToProperty)
+						.forEach(p -> p.setValue(newValue));
+				}
+			}
+		}
+		facadeImageTransforms.zoomModeOrDefaultProperty().addListener(
+			new ImageTransformPropertyChangeListener<>(TransformOp.ZoomMode,
+				(_, _, n) -> n,
+				ImageTransforms::zoomModeRawValueProperty));
+		facadeImageTransforms.zoomFixedProperty().addListener(
+			new ImageTransformPropertyChangeListener<>(TransformOp.ZoomFactor,
+				(p, o, n) -> p.doubleValue() * (n.doubleValue() / o.doubleValue()),
+				ImageTransforms::zoomFixedProperty));
+		facadeImageTransforms.rotateProperty().addListener(
+			new ImageTransformPropertyChangeListener<>(TransformOp.Rotate,
+				(p, o, n) -> p.doubleValue() + (n.doubleValue() - o.doubleValue()),
+				ImageTransforms::rotateProperty));
+		facadeImageTransforms.mirrorXProperty().addListener(
+			new ImageTransformPropertyChangeListener<>(TransformOp.MirrorX,
+				(p, _, _) -> !p,
+				ImageTransforms::mirrorXProperty));
+		facadeImageTransforms.mirrorYProperty().addListener(
+			new ImageTransformPropertyChangeListener<>(TransformOp.MirrorY,
+				(p, _, _) -> !p,
+				ImageTransforms::mirrorYProperty));
+		// on layer addition / removal:
 		final Consumer<T> addLayer = layer ->
 		{
-			final var intermediateImageTransforms = new DefaultImageTransforms();
-			mapIntermediate.put(layer, intermediateImageTransforms);
-			final Consumer<Boolean> onLocalChange = isLocal ->
+			if (mapBufferLocalParams.put(layer, new TransformableParams<>(layer)) != null)
 			{
-				final var layerImageTransforms = layer.getImageTransforms();
-				layerImageTransforms.unbindAllProperties();
-				layerImageTransforms.bindAllProperties(isLocal ?
-					intermediateImageTransforms : globalImageTransforms);
-			};
-			onLocalChange.accept(local.get());
-			local.addListener(onChange(onLocalChange));
+				throw new IllegalStateException(
+					"%s : adding the same layer twice".formatted(getClass().getName()));
+			}
 		};
 		final Consumer<T> removeLayer = layer ->
 		{
-			try (layer)
+			if (mapBufferLocalParams.remove(layer) == null)
 			{
-				final DefaultImageTransforms removed = mapIntermediate.remove(layer);
-				if (removed != null)
-				{
-					layer.getImageTransforms().unbindAllProperties();
-					removed.unbindAllProperties();
-				}
-				else
-				{
-					throw new IllegalStateException(
-						getClass().getName() + ": Removing invalid layer");
-				}
+				throw new IllegalStateException(
+					"%s : trying to remove non existing layer".formatted(getClass().getName()));
 			}
 		};
 		unmodifiableLayers.forEach(addLayer);
@@ -182,8 +266,6 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
 			.onRemove(change -> change.getRemoved().forEach(removeLayer))
 			.build());
-		unmodifiableSpotLayers.forEach(layer ->
-			layer.getImageTransforms().bindAllProperties(globalImageTransforms));
 	}
 
 	/// Returns the ImageTransforms of the facade.
@@ -222,7 +304,7 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 
 	/// {@inheritDoc}
 	///
-	/// This implementation unbinds all properties.
+	/// This implementation unbinds all properties and removes listeners.
 	///
 	@Override
 	public void close()
@@ -235,6 +317,7 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 				{
 				}
 			});
+			local.removeListener(localModeListener);
 		}
 	}
 }

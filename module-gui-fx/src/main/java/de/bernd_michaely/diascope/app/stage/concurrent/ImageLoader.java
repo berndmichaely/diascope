@@ -187,7 +187,8 @@ public class ImageLoader implements Consumer<TaskParameters>, AutoCloseable
 		final var pathRequested = mapPaths.get(requestType);
 		final Optional<ImageContainer> imageContainerCached = imageCache.find(pathRequested);
 		final boolean requestInCache = imageContainerCached.isPresent();
-		final boolean requestFulfilled = requestInCache && imageContainerCached.get().loaded();
+		final boolean requestFulfilled =
+			requestInCache && imageContainerCached.map(ImageContainer::loaded).orElse(false);
 		return new CacheRequestInfo(Optional.ofNullable(pathRequested),
 			imageContainerCached, requestInCache, requestFulfilled);
 	}
@@ -207,7 +208,7 @@ public class ImageLoader implements Consumer<TaskParameters>, AutoCloseable
 				{
 					if (crInfo.requestFulfilled())
 					{
-						deliverTaskResult(new TaskResult(crInfo.imageContainerCached().get(), true));
+						crInfo.imageContainerCached().ifPresent(c -> deliverTaskResult(new TaskResult(c, true)));
 					}
 					else
 					{
@@ -216,7 +217,7 @@ public class ImageLoader implements Consumer<TaskParameters>, AutoCloseable
 							deliverTaskResult(new TaskResult(imageContainer, false));
 							if (!mapTasks.containsKey(IMMEDIATE) && !crInfo.requestInCache())
 							{
-								submitTask(crInfo.pathRequested().get(), IMMEDIATE);
+								crInfo.pathRequested().ifPresent(p -> submitTask(p, IMMEDIATE));
 							}
 						}
 					}

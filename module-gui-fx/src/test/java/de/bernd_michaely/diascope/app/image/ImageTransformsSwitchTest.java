@@ -48,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.*;
 ///
 public class ImageTransformsSwitchTest
 {
+	/// Test dummy implementation of Transformable interface.
+	///
 	private static class Transformable_ implements Transformable
 	{
 		private static final double FACTOR_FIT = 0.7;
@@ -79,11 +81,11 @@ public class ImageTransformsSwitchTest
 			return "%s[%s]".formatted(getClass().getSimpleName(), name);
 		}
 	}
+
 	private EnumProperties<Mode> modeProperties;
 	private SelectableList<Transformable_> layers;
 	private ListDualSelection<Transformable_> listDualSelection;
 	private SelectableProperties selectionModel;
-	private ReadOnlyObjectProperty<Optional<Transformable_>> singleSelectedLayerProperty;
 	private ObservableList<Transformable_> spotLayers;
 	private ImageTransformsSwitch<Transformable_> its;
 
@@ -94,13 +96,14 @@ public class ImageTransformsSwitchTest
 		layers = SelectableListFactory.selectableList();
 		listDualSelection = new ListDualSelection<>(layers);
 		selectionModel = SelectableListFactory.listSelectionHandler(layers);
-		singleSelectedLayerProperty = listDualSelection.singleSelectionItemProperty();
 		spotLayers = observableArrayList();
-		its = new ImageTransformsSwitch<>(modeProperties,
-			singleSelectedLayerProperty,
-			selectionModel,
-			unmodifiableObservableList(layers),
-			unmodifiableObservableList(spotLayers));
+		its = new ImageTransformsSwitch<>(modeProperties, selectionModel, listDualSelection,
+			unmodifiableObservableList(layers), unmodifiableObservableList(spotLayers));
+	}
+
+	private Optional<? extends Transformable> getOptionalSingleSelected()
+	{
+		return listDualSelection.singleSelectionItemProperty().get();
 	}
 
 	@AfterEach
@@ -191,7 +194,7 @@ public class ImageTransformsSwitchTest
 		DefaultImageTransforms expected, actual;
 		// select layer
 		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, singleSelectedLayerProperty.get().get());
+		assertEquals(tb, getOptionalSingleSelected().get());
 		optional = its._getSelectedImageTransforms().get();
 		assertTrue(optional.isPresent());
 		expected = its._getMapIntermediate().get(tb);
@@ -201,7 +204,7 @@ public class ImageTransformsSwitchTest
 		// select other layer
 		layers.setSelected(layers.indexOf(tb), false);
 		layers.setSelected(layers.indexOf(tc), true);
-		assertEquals(tc, singleSelectedLayerProperty.get().get());
+		assertEquals(tc, getOptionalSingleSelected().get());
 		optional = its._getSelectedImageTransforms().get();
 		assertTrue(optional.isPresent());
 		expected = its._getMapIntermediate().get(tc);
@@ -306,14 +309,14 @@ public class ImageTransformsSwitchTest
 		assertTrue(zmp_b.isValue(getDefault()));
 		assertTrue(zmp_c.isValue(getDefault()));
 		// no single selection
-		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		assertTrue(getOptionalSingleSelected().isEmpty());
 		zoomModeRawValueProperty.set(ORIGINAL);
 		assertTrue(zmp_a.isValue(getDefault()));
 		assertTrue(zmp_b.isValue(getDefault()));
 		assertTrue(zmp_c.isValue(getDefault()));
 		// select layer b
 		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, singleSelectedLayerProperty.get().get());
+		assertEquals(tb, getOptionalSingleSelected().get());
 //		zoomModeRawValueProperty.set(null);
 		zoomModeRawValueProperty.set(ORIGINAL);
 		assertTrue(zmp_a.isValue(getDefault()));
@@ -384,23 +387,23 @@ public class ImageTransformsSwitchTest
 		assertEquals(1.0, it_c.zoomFactorProperty().get());
 		setLocal(true);
 		assertTrue(isLocal());
-		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		assertTrue(getOptionalSingleSelected().isEmpty());
 		layers.setSelected(layers.indexOf(ta), true);
-		assertEquals(ta, singleSelectedLayerProperty.get().get());
+		assertEquals(ta, getOptionalSingleSelected().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.1);
 		layers.setSelected(layers.indexOf(ta), false);
 		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, singleSelectedLayerProperty.get().get());
+		assertEquals(tb, getOptionalSingleSelected().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.2);
 		layers.setSelected(layers.indexOf(tb), false);
 		layers.setSelected(layers.indexOf(tc), true);
-		assertEquals(tc, singleSelectedLayerProperty.get().get());
+		assertEquals(tc, getOptionalSingleSelected().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.3);
 		layers.selectNone();
-		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		assertTrue(getOptionalSingleSelected().isEmpty());
 		setLocal(false);
 		assertTrue(isGlobal());
 		assertEquals(1.0, it_a.zoomFactorProperty().get());
@@ -454,7 +457,7 @@ public class ImageTransformsSwitchTest
 		assertEquals(17.5, it_c.rotateProperty().get());
 		setLocal(true);
 		assertTrue(isLocal());
-		assertTrue(singleSelectedLayerProperty.get().isEmpty());
+		assertTrue(getOptionalSingleSelected().isEmpty());
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
@@ -463,7 +466,7 @@ public class ImageTransformsSwitchTest
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
 		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, singleSelectedLayerProperty.get().get());
+		assertEquals(tb, getOptionalSingleSelected().get());
 		rotateProperty.set(2.0);
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(2.0, it_b.rotateProperty().get());

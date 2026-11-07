@@ -36,7 +36,7 @@ import static javafx.beans.binding.Bindings.createBooleanBinding;
 ///
 final class ImageLayersDefault extends ImageLayersBase
 {
-	final LayerSelectionModel layerSelectionModel;
+	private final LayerSelectionModel<ImageLayer> layerSelectionModel;
 	private final Viewport viewport;
 	private final SplitDividerRotationControl splitDividerRotationControl;
 	private final GridDividerDragControl gridDividerDragControl;
@@ -78,7 +78,7 @@ final class ImageLayersDefault extends ImageLayersBase
 				throw new IllegalStateException(getClass().getName() + ": Invalid ImageLayerShape");
 			}
 		};
-		this.layerSelectionModel = new LayerSelectionModel(layers, shapeByImageLayer);
+		this.layerSelectionModel = new LayerSelectionModel<>(layers, shapeByImageLayer);
 		this.splitDividerRotationControl = new SplitDividerRotationControl(unmodifiableLayers, splitDividerByImageLayer);
 		this.gridDividerDragControl = new GridDividerDragControl(gridTree,
 			viewport.widthProperty(), viewport.heightProperty());
@@ -188,6 +188,11 @@ final class ImageLayersDefault extends ImageLayersBase
 				gridDividerDragControl.initializeDividerPositions();
 				splitDividerRotationControl.initializeDividerAngles();
 			}).build());
+	}
+
+	LayerSelectionModel<ImageLayer> getLayerSelectionModel()
+	{
+		return layerSelectionModel;
 	}
 
 	SplitDividerRotationControl getSplitDividerRotationControl()

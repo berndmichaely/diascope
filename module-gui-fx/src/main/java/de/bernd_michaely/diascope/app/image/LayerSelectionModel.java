@@ -32,13 +32,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-public class LayerSelectionModel implements SelectableProperties
+public class LayerSelectionModel<T> implements SelectableProperties
 {
 	private final SelectableProperties selectionModel;
-	private final ListDualSelection<ImageLayer> listDualSelection;
+	private final ListDualSelection<T> listDualSelection;
 
-	LayerSelectionModel(SelectableList<ImageLayer> layers,
-		Function<ImageLayer, ImageLayerShapeSplit> shapeByImageLayer)
+	LayerSelectionModel(SelectableList<T> layers,
+		Function<T, ImageLayerShapeSplit> shapeByImageLayer)
 	{
 		this.selectionModel = SelectableListFactory.listSelectionHandler(layers);
 		this.listDualSelection = new ListDualSelection<>(layers);
@@ -54,6 +54,11 @@ public class LayerSelectionModel implements SelectableProperties
 	SelectableProperties getSelectionModel()
 	{
 		return selectionModel;
+	}
+
+	ListDualSelection<T> getListDualSelection()
+	{
+		return listDualSelection;
 	}
 
 	@Override
@@ -98,17 +103,17 @@ public class LayerSelectionModel implements SelectableProperties
 		return selectionModel.sizeProperty();
 	}
 
-	ReadOnlyObjectProperty<Optional<ImageLayer>> singleSelectedLayerProperty()
+	ReadOnlyObjectProperty<Optional<T>> singleSelectedLayerProperty()
 	{
 		return listDualSelection.singleSelectionItemProperty();
 	}
 
-	ReadOnlyObjectProperty<Optional<ImageLayer>> dualSelectedLayerFirstProperty()
+	ReadOnlyObjectProperty<Optional<T>> dualSelectedLayerFirstProperty()
 	{
 		return listDualSelection.dualSelectionFirstItemProperty();
 	}
 
-	ReadOnlyObjectProperty<Optional<ImageLayer>> dualSelectedLayerSecondProperty()
+	ReadOnlyObjectProperty<Optional<T>> dualSelectedLayerSecondProperty()
 	{
 		return listDualSelection.dualSelectionSecondItemProperty();
 	}

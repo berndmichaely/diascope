@@ -65,7 +65,7 @@ class Viewport implements AutoCloseable
 	private double mouseDragStartX, mouseDragStartY;
 	private double mouseScrollStartX, mouseScrollStartY;
 	private @Nullable ImageLayer spotBaseLayer, spotLayer;
-	private @MonotonicNonNull LayerSelectionModel layerSelectionModel;
+	private @MonotonicNonNull LayerSelectionModel<ImageLayer> layerSelectionModel;
 	private final ViewportBoundsGlobal viewportBounds;
 	private final ViewportComponents components;
 
@@ -173,7 +173,7 @@ class Viewport implements AutoCloseable
 		});
 	}
 
-	void setLayerSelectionModel(LayerSelectionModel layerSelectionModel)
+	void setLayerSelectionModel(LayerSelectionModel<ImageLayer> layerSelectionModel)
 	{
 		this.layerSelectionModel = layerSelectionModel;
 	}
