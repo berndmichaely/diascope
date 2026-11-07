@@ -134,6 +134,7 @@ allprojects {
 	group = 'de.bernd-michaely'
 	version = semVer.canonicalForm
 	
+	final boolean isRootProject = project == rootProject
 	final boolean isJavaFxSubProject = name.endsWith('-fx') // by naming convention
 	
 	apply plugin: 'org.checkerframework'
@@ -144,6 +145,9 @@ allprojects {
 			'org.checkerframework.checker.nullness.NullnessChecker',
 			// 'org.checkerframework.checker.optional.OptionalChecker',
 		]
+		if (isRootProject) {
+			// checkers.add 'org.checkerframework.checker.regex.RegexChecker'
+		}
 		if (!isJavaFxSubProject) {
 			checkers.add 'org.checkerframework.checker.modifiability.ModifiabilityChecker'
 		}
@@ -158,7 +162,7 @@ allprojects {
 		//mavenLocal()
 	}
 
-	if (project == rootProject || isJavaFxSubProject) {
+	if (isRootProject || isJavaFxSubProject) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
 			version = rootProject.libs.versions.javafx.get()

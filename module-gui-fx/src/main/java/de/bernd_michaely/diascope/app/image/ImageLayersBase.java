@@ -23,6 +23,7 @@ import java.lang.System.Logger;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.ObservableList;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static de.bernd_michaely.diascope.app.util.beans.binding.ListBindings.cumulatedOperations;
@@ -38,7 +39,7 @@ abstract sealed class ImageLayersBase implements AutoCloseable permits ImageLaye
 	private static final Logger logger = System.getLogger(ImageLayersBase.class.getName());
 	final ReadOnlyDoubleWrapper layersMaxWidth, layersMaxHeight;
 	final SelectableList<ImageLayer> layers;
-	final ObservableList<ImageLayer> unmodifiableLayers;
+	final @Unmodifiable ObservableList<ImageLayer> unmodifiableLayers;
 	private final ChangeListener<Number> onMaxWidthChange;
 	private final ChangeListener<Number> onMaxHeightChange;
 

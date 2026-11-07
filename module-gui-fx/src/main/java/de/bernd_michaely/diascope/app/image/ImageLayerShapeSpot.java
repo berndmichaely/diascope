@@ -112,7 +112,7 @@ final class ImageLayerShapeSpot extends AbstractImageLayerShape
 	{
 		super(true, onMouseDragInit, onMouseDragged);
 		strokeSelectedPaint = when(circleMode)
-			.then((Paint) COLORS_SELECTED.getFirst()).otherwise(STROKE_GRADIENT);
+			.<Paint>then(COLORS_SELECTED.getFirst()).otherwise(STROKE_GRADIENT);
 		this.ellipse = new Ellipse(SPOT_RADIUS_DEFAULT, SPOT_RADIUS_DEFAULT);
 		this.ellipseClip = new Ellipse(SPOT_RADIUS_DEFAULT, SPOT_RADIUS_DEFAULT);
 		this.clip = new ReadOnlyObjectWrapper<>(ellipseClip);

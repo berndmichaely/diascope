@@ -83,7 +83,7 @@ final class ImageLayer extends AbstractImageLayer
 		this.viewportBounds = new ViewportBoundsSwitch(isLocal,
 			viewport.getViewportBounds(), viewportBoundsLocal);
 		paneLayer.getChildren().add(imageView);
-		paneLayer.setMinSize(0, 0);
+		paneLayer.setMinSize(0d, 0d);
 		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.zoomFitWidth = new SimpleDoubleProperty();

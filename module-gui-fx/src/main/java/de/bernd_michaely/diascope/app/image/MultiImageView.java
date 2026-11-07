@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
 import java.util.Optional;
@@ -115,7 +116,12 @@ public class MultiImageView implements AutoCloseable
 		return imageTransformsSwitch.getFacadeImageTransforms();
 	}
 
-	public LayerSelectionModel<ImageLayer> getLayerSelectionModel()
+	public SelectableProperties getLayerSelectionModel()
+	{
+		return _getLayerSelectionModel();
+	}
+
+	private LayerSelectionModel<? extends AbstractImageLayer> _getLayerSelectionModel()
 	{
 		return imageLayers.getLayerSelectionModel();
 	}
@@ -128,6 +134,10 @@ public class MultiImageView implements AutoCloseable
 		final var mode = getMode();
 		switch (mode)
 		{
+			case SINGLE ->
+			{
+				// nothing to do
+			}
 			case GRID ->
 			{
 				imageLayers.getGridDividerDragControl().initializeDividerPositions();
@@ -141,8 +151,10 @@ public class MultiImageView implements AutoCloseable
 			{
 				spotImageLayers.reset();
 			}
-			case SINGLE ->
+			default ->
 			{
+				logger.log(WARNING, "%s::resetControls : unhandleded mode »%s«".formatted(
+					getClass().getName(), mode));
 			}
 		}
 	}
@@ -155,7 +167,7 @@ public class MultiImageView implements AutoCloseable
 		{
 			setMode(getDefaultMultiImageMode());
 		}
-		imageLayers.createImageLayer(getLayerSelectionModel().singleSelectedLayerProperty().get()
+		imageLayers.createImageLayer(_getLayerSelectionModel().singleSelectedLayerProperty().get()
 			.map(layer -> layers.indexOf(layer) + 1).orElse(layers.size()));
 	}
 
@@ -218,7 +230,7 @@ public class MultiImageView implements AutoCloseable
 		logger.log(TRACE, () -> getClass().getName() + "::setImageDescriptor »" + imageDescriptor + "«");
 		if (!viewport.modeProperties().isValue(SPOT))
 		{
-			getLayerSelectionModel().singleSelectedLayerProperty().get().ifPresent(
+			_getLayerSelectionModel().singleSelectedLayerProperty().get().ifPresent(
 				imageLayer -> imageLayer.setOptionalImageDescriptor(imageDescriptor));
 		}
 	}

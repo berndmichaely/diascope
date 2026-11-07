@@ -6,9 +6,9 @@ checker-framework = "4.4.0"
 filesystemview-base = "1.0.0-rc.1"
 filesystemview-fx   = "1.0.0-rc.1"
 jairosvg = "1.0.15"
-javafx = "27"
+javafx = "27.0.1"
 jsemver = "3.1.0"
-junit-jupiter = "6.0.1"
+junit-jupiter = "6.1.3"
 
 [libraries]
 assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj-core" }
