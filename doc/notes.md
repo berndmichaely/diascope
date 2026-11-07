@@ -34,3 +34,15 @@ This allows a stable version, a development version and unit tests to coexist on
 So it is **important** to **always** use this utility class instead of the preferences API directly!
 
 Keys for preferences must be defined in the `enum PreferencesKeys`.
+
+## Testing UI scaling
+
+To test e.g. icon sizes, you may want to set:
+
+```
+export JAVA_OPTS='-Dglass.gtk.uiScale=2.0'
+```
+or
+```
+export GDK_SCALE=1/2
+```

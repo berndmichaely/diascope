@@ -24,18 +24,18 @@ package de.bernd_michaely.diascope.app.image;
  */
 abstract sealed class TransformParamsBase permits TransformParams, DeltaTransformParams
 {
-	private static final double DEFAULT_ZOOM_FACTOR = 1.0;
+	private static final double DEFAULT_ZOOM_FACTOR_FIXED = 1.0;
 	private static final double DEFAULT_ROTATE = 0.0;
 	private static final boolean DEFAULT_MIRROR_X = false;
 	private static final boolean DEFAULT_MIRROR_Y = false;
-	double zoomFactor = DEFAULT_ZOOM_FACTOR;
+	double zoomFactorFixed = DEFAULT_ZOOM_FACTOR_FIXED;
 	double rotate = DEFAULT_ROTATE;
 	boolean mirrorX = DEFAULT_MIRROR_X;
 	boolean mirrorY = DEFAULT_MIRROR_Y;
 
 	void readFrom(ImageTransforms imageTransforms)
 	{
-		zoomFactor = imageTransforms.zoomFixedProperty().get();
+		zoomFactorFixed = imageTransforms.zoomFixedProperty().get();
 		rotate = imageTransforms.rotateProperty().get();
 		mirrorX = imageTransforms.mirrorXProperty().get();
 		mirrorY = imageTransforms.mirrorYProperty().get();
@@ -43,7 +43,7 @@ abstract sealed class TransformParamsBase permits TransformParams, DeltaTransfor
 
 	void writeTo(ImageTransforms imageTransforms)
 	{
-		imageTransforms.zoomFixedProperty().set(zoomFactor);
+		imageTransforms.zoomFixedProperty().set(zoomFactorFixed);
 		imageTransforms.rotateProperty().set(rotate);
 		imageTransforms.mirrorXProperty().set(mirrorX);
 		imageTransforms.mirrorYProperty().set(mirrorY);
@@ -51,33 +51,16 @@ abstract sealed class TransformParamsBase permits TransformParams, DeltaTransfor
 
 	static void _initDefaultsOf(ImageTransforms imageTransforms)
 	{
-		imageTransforms.zoomFixedProperty().set(DEFAULT_ZOOM_FACTOR);
+		imageTransforms.zoomFixedProperty().set(DEFAULT_ZOOM_FACTOR_FIXED);
 		imageTransforms.rotateProperty().set(DEFAULT_ROTATE);
 		imageTransforms.mirrorXProperty().set(DEFAULT_MIRROR_X);
 		imageTransforms.mirrorYProperty().set(DEFAULT_MIRROR_Y);
-	}
-
-	/// Transfer values between this object and the given ImageTransforms.
-	///
-	/// @param imageTransforms the given ImageTransforms
-	/// @param  read if `true`, read from, otherwise write to
-	///
-	final void transfer(ImageTransforms imageTransforms, boolean read)
-	{
-		if (read)
-		{
-			readFrom(imageTransforms);
-		}
-		else
-		{
-			writeTo(imageTransforms);
-		}
 	}
 
 	@Override
 	public String toString()
 	{
 		return "%s_[ZoomFactor:%f_Rotation:%f_Mirror(%b/%b)]".formatted(
-			getClass().getName(), zoomFactor, rotate, mirrorX, mirrorY);
+			getClass().getName(), zoomFactorFixed, rotate, mirrorX, mirrorY);
 	}
 }

@@ -16,25 +16,36 @@
  */
 package de.bernd_michaely.diascope.app.image;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableList;
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
+import de.bernd_michaely.diascope.app.util.beans.binding.ListBindings;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+import de.bernd_michaely.diascope.app.util.stream.UniqueElementGatherer;
 import java.lang.System.Logger;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.DoubleSupplier;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.Property;
+import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
+import javafx.beans.value.ObservableDoubleValue;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 import static de.bernd_michaely.diascope.app.image.NormalizationUtil.normalizeAngleToClosedRange;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
+import static javafx.beans.binding.Bindings.max;
+import static javafx.collections.FXCollections.observableArrayList;
 
 /// Class for connecting facade with image layer ImageTransforms.
 ///
@@ -64,11 +75,42 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 	private final Map<T, TransformableParams> mapBufferLocalParams = new IdentityHashMap<>(); // WeakHashMap?
 	private final ObservableBooleanValue local;
 	private final ChangeListener<Boolean> localModeListener;
+	private final ObservableList<ObservableDoubleValue> listCalculatedZoomFactors;
+	private final DoubleBinding resultingZoomFactorBinding;
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
 		SelectableProperties selectionModel, ListDualSelection<T> listDualSelection,
-		ObservableList<T> unmodifiableLayers, ObservableList<T> unmodifiableSpotLayers)
+		@Unmodifiable SelectableList<T> layers, @Unmodifiable ObservableList<T> spotLayers)
 	{
+		this.listCalculatedZoomFactors = observableArrayList();
+		this.resultingZoomFactorBinding = max(ListBindings.cumulatedOperations(
+			listCalculatedZoomFactors, (d1, d2) -> d1 < 0 ? d2 : (d1 == d2 ? d1 : 0.0), -1.0), 0.0);
+		final Runnable onCalculateZoomFactors = () ->
+		{
+			final boolean noneSelected = selectionModel.isNoneSelected();
+			// if no layer is selected, consider all layers
+			listCalculatedZoomFactors.setAll(
+				IntStream.range(0, layers.size())
+					.filter(i -> noneSelected || selectionModel.isSelected(i))
+					.mapToObj(layers::get)
+					.map(AbstractImageLayer::getImageTransforms)
+					.map(ImageTransforms::zoomFactorProperty).toList());
+		};
+		layers.addSelectionListener(_ -> onCalculateZoomFactors.run());
+		facadeImageTransforms.setResultingZoomFactorBinding(resultingZoomFactorBinding);
+		final DoubleSupplier adjustCalculatedZoomFactor = () ->
+		{
+			// if no layer is selected, consider all layers
+			final boolean noneSelected = selectionModel.isNoneSelected();
+			return IntStream.range(0, layers.size())
+				.filter(i -> selectionModel.isSelected(i) || noneSelected)
+				.mapToObj(layers::get)
+				.map(AbstractImageLayer::getImageTransforms)
+				.map(ImageTransforms::zoomFactorProperty)
+				.map(ReadOnlyDoubleProperty::getValue)
+				.gather(UniqueElementGatherer.of())
+				.findAny().map(Number::doubleValue).orElse(0.0);
+		};
 		// on view mode change:
 		this.local = modeProperties.isValueProperty(Mode.GRID);
 		this.localModeListener = onChange(isLocal ->
@@ -127,18 +169,18 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 		{
 			if (local.get())
 			{
-				final int n = unmodifiableLayers.size();
+				final int n = layers.size();
 				for (int i = 0; i < n; i++)
 				{
 					if (selectionModel.isSelected(i))
 					{
-						unmodifiableLayers.get(i).getImageTransforms().zoomModeRawValueProperty().set(newValue);
+						layers.get(i).getImageTransforms().zoomModeRawValueProperty().set(newValue);
 					}
 				}
 			}
 			else
 			{
-				Stream.concat(unmodifiableLayers.stream(), unmodifiableSpotLayers.stream()).forEach(t ->
+				Stream.concat(layers.stream(), spotLayers.stream()).forEach(t ->
 					t.getImageTransforms().zoomModeRawValueProperty().set(newValue));
 			}
 		}));
@@ -148,9 +190,9 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 			ZoomMode, ZoomFactor, Rotate, MirrorX, MirrorY
 		}
 		@FunctionalInterface
-		interface AdjustmentFunction<V>
+		interface AdjustmentFunction<A>
 		{
-			V apply(V propertyValue, V oldValue, V newValue);
+			A apply(A propertyValue, A oldValue, A newValue);
 		}
 		class ImageTransformPropertyChangeListener<V, P extends Property<V>>
 			implements ChangeListener<V>
@@ -175,12 +217,12 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 					listDualSelection.oldestSelectedItemProperty().get().ifPresent(oldestLayer ->
 					{
 						// at least one layer is selected
-						final int n = unmodifiableLayers.size();
+						final int n = layers.size();
 						for (int i = 0; i < n; i++)
 						{
 							if (selectionModel.isSelected(i))
 							{
-								final T layer = unmodifiableLayers.get(i);
+								final T layer = layers.get(i);
 								final P layerProperty = transformsToProperty.apply(layer.getImageTransforms());
 								final V value = layer == oldestLayer ? newValue :
 									adjustmentFunction.apply(layerProperty.getValue(), oldValue, newValue);
@@ -192,7 +234,7 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 									switch (transformOp)
 									{
 										case ZoomMode -> transformParams.zoomMode = (ZoomMode) value;
-										case ZoomFactor -> transformParams.zoomFactor = (double) value;
+										case ZoomFactor -> transformParams.zoomFactorFixed = (double) value;
 										case Rotate -> transformParams.rotate = (double) value;
 										case MirrorX -> transformParams.mirrorX = (boolean) value;
 										case MirrorY -> transformParams.mirrorY = (boolean) value;
@@ -211,7 +253,7 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				}
 				else // global
 				{
-					Stream.concat(unmodifiableLayers.stream(), unmodifiableSpotLayers.stream())
+					Stream.concat(layers.stream(), spotLayers.stream())
 						.map(AbstractImageLayer::getImageTransforms)
 						.map(transformsToProperty)
 						.forEach(p -> p.setValue(newValue));
@@ -228,7 +270,7 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				ImageTransforms::zoomFixedProperty));
 		facadeImageTransforms.rotateProperty().addListener(
 			new ImageTransformPropertyChangeListener<>(TransformOp.Rotate,
-				(p, o, n) -> normalizeAngleToClosedRange(p.doubleValue() + n.doubleValue() - o.doubleValue(), -180.0),
+				(p, o, n) -> normalizeAngleToClosedRange(p.doubleValue() + (n.doubleValue() - o.doubleValue()), -180.0),
 				ImageTransforms::rotateProperty));
 		facadeImageTransforms.mirrorXProperty().addListener(
 			new ImageTransformPropertyChangeListener<>(TransformOp.MirrorX,
@@ -246,6 +288,7 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				throw new IllegalStateException(
 					"%s : adding the same layer twice".formatted(getClass().getName()));
 			}
+			onCalculateZoomFactors.run();
 		};
 		final Consumer<T> removeLayer = layer ->
 		{
@@ -254,9 +297,10 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				throw new IllegalStateException(
 					"%s : trying to remove non existing layer".formatted(getClass().getName()));
 			}
+			onCalculateZoomFactors.run();
 		};
-		unmodifiableLayers.forEach(addLayer);
-		unmodifiableLayers.addListener(new ListChangeListenerBuilder<T>()
+		layers.forEach(addLayer);
+		layers.addListener(new ListChangeListenerBuilder<T>()
 			.onAdd(change -> change.getAddedSubList().forEach(addLayer))
 			.onRemove(change -> change.getRemoved().forEach(removeLayer))
 			.build());

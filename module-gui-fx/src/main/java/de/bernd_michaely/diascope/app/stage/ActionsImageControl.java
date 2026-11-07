@@ -59,6 +59,7 @@ class ActionsImageControl implements AutoCloseable
 		final var properties = imageControlProperties.getMainContentProperties();
 		final var selectionModel = multiImageView.getLayerSelectionModel();
 		final var emptyProperty = selectionModel.emptyProperty();
+		final var noneSelectedProperty = selectionModel.noneSelectedProperty();
 		final BooleanBinding notMultiLayerMode = not(multiImageView.multiLayerModeProperty());
 		// LayerAdd
 		this.actionLayerAdd = new TriggerAction(multiImageView::addLayer,
@@ -108,17 +109,17 @@ class ActionsImageControl implements AutoCloseable
 			ORIGINAL, new ActionItemDescriptor(Icons.Zoom100, "100%", "Zoom to 100%", "Zoom image to 100%"),
 			FIT, new ActionItemDescriptor(Icons.ZoomFitWindow, "Fit", "Zoom to fit window", "Zoom image to fit window"),
 			FILL, new ActionItemDescriptor(Icons.ZoomFillWindow, "Fill", "Zoom to fill window", "Zoom image to fill window")));
-		actionZoom.disableProperty().bind(emptyProperty);
+		actionZoom.disableProperty().bind(noneSelectedProperty);
 		actionZoom.selectedIdRawProperty().bindBidirectional(
 			multiImageView.getImageTransforms().zoomModeRawValueProperty());
 		// Mirror
 		this.actionMirrorX = new CheckedAction(new ActionItemDescriptor(
 			Icons.MirrorX, "<––>", "Mirror horizontally", "Mirror image horizontally"));
-		actionMirrorX.disableProperty().bind(emptyProperty);
+		actionMirrorX.disableProperty().bind(noneSelectedProperty);
 		actionMirrorX.selectedProperty().bindBidirectional(multiImageView.getImageTransforms().mirrorXProperty());
 		this.actionMirrorY = new CheckedAction(new ActionItemDescriptor(
 			Icons.MirrorY, "^|↓", "Mirror vertically", "Mirror image vertically"));
-		actionMirrorY.disableProperty().bind(emptyProperty);
+		actionMirrorY.disableProperty().bind(noneSelectedProperty);
 		actionMirrorY.selectedProperty().bindBidirectional(multiImageView.getImageTransforms().mirrorYProperty());
 		// ContextMenu specific
 		this.actionToolbar = new CheckedAction(
@@ -136,7 +137,7 @@ class ActionsImageControl implements AutoCloseable
 		actionSelectAll.disableProperty().bind(notMultiLayerMode.or(selectionModel.allSelectedProperty()));
 		this.actionSelectNone = new TriggerAction(selectionModel::selectNone, new ActionItemDescriptor(
 			Icons.SelectNone, "---", "Unselect all layers", "Unselect all layers"));
-		actionSelectNone.disableProperty().bind(notMultiLayerMode.or(selectionModel.noneSelectedProperty()));
+		actionSelectNone.disableProperty().bind(notMultiLayerMode.or(noneSelectedProperty));
 		this.actionSelectToggle = new TriggerAction(selectionModel::invertSelection, new ActionItemDescriptor(
 			Icons.SelectInvert, "+/-", "Toggle layers selection", "Toggle layers selection"));
 		actionSelectToggle.disableProperty().bind(notMultiLayerMode);

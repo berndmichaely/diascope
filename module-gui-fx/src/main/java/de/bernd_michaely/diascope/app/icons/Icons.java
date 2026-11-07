@@ -28,7 +28,7 @@ import static de.bernd_michaely.diascope.app.util.scene.ScreenUtil.*;
 import static java.lang.System.Logger.Level.*;
 
 /**
- * Utility class to access icons in resources. Implementation using batik.
+ * Utility class to access icons in resources.
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
@@ -74,7 +74,7 @@ public enum Icons
 		}
 		catch (Exception ex)
 		{
-			logger.log(WARNING, "Error reading SVG from JairoSVG", ex);
+			logger.log(WARNING, "Error reading SVG icon", ex);
 			return null;
 		}
 	}

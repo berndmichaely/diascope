@@ -35,6 +35,7 @@ import javafx.scene.layout.StackPane;
 
 import static de.bernd_michaely.diascope.app.util.action.Action.SEPARATOR;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
+import static javafx.beans.binding.Bindings.when;
 import static javafx.geometry.Pos.CENTER_RIGHT;
 
 /// ToolBar for image area.
@@ -71,22 +72,27 @@ class ToolBarImage
 		sliderZoom.valueProperty().addListener(onChange(value ->
 			actions.actionZoom.setSelectedId(ZoomMode.FIXED)));
 		sliderZoom.valueProperty().bindBidirectional(imageTransforms.zoomFixedProperty());
+		sliderZoom.disableProperty().bind(actions.actionZoom.disableProperty());
 		sliderZoom.setTooltip(new Tooltip("""
       Set zoom factor
 
       Double-Click to set slider to the actual zoom factor"""));
+		final var zoomFactorProperty = imageTransforms.zoomFactorProperty();
 		sliderZoom.setOnMouseClicked(event ->
 		{
 			if (event.getButton().equals(MouseButton.PRIMARY) && event.getClickCount() == 2 &&
 				imageTransforms.zoomModeOrDefaultProperty().get() != ZoomMode.FIXED)
 			{
-				sliderZoom.setValue(imageTransforms.zoomFactorProperty().get());
+				sliderZoom.setValue(zoomFactorProperty.get());
 			}
 		});
 		sliderZoom.setOnScroll(sliderScrollEventHandler);
 		final var labelZoom = new Label("100.0%");
 		labelZoom.setTooltip(new Tooltip("Current zoom factor"));
-		labelZoom.textProperty().bind(imageTransforms.zoomFactorProperty().multiply(100.0).asString("%.1f%% "));
+		labelZoom.textProperty().bind(
+			when(zoomFactorProperty.greaterThan(0.0))
+				.then(zoomFactorProperty.multiply(100.0).asString("%.1f%% "))
+				.otherwise("---       "));
 		final var labelZoomWidth = new Label("8888.8% ");
 		labelZoomWidth.setVisible(false);
 		final var stackPaneZoom = new StackPane(labelZoomWidth, labelZoom);
@@ -95,6 +101,8 @@ class ToolBarImage
 		// transformations
 		final var sliderRotation = new Slider(-180.0, 180.0, 0.0);
 		sliderRotation.setBlockIncrement(30);
+		// there is no action for rotation, but it is enabled, iff e.g. zooming is enabled
+		sliderRotation.disableProperty().bind(actions.actionZoom.disableProperty());
 		sliderRotation.setTooltip(new Tooltip("""
       Set image rotation
 

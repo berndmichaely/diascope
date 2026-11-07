@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
 ///
 public class ImageTransformsSwitchTest
 {
-	/// Test stub implementation of Transformable interface.
+	/// Test stub implementation of AbstractImageLayer.
 	///
 	private static class LayerStub extends AbstractImageLayer
 	{
@@ -113,7 +113,7 @@ public class ImageTransformsSwitchTest
 		selectionModel = SelectableListFactory.listSelectionHandler(layers);
 		spotLayers = observableArrayList();
 		its = new ImageTransformsSwitch<>(modeProperties, selectionModel, listDualSelection,
-			unmodifiableObservableList(layers), unmodifiableObservableList(spotLayers));
+			layers, unmodifiableObservableList(spotLayers));
 	}
 
 	private Optional<LayerStub> getOptionalSingleSelected()
@@ -403,30 +403,47 @@ public class ImageTransformsSwitchTest
 		assertEquals(1.0, it_a.zoomFactorProperty().get());
 		assertEquals(1.0, it_b.zoomFactorProperty().get());
 		assertEquals(1.0, it_c.zoomFactorProperty().get());
+		assertTrue(getOptionalSingleSelected().isEmpty());
+		assertEquals(1.0, zoomFactorProperty.get());
+		layers.setSelected(layers.indexOf(layer_a), true);
+		assertEquals(1.0, zoomFactorProperty.get());
+		layers.setSelected(layers.indexOf(layer_a), false);
+		assertEquals(1.0, zoomFactorProperty.get());
 		setLocal(true);
 		assertTrue(isLocal());
 		assertTrue(getOptionalSingleSelected().isEmpty());
+		assertEquals(LayerStub.FACTOR_FIT, zoomFactorProperty.get());
 		layers.setSelected(layers.indexOf(layer_a), true);
 		assertEquals(layer_a, getOptionalSingleSelected().get());
+		assertEquals(LayerStub.FACTOR_FIT, zoomFactorProperty.get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.1);
+		assertEquals(1.1, zoomFactorProperty.get());
 		layers.setSelected(layers.indexOf(layer_a), false);
+		assertEquals(0.0, zoomFactorProperty.get());
 		layers.setSelected(layers.indexOf(layer_b), true);
 		assertEquals(layer_b, getOptionalSingleSelected().get());
+		assertEquals(LayerStub.FACTOR_FIT, zoomFactorProperty.get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.2);
+		assertEquals(1.2, zoomFactorProperty.get());
 		layers.setSelected(layers.indexOf(layer_b), false);
+		assertEquals(0.0, zoomFactorProperty.get());
 		layers.setSelected(layers.indexOf(layer_c), true);
 		assertEquals(layer_c, getOptionalSingleSelected().get());
+		assertEquals(LayerStub.FACTOR_FIT, zoomFactorProperty.get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.3);
+		assertEquals(1.3, zoomFactorProperty.get());
 		layers.selectNone();
 		assertTrue(getOptionalSingleSelected().isEmpty());
+		assertEquals(0.0, zoomFactorProperty.get());
 		setLocal(false);
 		assertTrue(isGlobal());
 		assertEquals(1.0, it_a.zoomFactorProperty().get());
 		assertEquals(1.0, it_b.zoomFactorProperty().get());
 		assertEquals(1.0, it_c.zoomFactorProperty().get());
+		assertEquals(1.0, zoomFactorProperty.get());
 		setLocal(true);
 		assertTrue(isLocal());
 		assertEquals(1.1, it_a.zoomFactorProperty().get());
