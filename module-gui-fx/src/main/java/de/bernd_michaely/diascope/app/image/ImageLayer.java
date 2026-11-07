@@ -19,14 +19,12 @@ package de.bernd_michaely.diascope.app.image;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
-import java.util.Optional;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
@@ -51,7 +49,7 @@ import static javafx.beans.binding.Bindings.when;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ImageLayer implements Transformable
+final class ImageLayer extends AbstractImageLayer
 {
 	private static final Logger logger = System.getLogger(ImageLayer.class.getName());
 	private boolean isClosed;
@@ -75,7 +73,6 @@ final class ImageLayer implements Transformable
 	private final Translate translateScroll;
 	private final ViewportBoundsLocal viewportBoundsLocal;
 	private final ViewportBounds viewportBounds;
-	private final ObjectProperty<Optional<ImageDescriptor>> imageDescriptor;
 
 	ImageLayer(Viewport viewport)
 	{
@@ -151,12 +148,11 @@ final class ImageLayer implements Transformable
 				.otherwise(viewportBounds.heightProperty().subtract(imageHeightTransformed).divide(2.0))));
 		imageView.getTransforms().addAll(
 			translateScroll, scale, translateBack, mirror, rotate, translateCenter);
-		this.imageDescriptor = new SimpleObjectProperty<>(Optional.empty());
-		imageDescriptor.addListener(onChange(optional ->
+		optionalImageDescriptorProperty().addListener(onChange(optional ->
 		{
 			optional.ifPresentOrElse(descriptor ->
 			{
-				final var image = descriptor.getImage();
+				final var image = descriptor.image();
 				imageView.setImage(image);
 				final double width = Math.max(image.getWidth(), 0.0);
 				final double height = Math.max(image.getHeight(), 0.0);
@@ -178,7 +174,7 @@ final class ImageLayer implements Transformable
 	}
 
 	@Override
-	public DefaultImageTransforms getImageTransforms()
+	DefaultImageTransforms getImageTransforms()
 	{
 		return imageTransforms;
 	}
@@ -204,21 +200,6 @@ final class ImageLayer implements Transformable
 		return getRegion().clipProperty();
 	}
 
-	ObjectProperty<Optional<ImageDescriptor>> imageDescriptorProperty()
-	{
-		return imageDescriptor;
-	}
-
-	Optional<ImageDescriptor> getImageDescriptor()
-	{
-		return imageDescriptorProperty().get();
-	}
-
-	void setImageDescriptor(Optional<ImageDescriptor> imageDescriptor)
-	{
-		imageDescriptorProperty().set(imageDescriptor);
-	}
-
 	ViewportBoundsLocal getViewportBoundsLocal()
 	{
 		return viewportBoundsLocal;
@@ -227,7 +208,7 @@ final class ImageLayer implements Transformable
 	@Override
 	public String toString()
 	{
-		return getImageDescriptor().map(ImageDescriptor::getTitle).orElse("");
+		return getOptionalImageDescriptor().map(ImageDescriptor::getTitle).orElse("");
 	}
 
 	@Override
@@ -236,8 +217,8 @@ final class ImageLayer implements Transformable
 		if (!isClosed)
 		{
 			isClosed = true;
-			imageDescriptorProperty().unbind();
-			setImageDescriptor(Optional.empty());
+			optionalImageDescriptorProperty().unbind();
+			setImageDescriptor(null);
 		}
 	}
 }

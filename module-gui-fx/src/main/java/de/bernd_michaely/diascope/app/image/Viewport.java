@@ -92,14 +92,14 @@ class Viewport implements AutoCloseable
 		{
 			if (layer != null)
 			{
-				layer.setImageDescriptor(property.get().flatMap(ImageLayer::getImageDescriptor));
+				layer.setOptionalImageDescriptor(property.get().map(ImageLayer::getImageDescriptor));
 			}
 		};
 		final Consumer<@Nullable ImageLayer> clearImage = layer ->
 		{
 			if (layer != null)
 			{
-				layer.setImageDescriptor(Optional.empty());
+				layer.setImageDescriptor(null);
 			}
 		};
 		final ChangeListener<Mode> onModeChange = onChange((oldMode, newMode) ->

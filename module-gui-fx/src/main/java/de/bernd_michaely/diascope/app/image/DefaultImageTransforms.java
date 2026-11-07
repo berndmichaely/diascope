@@ -44,8 +44,18 @@ final class DefaultImageTransforms implements ImageTransforms, AutoCloseable
 	// calculated properties:
 	private final ReadOnlyDoubleWrapper resultingZoomFactor;
 	private @Nullable ReadOnlyDoubleWrapper otherResultingZoomFactor;
+	private final @Nullable ImageDescriptor imageDescriptor;
 
 	DefaultImageTransforms()
+	{
+		this(null);
+	}
+
+	/// Constructor for unit tests.
+	///
+	/// @param imageDescriptor to be associated with this instance for use in unit tests
+	///
+	DefaultImageTransforms(@Nullable ImageDescriptor imageDescriptor)
 	{
 		this.zoomModeProperties = EnumProperties.createInstance(ZoomMode.getDefault());
 		this.zoomFixed = new SimpleDoubleProperty(1.0);
@@ -53,6 +63,17 @@ final class DefaultImageTransforms implements ImageTransforms, AutoCloseable
 		this.mirrorX = new SimpleBooleanProperty();
 		this.mirrorY = new SimpleBooleanProperty();
 		this.resultingZoomFactor = new ReadOnlyDoubleWrapper();
+		this.imageDescriptor = imageDescriptor;
+	}
+
+	/// Method for unit tests.
+	///
+	/// @return an imageDescriptor to be used in unit tests
+	///
+	@Nullable
+	ImageDescriptor getImageDescriptor()
+	{
+		return imageDescriptor;
 	}
 
 	/// Bind this image control transforms to the other transforms.

@@ -23,13 +23,10 @@ import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.lang.System.Logger;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.Property;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.beans.value.ObservableValue;
@@ -48,11 +45,11 @@ import static java.lang.System.Logger.Level.*;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
+class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseable
 {
 	private static final Logger logger = System.getLogger(ImageTransformsSwitch.class.getName());
 
-	private record TransformableParams<L extends Transformable>(TransformParams local, DeltaTransformParams delta)
+	private record TransformableParams<L extends AbstractImageLayer>(TransformParams local, DeltaTransformParams delta)
 	{
 		private TransformableParams(L layer)
 		{
@@ -62,14 +59,10 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 	}
 
 	private final DefaultImageTransforms facadeImageTransforms = new DefaultImageTransforms();
-	@Deprecated private final DefaultImageTransforms globalImageTransforms = new DefaultImageTransforms();
 	private final TransformParams bufferGlobalParams = new TransformParams();
-	@Deprecated private final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
 	private final Map<T, TransformableParams> mapBufferLocalParams = new IdentityHashMap<>(); // WeakHashMap?
 	private final ObservableBooleanValue local;
 	private final ChangeListener<Boolean> localModeListener;
-	@Deprecated private final ObjectProperty<Optional<DefaultImageTransforms>> selectedImageTransforms =
-		new SimpleObjectProperty<>(Optional.empty());
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
 		SelectableProperties selectionModel, ListDualSelection<T> listDualSelection,
@@ -218,7 +211,7 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 				else // global
 				{
 					Stream.concat(unmodifiableLayers.stream(), unmodifiableSpotLayers.stream())
-						.map(Transformable::getImageTransforms)
+						.map(AbstractImageLayer::getImageTransforms)
 						.map(transformsToProperty)
 						.forEach(p -> p.setValue(newValue));
 				}
@@ -277,14 +270,11 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 		return facadeImageTransforms;
 	}
 
-	DefaultImageTransforms _getFacadeImageTransforms()
-	{
-		return facadeImageTransforms;
-	}
-
 	DefaultImageTransforms _getGlobalImageTransforms()
 	{
-		return globalImageTransforms;
+		final var imageTransforms = new DefaultImageTransforms();
+		bufferGlobalParams.writeTo(imageTransforms);
+		return imageTransforms;
 	}
 
 	ObservableBooleanValue _getLocal()
@@ -294,12 +284,14 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 
 	Map<T, DefaultImageTransforms> _getMapIntermediate()
 	{
+		final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
+		mapBufferLocalParams.forEach((layer, tp) ->
+		{
+			final var imageTransforms = new DefaultImageTransforms(layer.getImageDescriptor());
+			tp.local().writeTo(imageTransforms);
+			mapIntermediate.put(layer, imageTransforms);
+		});
 		return mapIntermediate;
-	}
-
-	ObjectProperty<Optional<DefaultImageTransforms>> _getSelectedImageTransforms()
-	{
-		return selectedImageTransforms;
 	}
 
 	/// {@inheritDoc}
@@ -309,11 +301,11 @@ class ImageTransformsSwitch<T extends Transformable> implements AutoCloseable
 	@Override
 	public void close()
 	{
-		try (facadeImageTransforms; globalImageTransforms)
+		try (facadeImageTransforms)
 		{
-			mapIntermediate.forEach((layer, intermediateTransforms) ->
+			mapBufferLocalParams.keySet().forEach(layer ->
 			{
-				try (intermediateTransforms; layer)
+				try (layer)
 				{
 				}
 			});

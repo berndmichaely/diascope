@@ -219,7 +219,7 @@ public class MultiImageView implements AutoCloseable
 		if (!viewport.modeProperties().isValue(SPOT))
 		{
 			getLayerSelectionModel().singleSelectedLayerProperty().get().ifPresent(
-				imageLayer -> imageLayer.setImageDescriptor(imageDescriptor));
+				imageLayer -> imageLayer.setOptionalImageDescriptor(imageDescriptor));
 		}
 	}
 

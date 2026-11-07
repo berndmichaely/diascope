@@ -18,7 +18,6 @@ package de.bernd_michaely.diascope.app.image;
 
 import java.nio.file.Path;
 import javafx.scene.image.Image;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Object to describe an image. As a wrapper, it has a unique object identity
@@ -27,57 +26,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *
  * @author Bernd Michaely (info@bernd-michaely.de)
  */
-public class ImageDescriptor
+public record ImageDescriptor(Image image, Path path)
 {
-	private final Image image;
-	private final Path path;
-
-	public ImageDescriptor(Image image, Path path)
-	{
-		this.image = image;
-		this.path = path;
-	}
-
-	/**
-	 * Returns the given image.
-	 *
-	 * @return the given image
-	 */
-	public Image getImage()
-	{
-		return image;
-	}
-
-	/**
-	 * Returns the image path.
-	 *
-	 * @return the image path
-	 */
-	public Path getPath()
-	{
-		return path;
-	}
-
 	public String getTitle()
 	{
-		return path != null ? path.toString() : "";
-	}
-
-	@Override
-	public final boolean equals(@Nullable Object object)
-	{
-		return super.equals(object);
-	}
-
-	@Override
-	public final int hashCode()
-	{
-		return super.hashCode();
-	}
-
-	@Override
-	public String toString()
-	{
-		return getTitle();
+		return "" + path();
 	}
 }

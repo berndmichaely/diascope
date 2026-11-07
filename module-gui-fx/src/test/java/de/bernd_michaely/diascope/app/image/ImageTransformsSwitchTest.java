@@ -21,6 +21,7 @@ import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableListF
 import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import de.bernd_michaely.diascope.app.image.MultiImageView.Mode;
 import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import javafx.beans.property.BooleanProperty;
@@ -48,19 +49,27 @@ import static org.junit.jupiter.api.Assertions.*;
 ///
 public class ImageTransformsSwitchTest
 {
-	/// Test dummy implementation of Transformable interface.
+	/// Test stub implementation of Transformable interface.
 	///
-	private static class Transformable_ implements Transformable
+	private static class LayerStub extends AbstractImageLayer
 	{
 		private static final double FACTOR_FIT = 0.7;
 		private static final double FACTOR_FILL = 0.8;
 		private final DefaultImageTransforms imageTransforms;
+		private final ObjectProperty<Optional<ImageDescriptor>> imageDescriptorProperty;
 		private final String name;
 
-		Transformable_(String name)
+		/// Creates a layer stub.
+		///
+		/// @param name a layer stub name. Must be suitable for use as `Path.of(name)`
+		///
+		LayerStub(String name)
 		{
 			this.name = name;
-			this.imageTransforms = new DefaultImageTransforms();
+			final var imageDescriptor = new ImageDescriptor(null, Path.of(name));
+			this.imageTransforms = new DefaultImageTransforms(imageDescriptor);
+			this.imageDescriptorProperty = new SimpleObjectProperty<>();
+			setImageDescriptor(imageDescriptor);
 			final EnumProperties<ZoomMode> zoomModeProperties = imageTransforms.zoomModeProperties();
 			imageTransforms.setResultingZoomFactorBinding(
 				when(zoomModeProperties.isValueProperty(FIT)).then(FACTOR_FIT)
@@ -76,6 +85,12 @@ public class ImageTransformsSwitchTest
 		}
 
 		@Override
+		public ObjectProperty<Optional<ImageDescriptor>> optionalImageDescriptorProperty()
+		{
+			return imageDescriptorProperty;
+		}
+
+		@Override
 		public String toString()
 		{
 			return "%s[%s]".formatted(getClass().getSimpleName(), name);
@@ -83,11 +98,11 @@ public class ImageTransformsSwitchTest
 	}
 
 	private EnumProperties<Mode> modeProperties;
-	private SelectableList<Transformable_> layers;
-	private ListDualSelection<Transformable_> listDualSelection;
+	private SelectableList<LayerStub> layers;
+	private ListDualSelection<LayerStub> listDualSelection;
 	private SelectableProperties selectionModel;
-	private ObservableList<Transformable_> spotLayers;
-	private ImageTransformsSwitch<Transformable_> its;
+	private ObservableList<LayerStub> spotLayers;
+	private ImageTransformsSwitch<LayerStub> its;
 
 	@BeforeEach
 	public void setUp()
@@ -101,9 +116,14 @@ public class ImageTransformsSwitchTest
 			unmodifiableObservableList(layers), unmodifiableObservableList(spotLayers));
 	}
 
-	private Optional<? extends Transformable> getOptionalSingleSelected()
+	private Optional<LayerStub> getOptionalSingleSelected()
 	{
 		return listDualSelection.singleSelectionItemProperty().get();
+	}
+
+	private Optional<DefaultImageTransforms> getOptionalSelectedImageTransforms()
+	{
+		return getOptionalSingleSelected().map(LayerStub::getImageTransforms);
 	}
 
 	@AfterEach
@@ -136,18 +156,17 @@ public class ImageTransformsSwitchTest
 		return layers.stream()
 			.filter(t -> t.getImageTransforms() == imageTransforms)
 			.findAny()
-			.map(t -> "<LAYER_[%s]>".formatted(t))
+			.map(t -> "%s".formatted(t))
 			.orElseGet(() ->
 			{
-				final Map<Transformable_, DefaultImageTransforms> map = its._getMapIntermediate();
-				return map.entrySet().stream()
+				return its._getMapIntermediate().entrySet().stream()
 					.filter(entry -> entry.getValue() == imageTransforms)
 					.findAny()
 					.map(Map.Entry::getKey)
 					.map(t -> "<INTERMEDIATE_[%s]>".formatted(t))
 					.orElseGet(() ->
 					{
-						if (imageTransforms == its._getFacadeImageTransforms())
+						if (imageTransforms == its.getFacadeImageTransforms())
 						{
 							return "<FACADE>";
 						}
@@ -168,7 +187,7 @@ public class ImageTransformsSwitchTest
 	{
 		System.out.println("test_ImageTransformsSwitch_mode_switch");
 		// check initial state
-		assertNotNull(its._getFacadeImageTransforms());
+		assertNotNull(its.getFacadeImageTransforms());
 		assertNotNull(its._getGlobalImageTransforms());
 		assertTrue(isGlobal());
 		assertFalse(its._getLocal().get());
@@ -176,47 +195,46 @@ public class ImageTransformsSwitchTest
 		assertTrue(layers.isEmpty());
 		assertTrue(spotLayers.isEmpty());
 		Optional<DefaultImageTransforms> optional;
-		optional = its._getSelectedImageTransforms().get();
-		assertTrue(optional.isPresent());
-		assertEquals(its._getGlobalImageTransforms(), optional.get());
+		optional = getOptionalSelectedImageTransforms();
+		assertFalse(optional.isPresent());
 		// switch to local
 		setLocal(true);
 		assertTrue(isLocal());
-		optional = its._getSelectedImageTransforms().get();
+		optional = getOptionalSelectedImageTransforms();
 		assertFalse(optional.isPresent());
 		// add layer
-		final Transformable_ ta = new Transformable_("A");
-		final Transformable_ tb = new Transformable_("B");
-		final Transformable_ tc = new Transformable_("C");
-		layers.addAll(ta, tb, tc);
-		optional = its._getSelectedImageTransforms().get();
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		final var layer_c = new LayerStub("C");
+		layers.addAll(layer_a, layer_b, layer_c);
+		optional = getOptionalSelectedImageTransforms();
 		assertFalse(optional.isPresent());
 		DefaultImageTransforms expected, actual;
 		// select layer
-		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, getOptionalSingleSelected().get());
-		optional = its._getSelectedImageTransforms().get();
+		layers.setSelected(layers.indexOf(layer_b), true);
+		assertEquals(layer_b, getOptionalSingleSelected().get());
+		optional = getOptionalSelectedImageTransforms();
 		assertTrue(optional.isPresent());
-		expected = its._getMapIntermediate().get(tb);
+		expected = its._getMapIntermediate().get(layer_b);
 		actual = optional.get();
-		assertEquals(expected, actual,
-			"expected »%s« ←→ actual »%s«".formatted(tb, findTransformable(actual)));
+		assertEquals(expected.getImageDescriptor(), actual.getImageDescriptor(),
+			"expected »%s« ←→ actual »%s«".formatted(layer_b, findTransformable(actual)));
 		// select other layer
-		layers.setSelected(layers.indexOf(tb), false);
-		layers.setSelected(layers.indexOf(tc), true);
-		assertEquals(tc, getOptionalSingleSelected().get());
-		optional = its._getSelectedImageTransforms().get();
+		layers.setSelected(layers.indexOf(layer_b), false);
+		layers.setSelected(layers.indexOf(layer_c), true);
+		assertEquals(layer_c, getOptionalSingleSelected().get());
+		optional = getOptionalSelectedImageTransforms();
 		assertTrue(optional.isPresent());
-		expected = its._getMapIntermediate().get(tc);
+		expected = its._getMapIntermediate().get(layer_c);
 		actual = optional.get();
-		assertEquals(expected, actual,
-			"expected »%s« ←→ actual »%s«".formatted(tc, findTransformable(actual)));
+		assertEquals(expected.getImageDescriptor(), actual.getImageDescriptor(),
+			"expected »%s« ←→ actual »%s«".formatted(layer_c, findTransformable(actual)));
 		// switch to global
 		setLocal(false);
 		assertFalse(isLocal());
-		optional = its._getSelectedImageTransforms().get();
+		optional = getOptionalSelectedImageTransforms();
 		assertTrue(optional.isPresent());
-		assertEquals(its._getGlobalImageTransforms(), optional.get());
+		assertNull(its._getGlobalImageTransforms().getImageDescriptor());
 	}
 
 	@FunctionalInterface
@@ -236,7 +254,7 @@ public class ImageTransformsSwitchTest
 	///
 	private void _runImageTransformsTestImmediate(PropertiesConsumer propertiesConsumer)
 	{
-		final ImageTransforms facade = its._getFacadeImageTransforms();
+		final ImageTransforms facade = its.getFacadeImageTransforms();
 		propertiesConsumer.accept(
 			facade.zoomModeRawValueProperty(),
 			facade.zoomFixedProperty(),
@@ -288,13 +306,13 @@ public class ImageTransformsSwitchTest
 	{
 		assertTrue(isGlobal());
 		// add layer
-		final Transformable_ ta = new Transformable_("A");
-		final Transformable_ tb = new Transformable_("B");
-		final Transformable_ tc = new Transformable_("C");
-		layers.addAll(ta, tb, tc);
-		final EnumProperties<ZoomMode> zmp_a = ta.getImageTransforms().zoomModeProperties();
-		final EnumProperties<ZoomMode> zmp_b = tb.getImageTransforms().zoomModeProperties();
-		final EnumProperties<ZoomMode> zmp_c = tc.getImageTransforms().zoomModeProperties();
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		final var layer_c = new LayerStub("C");
+		layers.addAll(layer_a, layer_b, layer_c);
+		final EnumProperties<ZoomMode> zmp_a = layer_a.getImageTransforms().zoomModeProperties();
+		final EnumProperties<ZoomMode> zmp_b = layer_b.getImageTransforms().zoomModeProperties();
+		final EnumProperties<ZoomMode> zmp_c = layer_c.getImageTransforms().zoomModeProperties();
 		assertTrue(zmp_a.isValue(getDefault()));
 		assertTrue(zmp_b.isValue(getDefault()));
 		assertTrue(zmp_c.isValue(getDefault()));
@@ -315,8 +333,8 @@ public class ImageTransformsSwitchTest
 		assertTrue(zmp_b.isValue(getDefault()));
 		assertTrue(zmp_c.isValue(getDefault()));
 		// select layer b
-		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, getOptionalSingleSelected().get());
+		layers.setSelected(layers.indexOf(layer_b), true);
+		assertEquals(layer_b, getOptionalSingleSelected().get());
 //		zoomModeRawValueProperty.set(null);
 		zoomModeRawValueProperty.set(ORIGINAL);
 		assertTrue(zmp_a.isValue(getDefault()));
@@ -374,13 +392,13 @@ public class ImageTransformsSwitchTest
 	{
 		assertTrue(isGlobal());
 		// add layer
-		final Transformable_ ta = new Transformable_("A");
-		final Transformable_ tb = new Transformable_("B");
-		final Transformable_ tc = new Transformable_("C");
-		layers.addAll(ta, tb, tc);
-		final DefaultImageTransforms it_a = ta.getImageTransforms();
-		final DefaultImageTransforms it_b = tb.getImageTransforms();
-		final DefaultImageTransforms it_c = tc.getImageTransforms();
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		final var layer_c = new LayerStub("C");
+		layers.addAll(layer_a, layer_b, layer_c);
+		final var it_a = layer_a.getImageTransforms();
+		final var it_b = layer_b.getImageTransforms();
+		final var it_c = layer_c.getImageTransforms();
 		zoomModeRawValueProperty.set(ORIGINAL);
 		assertEquals(1.0, it_a.zoomFactorProperty().get());
 		assertEquals(1.0, it_b.zoomFactorProperty().get());
@@ -388,18 +406,18 @@ public class ImageTransformsSwitchTest
 		setLocal(true);
 		assertTrue(isLocal());
 		assertTrue(getOptionalSingleSelected().isEmpty());
-		layers.setSelected(layers.indexOf(ta), true);
-		assertEquals(ta, getOptionalSingleSelected().get());
+		layers.setSelected(layers.indexOf(layer_a), true);
+		assertEquals(layer_a, getOptionalSingleSelected().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.1);
-		layers.setSelected(layers.indexOf(ta), false);
-		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, getOptionalSingleSelected().get());
+		layers.setSelected(layers.indexOf(layer_a), false);
+		layers.setSelected(layers.indexOf(layer_b), true);
+		assertEquals(layer_b, getOptionalSingleSelected().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.2);
-		layers.setSelected(layers.indexOf(tb), false);
-		layers.setSelected(layers.indexOf(tc), true);
-		assertEquals(tc, getOptionalSingleSelected().get());
+		layers.setSelected(layers.indexOf(layer_b), false);
+		layers.setSelected(layers.indexOf(layer_c), true);
+		assertEquals(layer_c, getOptionalSingleSelected().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.3);
 		layers.selectNone();
@@ -441,13 +459,13 @@ public class ImageTransformsSwitchTest
 	{
 		assertTrue(isGlobal());
 		// add layer
-		final Transformable_ ta = new Transformable_("A");
-		final Transformable_ tb = new Transformable_("B");
-		final Transformable_ tc = new Transformable_("C");
-		layers.addAll(ta, tb, tc);
-		final DefaultImageTransforms it_a = ta.getImageTransforms();
-		final DefaultImageTransforms it_b = tb.getImageTransforms();
-		final DefaultImageTransforms it_c = tc.getImageTransforms();
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		final var layer_c = new LayerStub("C");
+		layers.addAll(layer_a, layer_b, layer_c);
+		final var it_a = layer_a.getImageTransforms();
+		final var it_b = layer_b.getImageTransforms();
+		final var it_c = layer_c.getImageTransforms();
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
@@ -465,8 +483,8 @@ public class ImageTransformsSwitchTest
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
-		layers.setSelected(layers.indexOf(tb), true);
-		assertEquals(tb, getOptionalSingleSelected().get());
+		layers.setSelected(layers.indexOf(layer_b), true);
+		assertEquals(layer_b, getOptionalSingleSelected().get());
 		rotateProperty.set(2.0);
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(2.0, it_b.rotateProperty().get());

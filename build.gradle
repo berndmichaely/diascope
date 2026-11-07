@@ -23,7 +23,7 @@ plugins {
 //apply plugin: 'extra-java-module-info'
 
 wrapper {
-	gradleVersion = '9.3.1'
+	gradleVersion = '9.6.1'
 }
 
 import de.bernd_michaely.common.semver.*
@@ -139,7 +139,7 @@ allprojects {
 	apply plugin: 'org.checkerframework'
 
 	checkerFramework {
-		version = libs.checker.get().version
+		version = rootProject.libs.checker.framework.get().version
 		checkers = [
 			'org.checkerframework.checker.nullness.NullnessChecker',
 			// 'org.checkerframework.checker.optional.OptionalChecker',
@@ -161,7 +161,7 @@ allprojects {
 	if (project == rootProject || isJavaFxSubProject) {
 		apply plugin: 'org.openjfx.javafxplugin'
 		javafx {
-			version = libs.versions.javafx.get()
+			version = rootProject.libs.versions.javafx.get()
 		}
 		logger.lifecycle "-> Applying JavaFX ${javafx.version} plugin to project »$path«"
 	}
