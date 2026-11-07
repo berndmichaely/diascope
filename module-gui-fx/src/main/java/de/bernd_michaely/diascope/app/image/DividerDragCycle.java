@@ -23,6 +23,7 @@ import java.util.function.Function;
 import org.checkerframework.checker.initialization.qual.UnderInitialization;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
+import static de.bernd_michaely.diascope.app.image.NormalizationUtil.normalizeAngleToRange;
 import static java.lang.Math.clamp;
 import static java.lang.Math.max;
 import static java.lang.System.Logger.Level.*;
@@ -173,30 +174,6 @@ class DividerDragCycle implements Runnable
 			singleAngleMin = 0.0;
 			singleAngleMax = 0.0;
 		}
-	}
-
-	/// Normalizes the given angle to be within the range
-	/// `[rangeLow..(rangeLow+360°)[`.
-	///
-	/// *Implementation note:* assuming angle is already close to range.
-	///
-	/// @param angle    the given angle
-	/// @param rangeLow the lower range bound
-	/// @return the normalized angle
-	///
-	static double normalizeAngleToRange(double angle, double rangeLow)
-	{
-		final double rangeHigh = rangeLow + C;
-		double a = angle;
-		while (a < rangeLow)
-		{
-			a += C;
-		}
-		while (a >= rangeHigh)
-		{
-			a -= C;
-		}
-		return a;
 	}
 
 	@Override

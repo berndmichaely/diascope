@@ -30,21 +30,6 @@ class Bindings
 	/// The number of degrees of a full circle.
 	static final double C = 360.0;
 
-	/// Returns the normalized angle.
-	///
-	/// @param angle an angle in degrees
-	/// @return the angle normalized to the range [0°..360°[
-	///
-	static double normalizeAngle(double angle)
-	{
-		double a = angle % C;
-		if (a < 0.0)
-		{
-			a += C;
-		}
-		return a == -0.0 ? 0.0 : a;
-	}
-
 	/// Binding to calculate the tangent of an angle.
 	///
 	/// @param angle an angle in degrees
@@ -77,7 +62,7 @@ class Bindings
 	static DoubleBinding normalizeAngle(ObservableNumberValue angle)
 	{
 		return createDoubleBinding(
-			() -> normalizeAngle(angle.doubleValue()),
+			() -> NormalizationUtil.normalizeAngle(angle.doubleValue()),
 			angle);
 	}
 }

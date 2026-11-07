@@ -17,7 +17,7 @@
 package de.bernd_michaely.diascope.app.image;
 
 import static de.bernd_michaely.diascope.app.image.Bindings.C;
-import static de.bernd_michaely.diascope.app.image.Bindings.normalizeAngle;
+import static de.bernd_michaely.diascope.app.image.NormalizationUtil.normalizeAngle;
 
 /// Enumeration of borders and corners of a rectangular area.
 /// Borders are ordered in ascending order of angles.

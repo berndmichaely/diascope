@@ -32,6 +32,7 @@ import javafx.beans.value.ObservableBooleanValue;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 
+import static de.bernd_michaely.diascope.app.image.NormalizationUtil.normalizeAngleToClosedRange;
 import static de.bernd_michaely.diascope.app.util.beans.ChangeListenerUtil.onChange;
 import static java.lang.System.Logger.Level.*;
 
@@ -227,7 +228,7 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				ImageTransforms::zoomFixedProperty));
 		facadeImageTransforms.rotateProperty().addListener(
 			new ImageTransformPropertyChangeListener<>(TransformOp.Rotate,
-				(p, o, n) -> p.doubleValue() + (n.doubleValue() - o.doubleValue()),
+				(p, o, n) -> normalizeAngleToClosedRange(p.doubleValue() + n.doubleValue() - o.doubleValue(), -180.0),
 				ImageTransforms::rotateProperty));
 		facadeImageTransforms.mirrorXProperty().addListener(
 			new ImageTransformPropertyChangeListener<>(TransformOp.MirrorX,

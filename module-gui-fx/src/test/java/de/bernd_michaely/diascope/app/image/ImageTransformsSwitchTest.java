@@ -489,19 +489,148 @@ public class ImageTransformsSwitchTest
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(2.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
+		rotateProperty.set(0.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(0.0, it_c.rotateProperty().get());
+		layers.setSelected(layers.indexOf(layer_c), true);
+		rotateProperty.set(180.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(180.0, it_b.rotateProperty().get());
+		assertEquals(180.0, it_c.rotateProperty().get());
+		layers.setSelected(layers.indexOf(layer_c), false);
+		rotateProperty.set(0.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(180.0, it_c.rotateProperty().get());
+		layers.setSelected(layers.indexOf(layer_c), true);
+		rotateProperty.set(90.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(90.0, it_b.rotateProperty().get());
+		assertEquals(-90.0, it_c.rotateProperty().get());
+		rotateProperty.set(0.0);
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(-180.0, it_c.rotateProperty().get());
 	}
 
 	@Test
 	public void test_facade_rotate_immediate()
 	{
-		System.out.println("test_facade_zoom_factor_immediate");
+		System.out.println("test_facade_rotate_immediate");
 		_runImageTransformsTestImmediate(this::_test_facade_rotate);
 	}
 
 	@Test
 	public void test_facade_rotate_remote()
 	{
-		System.out.println("test_facade_zoom_factor_remote");
+		System.out.println("test_facade_rotate_remote");
+		_runImageTransformsTestRemote(this::_test_facade_rotate);
+	}
+
+	private void _test_facade_mirror(
+		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+		DoubleProperty zoomFixedProperty,
+		DoubleProperty rotateProperty,
+		BooleanProperty mirrorXProperty,
+		BooleanProperty mirrorYProperty,
+		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+		ReadOnlyDoubleProperty zoomFactorProperty)
+	{
+		assertTrue(isGlobal());
+		// add layer
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		final var layer_c = new LayerStub("C");
+		final var layer_d = new LayerStub("D");
+		layers.addAll(layer_a, layer_b, layer_c, layer_d);
+		final var it_a = layer_a.getImageTransforms();
+		final var it_b = layer_b.getImageTransforms();
+		final var it_c = layer_c.getImageTransforms();
+		final var it_d = layer_d.getImageTransforms();
+		assertFalse(it_a.mirrorXProperty().get());
+		assertFalse(it_a.mirrorYProperty().get());
+		assertFalse(it_b.mirrorXProperty().get());
+		assertFalse(it_b.mirrorYProperty().get());
+		assertFalse(it_c.mirrorXProperty().get());
+		assertFalse(it_c.mirrorYProperty().get());
+		assertFalse(it_d.mirrorXProperty().get());
+		assertFalse(it_d.mirrorYProperty().get());
+		mirrorXProperty.set(true);
+		mirrorYProperty.set(true);
+		assertFalse(it_a.mirrorXProperty().get());
+		assertFalse(it_a.mirrorYProperty().get());
+		layers.setSelected(layers.indexOf(layer_a), true);
+		assertFalse(mirrorXProperty.get());
+		assertFalse(mirrorYProperty.get());
+		layers.setSelected(layers.indexOf(layer_b), true);
+		mirrorXProperty.set(true);
+		layers.setSelected(layers.indexOf(layer_c), true);
+		mirrorYProperty.set(true);
+		layers.setSelected(layers.indexOf(layer_d), true);
+		mirrorXProperty.set(true);
+		mirrorYProperty.set(true);
+		assertFalse(it_a.mirrorXProperty().get());
+		assertFalse(it_a.mirrorYProperty().get());
+		assertTrue(it_b.mirrorXProperty().get());
+		assertFalse(it_b.mirrorYProperty().get());
+		assertFalse(it_c.mirrorXProperty().get());
+		assertTrue(it_c.mirrorYProperty().get());
+		assertTrue(it_d.mirrorXProperty().get());
+		assertTrue(it_d.mirrorYProperty().get());
+		layers.setSelected(layers.indexOf(layer_a), true);
+		layers.setSelected(layers.indexOf(layer_b), true);
+		layers.setSelected(layers.indexOf(layer_c), true);
+		layers.setSelected(layers.indexOf(layer_d), true);
+		mirrorXProperty.set(true);
+		assertTrue(it_a.mirrorXProperty().get());
+		assertFalse(it_a.mirrorYProperty().get());
+		assertFalse(it_b.mirrorXProperty().get());
+		assertFalse(it_b.mirrorYProperty().get());
+		assertTrue(it_c.mirrorXProperty().get());
+		assertTrue(it_c.mirrorYProperty().get());
+		assertFalse(it_d.mirrorXProperty().get());
+		assertTrue(it_d.mirrorYProperty().get());
+		mirrorYProperty.set(true);
+		assertTrue(it_a.mirrorXProperty().get());
+		assertTrue(it_a.mirrorYProperty().get());
+		assertFalse(it_b.mirrorXProperty().get());
+		assertTrue(it_b.mirrorYProperty().get());
+		assertTrue(it_c.mirrorXProperty().get());
+		assertFalse(it_c.mirrorYProperty().get());
+		assertFalse(it_d.mirrorXProperty().get());
+		assertFalse(it_d.mirrorYProperty().get());
+		mirrorXProperty.set(false);
+		assertFalse(it_a.mirrorXProperty().get());
+		assertTrue(it_a.mirrorYProperty().get());
+		assertTrue(it_b.mirrorXProperty().get());
+		assertTrue(it_b.mirrorYProperty().get());
+		assertFalse(it_c.mirrorXProperty().get());
+		assertFalse(it_c.mirrorYProperty().get());
+		assertTrue(it_d.mirrorXProperty().get());
+		assertFalse(it_d.mirrorYProperty().get());
+		mirrorYProperty.set(false);
+		assertFalse(it_a.mirrorXProperty().get());
+		assertFalse(it_a.mirrorYProperty().get());
+		assertTrue(it_b.mirrorXProperty().get());
+		assertFalse(it_b.mirrorYProperty().get());
+		assertFalse(it_c.mirrorXProperty().get());
+		assertTrue(it_c.mirrorYProperty().get());
+		assertTrue(it_d.mirrorXProperty().get());
+		assertTrue(it_d.mirrorYProperty().get());
+	}
+
+	@Test
+	public void test_facade_mirror_immediate()
+	{
+		System.out.println("test_facade_mirror_immediate");
+		_runImageTransformsTestImmediate(this::_test_facade_rotate);
+	}
+
+	@Test
+	public void test_facade_mirror_remote()
+	{
+		System.out.println("test_facade_mirror_remote");
 		_runImageTransformsTestRemote(this::_test_facade_rotate);
 	}
 }

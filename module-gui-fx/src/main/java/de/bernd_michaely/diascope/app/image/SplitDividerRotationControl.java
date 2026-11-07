@@ -24,7 +24,8 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import static de.bernd_michaely.diascope.app.image.Bindings.*;
+import static de.bernd_michaely.diascope.app.image.Bindings.C;
+import static de.bernd_michaely.diascope.app.image.NormalizationUtil.normalizeAngle;
 import static java.lang.Math.max;
 import static java.lang.System.Logger.Level.*;
 
