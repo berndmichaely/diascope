@@ -23,7 +23,7 @@ Diascope is written based on Java/JavaFX and so should run on any platform provi
 
 ## Building the application
 
-Have a recent JDK installed, get the sources and run from the root directory:
+Have a recent JDK installed (currently JDK 17 to 26 to run `gradlew`), get the sources and run from the root directory:
 
     ./gradlew run
 
@@ -31,7 +31,7 @@ to run the application immediately or
 
     ./gradlew installDist
 
-to build the application into the `./build/install/Diascope` directory. The minimum Java version required is 25.
+to build the application into the `./build/install/Diascope` directory. The minimum Java version required to compile and run `Diascope` is 25.
 
 You might want to add some JVM options to suppress warnings, e.g. by using an environment variable:
 
