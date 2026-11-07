@@ -184,7 +184,7 @@ class Viewport implements AutoCloseable
 	{
 		splitDivider.visibleProperty().bind(dividersEnabled.getReadOnlyProperty());
 		components.addGridSplitLayer(index, imageLayer, Map.of(
-			imageLayer.getRegion(), components.imageLayers,
+			imageLayer.getNode(), components.imageLayers,
 			splitDivider.getLineEvent(), components.splitEventLines,
 			splitDivider.getLineShape(), components.splitShapeLines
 		));
@@ -214,13 +214,13 @@ class Viewport implements AutoCloseable
 	void addSpotBaseLayer(ImageLayer imageLayer)
 	{
 		spotBaseLayer = imageLayer;
-		components.spotLayers.addFirst(imageLayer.getRegion());
+		components.spotLayers.addFirst(imageLayer.getNode());
 	}
 
 	void addSpotLayer(ImageLayer imageLayer, ImageLayerShapeSpot imageLayerShapeSpot)
 	{
 		spotLayer = imageLayer;
-		components.spotLayers.addLast(imageLayer.getRegion());
+		components.spotLayers.addLast(imageLayer.getNode());
 		components.spotShapes.addAll(
 			imageLayerShapeSpot.getShape(),
 			imageLayerShapeSpot.getSpotCenter().getShape());

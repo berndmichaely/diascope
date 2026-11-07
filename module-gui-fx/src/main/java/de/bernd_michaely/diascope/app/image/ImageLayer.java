@@ -26,10 +26,9 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableBooleanValue;
+import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Scale;
@@ -53,7 +52,7 @@ final class ImageLayer extends AbstractImageLayer
 {
 	private static final Logger logger = System.getLogger(ImageLayer.class.getName());
 	private boolean isClosed;
-	private final Pane paneLayer = new Pane();
+	private final Group group;
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
 	private final DoubleProperty aspectRatio;
@@ -82,9 +81,11 @@ final class ImageLayer extends AbstractImageLayer
 		final ObservableBooleanValue isLocal = viewport.modeProperties().isValueProperty(Mode.GRID);
 		this.viewportBounds = new ViewportBoundsSwitch(isLocal,
 			viewport.getViewportBounds(), viewportBoundsLocal);
-		paneLayer.getChildren().add(imageView);
-		paneLayer.setMinSize(0d, 0d);
-		paneLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+		imageView.setX(0d);
+		imageView.setY(0d);
+		imageView.setManaged(false);
+		this.group = new Group(imageView);
+		group.setAutoSizeChildren(false);
 		this.aspectRatio = new SimpleDoubleProperty(1.0);
 		this.zoomFitWidth = new SimpleDoubleProperty();
 		this.zoomFitHeight = new SimpleDoubleProperty();
@@ -189,15 +190,15 @@ final class ImageLayer extends AbstractImageLayer
 		return imageHeightTransformed.getReadOnlyProperty();
 	}
 
-	Region getRegion()
+	Node getNode()
 	{
-		return paneLayer;
+		return group;
 	}
 
 	@SuppressWarnings("return")
 	ObjectProperty<@Nullable Node> clipProperty()
 	{
-		return getRegion().clipProperty();
+		return getNode().clipProperty();
 	}
 
 	ViewportBoundsLocal getViewportBoundsLocal()

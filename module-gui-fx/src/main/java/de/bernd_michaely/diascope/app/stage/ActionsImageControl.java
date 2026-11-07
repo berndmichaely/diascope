@@ -16,6 +16,7 @@
  */
 package de.bernd_michaely.diascope.app.stage;
 
+import de.bernd_michaely.common.desktop.fx.collections.selection.SelectableProperties;
 import de.bernd_michaely.diascope.app.icons.Icons;
 import de.bernd_michaely.diascope.app.image.MultiImageView;
 import de.bernd_michaely.diascope.app.image.ZoomMode;
@@ -23,12 +24,15 @@ import de.bernd_michaely.diascope.app.util.action.ActionItemDescriptor;
 import de.bernd_michaely.diascope.app.util.action.CheckedAction;
 import de.bernd_michaely.diascope.app.util.action.ToggleAction;
 import de.bernd_michaely.diascope.app.util.action.TriggerAction;
+import de.bernd_michaely.diascope.app.util.beans.property.EnumProperties;
 import java.util.Map;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 
 import static de.bernd_michaely.diascope.app.image.MultiImageView.Mode.*;
 import static de.bernd_michaely.diascope.app.image.ZoomMode.*;
 import static javafx.beans.binding.Bindings.not;
+import static javafx.beans.binding.Bindings.when;
 
 /// Class to define Actions for image control.
 ///
@@ -56,11 +60,14 @@ class ActionsImageControl implements AutoCloseable
 
 	ActionsImageControl(MultiImageView multiImageView, ImageControlProperties imageControlProperties)
 	{
-		final var properties = imageControlProperties.getMainContentProperties();
-		final var selectionModel = multiImageView.getLayerSelectionModel();
-		final var emptyProperty = selectionModel.emptyProperty();
-		final var noneSelectedProperty = selectionModel.noneSelectedProperty();
+		final MainContentProperties mainContentProperties = imageControlProperties.getMainContentProperties();
+		final EnumProperties<MultiImageView.Mode> modeProperties = multiImageView.modeProperties();
+		final SelectableProperties selectionModel = multiImageView.getLayerSelectionModel();
+		final ReadOnlyBooleanProperty emptyProperty = selectionModel.emptyProperty();
+		final ReadOnlyBooleanProperty noneSelectedProperty = selectionModel.noneSelectedProperty();
 		final BooleanBinding notMultiLayerMode = not(multiImageView.multiLayerModeProperty());
+		final BooleanBinding imageControlsDisabled =
+			when(modeProperties.isValueProperty(GRID)).then(noneSelectedProperty).otherwise(emptyProperty);
 		// LayerAdd
 		this.actionLayerAdd = new TriggerAction(multiImageView::addLayer,
 			new ActionItemDescriptor(Icons.LayerAdd, "+", "Add layer", "Add a new layer"));
@@ -97,40 +104,39 @@ class ActionsImageControl implements AutoCloseable
 			SPOT, new ActionItemDescriptor(Icons.ModeSpot, "Spot", "Spot Mode", strTooltipModeSpot)));
 		actionMode.disableProperty().bind(emptyProperty);
 		actionMode.getDisableProperty(SPOT).bind(multiImageView.spotModeDisabledProperty());
-		actionMode.selectedIdRawProperty().bindBidirectional(
-			multiImageView.modeProperties().rawValueProperty());
+		actionMode.selectedIdRawProperty().bindBidirectional(modeProperties.rawValueProperty());
 		// ShowDividers
 		this.actionShowDividers = new CheckedAction(new ActionItemDescriptor(
 			Icons.ShowDividers, "\\/", "Show/Hide dividers", "Show/Hide dividers"));
-		actionShowDividers.disableProperty().bind(notMultiLayerMode);
-		actionShowDividers.selectedProperty().bindBidirectional(properties.dividersVisibleProperty());
+		actionShowDividers.disableProperty().bind(emptyProperty.or(notMultiLayerMode));
+		actionShowDividers.selectedProperty().bindBidirectional(mainContentProperties.dividersVisibleProperty());
 		// ZoomMode
 		this.actionZoom = new ToggleAction<>(FIXED, Map.of(
 			ORIGINAL, new ActionItemDescriptor(Icons.Zoom100, "100%", "Zoom to 100%", "Zoom image to 100%"),
 			FIT, new ActionItemDescriptor(Icons.ZoomFitWindow, "Fit", "Zoom to fit window", "Zoom image to fit window"),
 			FILL, new ActionItemDescriptor(Icons.ZoomFillWindow, "Fill", "Zoom to fill window", "Zoom image to fill window")));
-		actionZoom.disableProperty().bind(noneSelectedProperty);
+		actionZoom.disableProperty().bind(imageControlsDisabled);
 		actionZoom.selectedIdRawProperty().bindBidirectional(
 			multiImageView.getImageTransforms().zoomModeRawValueProperty());
 		// Mirror
 		this.actionMirrorX = new CheckedAction(new ActionItemDescriptor(
 			Icons.MirrorX, "<––>", "Mirror horizontally", "Mirror image horizontally"));
-		actionMirrorX.disableProperty().bind(noneSelectedProperty);
+		actionMirrorX.disableProperty().bind(imageControlsDisabled);
 		actionMirrorX.selectedProperty().bindBidirectional(multiImageView.getImageTransforms().mirrorXProperty());
 		this.actionMirrorY = new CheckedAction(new ActionItemDescriptor(
 			Icons.MirrorY, "^|↓", "Mirror vertically", "Mirror image vertically"));
-		actionMirrorY.disableProperty().bind(noneSelectedProperty);
+		actionMirrorY.disableProperty().bind(imageControlsDisabled);
 		actionMirrorY.selectedProperty().bindBidirectional(multiImageView.getImageTransforms().mirrorYProperty());
 		// ContextMenu specific
 		this.actionToolbar = new CheckedAction(
 			new ActionItemDescriptor(Icons.ShowToolBar, "Toolbar", "Show/Hide Toolbar", "Show/Hide Toolbar"));
-		actionToolbar.selectedProperty().bindBidirectional(properties.toolBarVisibleProperty());
+		actionToolbar.selectedProperty().bindBidirectional(mainContentProperties.toolBarVisibleProperty());
 		this.actionThumbnails = new CheckedAction(new ActionItemDescriptor(
 			Icons.ShowThumbs, "Thumbs", "Show/Hide Thumbnails", "Show/Hide Thumbnails"));
-		actionThumbnails.selectedProperty().bindBidirectional(properties.thumbnailsVisibleProperty());
+		actionThumbnails.selectedProperty().bindBidirectional(mainContentProperties.thumbnailsVisibleProperty());
 		this.actionScrollbars = new CheckedAction(
 			new ActionItemDescriptor(Icons.ShowScrollBars, "Scrollbars", "Show/Hide Scrollbars", "Show/Hide Scrollbars"));
-		actionScrollbars.selectedProperty().bindBidirectional(properties.scrollBarsVisibleProperty());
+		actionScrollbars.selectedProperty().bindBidirectional(mainContentProperties.scrollBarsVisibleProperty());
 		// Layer Selection
 		this.actionSelectAll = new TriggerAction(selectionModel::selectAll, new ActionItemDescriptor(
 			Icons.SelectAll, "+++", "Select all layers", "Select all layers"));
