@@ -116,6 +116,19 @@ public class ImageTransformsSwitchTest
 			layers, unmodifiableObservableList(spotLayers));
 	}
 
+	@AfterEach
+	public void tearDown()
+	{
+		try
+		{
+			its.close();
+		}
+		finally
+		{
+			modeProperties.close();
+		}
+	}
+
 	private Optional<LayerStub> getOptionalSingleSelected()
 	{
 		return listDualSelection.singleSelectionItemProperty().get();
@@ -124,13 +137,6 @@ public class ImageTransformsSwitchTest
 	private Optional<DefaultImageTransforms> getOptionalSelectedImageTransforms()
 	{
 		return getOptionalSingleSelected().map(LayerStub::getImageTransforms);
-	}
-
-	@AfterEach
-	public void tearDown()
-	{
-		its.close();
-		modeProperties.close();
 	}
 
 	private boolean isLocal()
@@ -649,5 +655,45 @@ public class ImageTransformsSwitchTest
 	{
 		System.out.println("test_facade_mirror_remote");
 		_runImageTransformsTestRemote(this::_test_facade_rotate);
+	}
+
+	private void _test_add_layer(
+		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+		DoubleProperty zoomFixedProperty,
+		DoubleProperty rotateProperty,
+		BooleanProperty mirrorXProperty,
+		BooleanProperty mirrorYProperty,
+		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+		ReadOnlyDoubleProperty zoomFactorProperty)
+	{
+		assertTrue(isGlobal());
+		// add layer
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		layers.addAll(layer_a, layer_b);
+		final var it_a = layer_a.getImageTransforms();
+		final var it_b = layer_b.getImageTransforms();
+		zoomModeRawValueProperty.set(FIXED);
+		zoomFixedProperty.set(1.2);
+		assertEquals(1.2, it_a.zoomFactorProperty().get());
+		assertEquals(1.2, it_b.zoomFactorProperty().get());
+		final var layer_c = new LayerStub("C");
+		layers.addAll(layer_c);
+		final var it_c = layer_c.getImageTransforms();
+		assertEquals(1.2, it_c.zoomFactorProperty().get());
+	}
+
+	@Test
+	public void test_add_layer_immediate()
+	{
+		System.out.println("test_add_layer_immediate");
+		_runImageTransformsTestImmediate(this::_test_add_layer);
+	}
+
+	@Test
+	public void test_add_layer_remote()
+	{
+		System.out.println("test_add_layer_remote");
+		_runImageTransformsTestRemote(this::_test_add_layer);
 	}
 }
