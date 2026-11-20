@@ -698,4 +698,61 @@ public class ImageTransformsSwitchTest
 		System.out.println("test_add_layer_remote");
 		_runImageTransformsTestRemote(this::_test_add_layer);
 	}
+
+	private void _test_mode_switch2(
+		ObjectProperty<ZoomMode> zoomModeRawValueProperty,
+		DoubleProperty zoomFixedProperty,
+		DoubleProperty rotateProperty,
+		BooleanProperty mirrorXProperty,
+		BooleanProperty mirrorYProperty,
+		ReadOnlyObjectProperty<ZoomMode> zoomModeOrDefaultProperty,
+		ReadOnlyDoubleProperty zoomFactorProperty)
+	{
+		assertTrue(isGlobal());
+		modeProperties.setRawValue(Mode.GRID);
+		// add layer
+		final var layer_a = new LayerStub("A");
+		final var layer_b = new LayerStub("B");
+		final var layer_c = new LayerStub("C");
+		layers.addAll(layer_a, layer_b, layer_c);
+		final var it_a = layer_a.getImageTransforms();
+		final var it_b = layer_b.getImageTransforms();
+		final var it_c = layer_c.getImageTransforms();
+		assertEquals(0.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(0.0, it_c.rotateProperty().get());
+		layers.setSelected(layers.indexOf(layer_c), true);
+		rotateProperty.set(123.0);
+		layers.setSelected(layers.indexOf(layer_c), false);
+		layers.setSelected(layers.indexOf(layer_a), true);
+		rotateProperty.set(-123.0);
+		layers.setSelected(layers.indexOf(layer_a), false);
+		assertEquals(-123.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(123.0, it_c.rotateProperty().get());
+		layers.setSelected(layers.indexOf(layer_a), true);
+		layers.setSelected(layers.indexOf(layer_c), true);
+		assertEquals(-123.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(123.0, it_c.rotateProperty().get());
+		modeProperties.setRawValue(Mode.SPLIT);
+		modeProperties.setRawValue(Mode.GRID);
+		assertEquals(-123.0, it_a.rotateProperty().get());
+		assertEquals(0.0, it_b.rotateProperty().get());
+		assertEquals(123.0, it_c.rotateProperty().get());
+	}
+
+	@Test
+	public void test_mode_switch2_immediate()
+	{
+		System.out.println("test_mode_switch2_immediate");
+		_runImageTransformsTestImmediate(this::_test_mode_switch2);
+	}
+
+	@Test
+	public void test_mode_switch2_remote()
+	{
+		System.out.println("test_mode_switch2_remote");
+		_runImageTransformsTestRemote(this::_test_mode_switch2);
+	}
 }
