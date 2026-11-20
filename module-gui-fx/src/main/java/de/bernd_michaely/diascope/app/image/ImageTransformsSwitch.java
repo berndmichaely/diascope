@@ -77,6 +77,7 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 	private final ChangeListener<Boolean> localModeListener;
 	private final ObservableList<ObservableDoubleValue> listCalculatedZoomFactors;
 	private final DoubleBinding resultingZoomFactorBinding;
+	private boolean facadeControlDisabled;
 
 	ImageTransformsSwitch(EnumProperties<Mode> modeProperties,
 		SelectableProperties selectionModel, ListDualSelection<T> listDualSelection,
@@ -120,30 +121,42 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				// save global state:
 				bufferGlobalParams.readFrom(facadeImageTransforms);
 				// recall local layer specific params:
-				mapBufferLocalParams.entrySet().forEach(entry ->
+				mapBufferLocalParams.forEach((layer, buffer) ->
+					buffer.local().writeTo(layer.getImageTransforms()));
+				facadeControlDisabled = true;
+				try
 				{
-					final T layer = entry.getKey();
-					final TransformableParams buffer = entry.getValue();
-					buffer.local().writeTo(layer.getImageTransforms());
-				});
-				// determine a selected layer and set facade control params to it, if present,
-				// or otherwise use defaults:
-				listDualSelection.oldestSelectedItemProperty().get().map(mapBufferLocalParams::get)
-					.ifPresentOrElse(
-						buffer -> buffer.local().writeTo(facadeImageTransforms),
-						() -> TransformParams.initDefaultsOf(facadeImageTransforms));
+					// determine a selected layer and set facade control params to it, if present,
+					// or otherwise use defaults:
+					listDualSelection.oldestSelectedItemProperty().get().map(mapBufferLocalParams::get)
+						.ifPresentOrElse(
+							buffer -> buffer.local().writeTo(facadeImageTransforms),
+							() -> TransformParams.initDefaultsOf(facadeImageTransforms));
+				}
+				finally
+				{
+					facadeControlDisabled = false;
+				}
 			}
 			else // switch from local to global
 			{
 				// save local layer specific params:
-				mapBufferLocalParams.entrySet().forEach(entry ->
+				mapBufferLocalParams.forEach((layer, buffer) ->
 				{
-					final T layer = entry.getKey();
-					final TransformableParams buffer = entry.getValue();
-					buffer.local().readFrom(layer.getImageTransforms());
+					final var imageTransforms = layer.getImageTransforms();
+					buffer.local().readFrom(imageTransforms);
+					bufferGlobalParams.writeTo(imageTransforms);
 				});
 				// recall global state and set facade control params to it:
-				bufferGlobalParams.writeTo(facadeImageTransforms);
+				facadeControlDisabled = true;
+				try
+				{
+					bufferGlobalParams.writeTo(facadeImageTransforms);
+				}
+				finally
+				{
+					facadeControlDisabled = false;
+				}
 			}
 		});
 		local.addListener(localModeListener);
@@ -162,26 +175,6 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 					.ifPresentOrElse(
 						buffer -> buffer.local().writeTo(facadeImageTransforms),
 						() -> TransformParams.initDefaultsOf(facadeImageTransforms));
-			}
-		}));
-		// on zoom mode change:
-		facadeImageTransforms.zoomModeOrDefaultProperty().addListener(onChange(newValue ->
-		{
-			if (local.get())
-			{
-				final int n = layers.size();
-				for (int i = 0; i < n; i++)
-				{
-					if (selectionModel.isSelected(i))
-					{
-						layers.get(i).getImageTransforms().zoomModeRawValueProperty().set(newValue);
-					}
-				}
-			}
-			else
-			{
-				Stream.concat(layers.stream(), spotLayers.stream()).forEach(t ->
-					t.getImageTransforms().zoomModeRawValueProperty().set(newValue));
 			}
 		}));
 		// on image transform property change:
@@ -212,6 +205,10 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 			@Override
 			public void changed(ObservableValue<? extends V> observable, V oldValue, V newValue)
 			{
+				if (facadeControlDisabled)
+				{
+					return;
+				}
 				if (local.get())
 				{
 					listDualSelection.oldestSelectedItemProperty().get().ifPresent(oldestLayer ->
@@ -335,10 +332,10 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 	Map<T, DefaultImageTransforms> _getMapIntermediate()
 	{
 		final Map<T, DefaultImageTransforms> mapIntermediate = new IdentityHashMap<>();
-		mapBufferLocalParams.forEach((layer, tp) ->
+		mapBufferLocalParams.forEach((layer, transformableParams) ->
 		{
 			final var imageTransforms = new DefaultImageTransforms(layer.getImageDescriptor());
-			tp.local().writeTo(imageTransforms);
+			transformableParams.local().writeTo(imageTransforms);
 			mapIntermediate.put(layer, imageTransforms);
 		});
 		return mapIntermediate;
@@ -353,12 +350,6 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 	{
 		try (facadeImageTransforms)
 		{
-			mapBufferLocalParams.keySet().forEach(layer ->
-			{
-				try (layer)
-				{
-				}
-			});
 			local.removeListener(localModeListener);
 		}
 	}

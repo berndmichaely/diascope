@@ -20,6 +20,7 @@ import de.bernd_michaely.diascope.app.util.beans.ListChangeListenerBuilder;
 import de.bernd_michaely.diascope.app.util.collections.BinaryNode;
 import de.bernd_michaely.diascope.app.util.collections.BinaryTree;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -271,7 +272,13 @@ final class ImageLayersDefault extends ImageLayersBase
 	///
 	private boolean _removeLayersIf(Predicate<ImageLayer> condition)
 	{
-		final boolean anyRemoved = layers.removeIf(condition);
+		final List<ImageLayer> listRemove = layers.stream().filter(condition).toList();
+		final boolean anyRemoved = !listRemove.isEmpty();
+		listRemove.forEach(layer ->
+		{
+			layer.close();
+			layers.remove(layer);
+		});
 		if (anyRemoved)
 		{
 			if (layers.size() == 1)

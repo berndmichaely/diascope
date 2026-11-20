@@ -709,7 +709,8 @@ public class ImageTransformsSwitchTest
 		ReadOnlyDoubleProperty zoomFactorProperty)
 	{
 		assertTrue(isGlobal());
-		modeProperties.setRawValue(Mode.GRID);
+		modeProperties.setRawValue(Mode.SPLIT);
+		assertTrue(isGlobal());
 		// add layer
 		final var layer_a = new LayerStub("A");
 		final var layer_b = new LayerStub("B");
@@ -718,6 +719,20 @@ public class ImageTransformsSwitchTest
 		final var it_a = layer_a.getImageTransforms();
 		final var it_b = layer_b.getImageTransforms();
 		final var it_c = layer_c.getImageTransforms();
+		assertEquals(ZoomMode.FIT, it_a.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIT, it_b.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIT, it_c.zoomModeOrDefaultProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_a.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_b.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_c.zoomFactorProperty().get());
+		modeProperties.setRawValue(Mode.GRID);
+		assertTrue(isLocal());
+		assertEquals(ZoomMode.FIT, it_a.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIT, it_b.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIT, it_c.zoomModeOrDefaultProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_a.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_b.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_c.zoomFactorProperty().get());
 		assertEquals(0.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(0.0, it_c.rotateProperty().get());
@@ -736,10 +751,43 @@ public class ImageTransformsSwitchTest
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(123.0, it_c.rotateProperty().get());
 		modeProperties.setRawValue(Mode.SPLIT);
+		assertTrue(isGlobal());
 		modeProperties.setRawValue(Mode.GRID);
+		assertTrue(isLocal());
 		assertEquals(-123.0, it_a.rotateProperty().get());
 		assertEquals(0.0, it_b.rotateProperty().get());
 		assertEquals(123.0, it_c.rotateProperty().get());
+		zoomModeRawValueProperty.set(FIXED);
+		zoomFixedProperty.set(1.5);
+		assertEquals(1.5, it_a.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_b.zoomFactorProperty().get());
+		assertEquals(1.5, it_c.zoomFactorProperty().get());
+		modeProperties.setRawValue(Mode.SPLIT);
+		assertTrue(isGlobal());
+		assertEquals(ZoomMode.FIT, it_a.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIT, it_b.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIT, it_c.zoomModeOrDefaultProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_a.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_b.zoomFactorProperty().get());
+		assertEquals(LayerStub.FACTOR_FIT, it_c.zoomFactorProperty().get());
+		zoomModeRawValueProperty.set(FIXED);
+		zoomFixedProperty.set(2.8);
+		assertEquals(ZoomMode.FIXED, it_a.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIXED, it_b.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIXED, it_c.zoomModeOrDefaultProperty().get());
+		assertEquals(2.8, it_a.zoomFactorProperty().get());
+		assertEquals(2.8, it_b.zoomFactorProperty().get());
+		assertEquals(2.8, it_c.zoomFactorProperty().get());
+		modeProperties.setRawValue(Mode.GRID);
+		assertTrue(isLocal());
+		modeProperties.setRawValue(Mode.SPLIT);
+		assertTrue(isGlobal());
+		assertEquals(ZoomMode.FIXED, it_a.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIXED, it_b.zoomModeOrDefaultProperty().get());
+		assertEquals(ZoomMode.FIXED, it_c.zoomModeOrDefaultProperty().get());
+		assertEquals(2.8, it_a.zoomFactorProperty().get());
+		assertEquals(2.8, it_b.zoomFactorProperty().get());
+		assertEquals(2.8, it_c.zoomFactorProperty().get());
 	}
 
 	@Test
