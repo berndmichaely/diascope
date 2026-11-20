@@ -22,8 +22,7 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-sealed interface ViewportBounds permits
-	ViewportBoundsGlobal, ViewportBoundsLocal, ViewportBoundsSwitch
+sealed interface ViewportBounds permits ScrollableViewportBounds, ViewportBoundsSwitch
 {
 	ReadOnlyDoubleProperty xProperty();
 

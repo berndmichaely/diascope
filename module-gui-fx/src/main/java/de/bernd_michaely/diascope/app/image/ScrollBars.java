@@ -24,6 +24,7 @@ import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Orientation;
 import javafx.scene.control.ScrollBar;
+import org.checkerframework.checker.modifiability.qual.Unmodifiable;
 
 /// Class to handle viewport scrollbars.
 ///
@@ -31,21 +32,25 @@ import javafx.scene.control.ScrollBar;
 ///
 class ScrollBars
 {
-	private final ScrollBar scrollBarH, scrollBarV;
-	private final Collection<ScrollBar> scrollBars;
+	private final ScrollBar scrollBarH = new ScrollBar();
+	private final ScrollBar scrollBarV = new ScrollBar();
+	private final Collection<ScrollBar> scrollBars = List.of(scrollBarH, scrollBarV);
 	private final BooleanProperty enabled = new SimpleBooleanProperty();
 
 	ScrollBars(ReadOnlyDoubleProperty viewportWidth, ReadOnlyDoubleProperty viewportHeight)
 	{
-		this.scrollBarH = new ScrollBar();
-		initScrollBar(scrollBarH);
 		scrollBarH.setOrientation(Orientation.HORIZONTAL);
-		this.scrollBarV = new ScrollBar();
-		initScrollBar(scrollBarV);
 		scrollBarV.setOrientation(Orientation.VERTICAL);
-		scrollBarH.visibleProperty().bind(enabled);
-		scrollBarV.visibleProperty().bind(enabled);
-		this.scrollBars = List.of(scrollBarH, scrollBarV);
+		scrollBars.forEach(scrollBar ->
+		{
+			scrollBar.setMin(0.0);
+			scrollBar.setMax(1.0);
+			scrollBar.setValue(0.5);
+			scrollBar.setUnitIncrement(0.05);
+			scrollBar.setBlockIncrement(0.2);
+			scrollBar.setOpacity(0.9);
+			scrollBar.visibleProperty().bind(enabled);
+		});
 		// position:
 		final var widthBinding = viewportWidth.subtract(scrollBarV.widthProperty());
 		final var heightBinding = viewportHeight.subtract(scrollBarH.heightProperty());
@@ -55,16 +60,6 @@ class ScrollBars
 		scrollBarV.setLayoutY(0);
 		scrollBarH.layoutYProperty().bind(heightBinding);
 		scrollBarV.layoutXProperty().bind(widthBinding);
-	}
-
-	private static void initScrollBar(ScrollBar scrollBar)
-	{
-		scrollBar.setMin(0.0);
-		scrollBar.setMax(1.0);
-		scrollBar.setValue(0.5);
-		scrollBar.setUnitIncrement(0.05);
-		scrollBar.setBlockIncrement(0.2);
-		scrollBar.setOpacity(0.85);
 	}
 
 	DoubleProperty valueHProperty()
@@ -96,6 +91,7 @@ class ScrollBars
 	///
 	/// @return an unmodifiable collection of scrollbars
 	///
+	@Unmodifiable
 	Collection<ScrollBar> getScrollBars()
 	{
 		return scrollBars;

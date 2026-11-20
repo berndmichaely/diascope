@@ -25,10 +25,11 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javafx.beans.property.*;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableBooleanValue;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -51,42 +52,88 @@ class Viewport implements AutoCloseable
 	private final Pane pane = new Pane();
 	private final ListContentConcatenation<Node> stackNodes;
 	private final EnumProperties<Mode> modeProperties;
-	private final ScrollBars scrollBars;
 	private final SplitCenter splitCenter;
 	private final CornerAngles cornerAngles;
 	private final ObservableBooleanValue multiLayerMode;
-	private final DoubleProperty focusPointX, focusPointY;
-	private final DoubleProperty layersMaxWidth, layersMaxHeight;
-	private final ReadOnlyBooleanWrapper scrollingEnabledHorizontal, scrollingEnabledVertical;
-	private final ReadOnlyDoubleWrapper scrollRangeMaxWidth, scrollRangeMaxHeight;
-	private final ReadOnlyDoubleWrapper scrollPosX, scrollPosY;
-	private final BooleanProperty dividersVisible;
-	private final ReadOnlyBooleanWrapper dividersEnabled;
-	private double mouseDragStartX, mouseDragStartY;
-	private double mouseScrollStartX, mouseScrollStartY;
+	private final BooleanProperty dividersVisible = new SimpleBooleanProperty();
+	private final ReadOnlyBooleanWrapper dividersEnabled = new ReadOnlyBooleanWrapper();
 	private @Nullable ImageLayer spotBaseLayer, spotLayer;
 	private @MonotonicNonNull LayerSelectionModel<ImageLayer> layerSelectionModel;
+	private @MonotonicNonNull List<ImageLayer> unmodifiableLayers;
 	private final ViewportBoundsGlobal viewportBounds;
 	private final ViewportComponents components;
+	private final LayerTranslation layerTranslation;
+
+	private class MouseEventHandler
+	{
+		private double mouseDragStartX, mouseDragStartY;
+
+		private void onMousePressed(MouseEvent event)
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				mouseDragStartX = event.getX();
+				mouseDragStartY = event.getY();
+				if (modeProperties.isValue(GRID))
+				{
+					if (unmodifiableLayers != null)
+					{
+						unmodifiableLayers.forEach(l -> l.getLayerTranslation().saveScrollPos());
+					}
+				}
+				else
+				{
+					layerTranslation.saveScrollPos();
+				}
+			}
+		}
+
+		private void mouseDragged(MouseEvent event, LayerTranslation layerTranslation)
+		{
+			final double px = layerTranslation.scrollRangeMaxWidthProperty().doubleValue();
+			final double py = layerTranslation.scrollRangeMaxHeightProperty().doubleValue();
+			final double dx = (event.getX() - mouseDragStartX) / px;
+			final double dy = (event.getY() - mouseDragStartY) / py;
+			final double x = clamp(layerTranslation.getMouseScrollStartX() - dx, 0.0, 1.0);
+			final double y = clamp(layerTranslation.getMouseScrollStartY() - dy, 0.0, 1.0);
+			final var scrollBars = layerTranslation.getScrollBars();
+			scrollBars.valueHProperty().setValue(x);
+			scrollBars.valueVProperty().setValue(y);
+		}
+
+		private void onMouseDragged(MouseEvent event)
+		{
+			if (event.getButton().equals(MouseButton.PRIMARY))
+			{
+				if (modeProperties.isValue(GRID))
+				{
+					if (layerSelectionModel != null && unmodifiableLayers != null)
+					{
+						for (int i : layerSelectionModel.getListDualSelection().getSelectedIndices())
+						{
+							mouseDragged(event, unmodifiableLayers.get(i).getLayerTranslation());
+						}
+					}
+				}
+				else
+				{
+					mouseDragged(event, layerTranslation);
+				}
+			}
+		}
+	}
+
+	private final MouseEventHandler mouseEventHandler = new MouseEventHandler();
 
 	Viewport()
 	{
-		this.dividersVisible = new SimpleBooleanProperty();
-		this.dividersEnabled = new ReadOnlyBooleanWrapper();
-		this.focusPointX = new SimpleDoubleProperty(0.5);
-		this.focusPointY = new SimpleDoubleProperty(0.5);
-		this.layersMaxWidth = new SimpleDoubleProperty();
-		this.layersMaxHeight = new SimpleDoubleProperty();
-		this.scrollRangeMaxWidth = new ReadOnlyDoubleWrapper();
-		this.scrollRangeMaxHeight = new ReadOnlyDoubleWrapper();
-		this.scrollPosX = new ReadOnlyDoubleWrapper();
-		this.scrollPosY = new ReadOnlyDoubleWrapper();
-		this.scrollBars = new ScrollBars(pane.widthProperty(), pane.heightProperty());
 		this.splitCenter = new SplitCenter(pane.widthProperty(), pane.heightProperty());
 		splitCenter.enabledProperty().bind(dividersEnabled.getReadOnlyProperty());
 		this.stackNodes = new ListContentConcatenation<>(pane.getChildren());
+		this.viewportBounds = new ViewportBoundsGlobal(pane.widthProperty(), pane.heightProperty());
+		this.layerTranslation = new LayerTranslation(viewportBounds);
 		this.components = new ViewportComponents(stackNodes.getObservableLists(),
-			scrollBars.getScrollBars(), splitCenter.getShapes());
+			layerTranslation.getScrollBars().getScrollBars(), splitCenter.getShapes());
 		final BiConsumer<ReadOnlyObjectProperty<Optional<ImageLayer>>, @Nullable ImageLayer> setImage =
 			(property, layer) ->
 		{
@@ -102,7 +149,7 @@ class Viewport implements AutoCloseable
 				layer.setImageDescriptor(null);
 			}
 		};
-		final ChangeListener<Mode> onModeChange = onChange((oldMode, newMode) ->
+		final BiConsumer<Mode, Mode> onModeChange = (oldMode, newMode) ->
 		{
 			if (oldMode == SPOT)
 			{
@@ -117,9 +164,9 @@ class Viewport implements AutoCloseable
 					setImage.accept(layerSelectionModel.dualSelectedLayerSecondProperty(), spotLayer);
 				}
 			}
-		});
-		this.modeProperties = EnumProperties.createInstance(
-			getInitialMode(), List.of(onChange(components::setListsByMode), onModeChange));
+		};
+		this.modeProperties = EnumProperties.createInstance(getInitialMode(),
+			List.of(onChange(components::setListsByMode), onChange(onModeChange)));
 		this.multiLayerMode = not(modeProperties.isValueProperty(SINGLE));
 		dividersEnabled.bind(dividersVisible
 			.and(modeProperties.isValueProperty(SPLIT).or(modeProperties.isValueProperty(GRID)))
@@ -127,55 +174,21 @@ class Viewport implements AutoCloseable
 		pane.setBackground(Background.fill(Color.BLACK));
 		pane.setMinSize(0, 0);
 		pane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-		this.scrollingEnabledHorizontal = new ReadOnlyBooleanWrapper();
-		scrollingEnabledHorizontal.bind(
-			layersMaxWidth.greaterThan(pane.widthProperty()));
-		scrollBars.horizontalVisibleProperty().bind(
-			scrollBars.enabledProperty().and(scrollingEnabledHorizontal));
-		this.scrollingEnabledVertical = new ReadOnlyBooleanWrapper();
-		scrollingEnabledVertical.bind(
-			layersMaxHeight.greaterThan(pane.heightProperty()));
-		scrollBars.verticalVisibleProperty().bind(
-			scrollBars.enabledProperty().and(scrollingEnabledVertical));
-		scrollRangeMaxWidth.bind(layersMaxWidth.subtract(pane.widthProperty()));
-		scrollRangeMaxHeight.bind(layersMaxHeight.subtract(pane.heightProperty()));
-		this.viewportBounds = new ViewportBoundsGlobal(
-			pane.widthProperty(), pane.heightProperty(),
-			scrollPosX.getReadOnlyProperty(), scrollPosY.getReadOnlyProperty());
-		scrollPosX.bind(scrollBars.valueHProperty().multiply(scrollRangeMaxWidth));
-		scrollPosY.bind(scrollBars.valueVProperty().multiply(scrollRangeMaxHeight));
 		this.cornerAngles = new CornerAngles(
 			splitCenter.xProperty(), splitCenter.yProperty(),
 			splitCenter.dxProperty(), splitCenter.dyProperty());
-		pane.setOnMousePressed(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				mouseDragStartX = event.getX();
-				mouseDragStartY = event.getY();
-				mouseScrollStartX = scrollBars.valueHProperty().doubleValue();
-				mouseScrollStartY = scrollBars.valueVProperty().doubleValue();
-			}
-		});
-		pane.setOnMouseDragged(event ->
-		{
-			if (event.getButton().equals(MouseButton.PRIMARY))
-			{
-				final double px = scrollRangeMaxWidth.doubleValue();
-				final double py = scrollRangeMaxHeight.doubleValue();
-				final double dx = (event.getX() - mouseDragStartX) / px;
-				final double dy = (event.getY() - mouseDragStartY) / py;
-				final double x = clamp(mouseScrollStartX - dx, 0.0, 1.0);
-				final double y = clamp(mouseScrollStartY - dy, 0.0, 1.0);
-				scrollBars.valueHProperty().setValue(x);
-				scrollBars.valueVProperty().setValue(y);
-			}
-		});
+		pane.setOnMousePressed(mouseEventHandler::onMousePressed);
+		pane.setOnMouseDragged(mouseEventHandler::onMouseDragged);
 	}
 
 	void setLayerSelectionModel(LayerSelectionModel<ImageLayer> layerSelectionModel)
 	{
 		this.layerSelectionModel = layerSelectionModel;
+	}
+
+	void setUnmodifiableLayers(ObservableList<ImageLayer> unmodifiableLayers)
+	{
+		this.unmodifiableLayers = unmodifiableLayers;
 	}
 
 	void addImageLayer(int index, ImageLayer imageLayer,
@@ -253,17 +266,17 @@ class Viewport implements AutoCloseable
 
 	BooleanProperty scrollBarsEnabledProperty()
 	{
-		return scrollBars.enabledProperty();
+		return layerTranslation.getScrollBars().enabledProperty();
 	}
 
 	DoubleProperty focusPointX()
 	{
-		return focusPointX;
+		return layerTranslation.focusPointXProperty();
 	}
 
 	DoubleProperty focusPointY()
 	{
-		return focusPointY;
+		return layerTranslation.focusPointYProperty();
 	}
 
 	ReadOnlyDoubleProperty widthProperty()
@@ -282,7 +295,7 @@ class Viewport implements AutoCloseable
 	///
 	DoubleProperty layersMaxWidthProperty()
 	{
-		return layersMaxWidth;
+		return layerTranslation.layersMaxWidthProperty();
 	}
 
 	/// The maximum of heights of all layers.
@@ -291,7 +304,7 @@ class Viewport implements AutoCloseable
 	///
 	DoubleProperty layersMaxHeightProperty()
 	{
-		return layersMaxHeight;
+		return layerTranslation.layersMaxHeightProperty();
 	}
 
 	/// True, iff the maximum of all layer widths (depending on Mode) is
@@ -299,7 +312,7 @@ class Viewport implements AutoCloseable
 	///
 	ReadOnlyBooleanProperty scrollingEnabledHorizontalProperty()
 	{
-		return scrollingEnabledHorizontal.getReadOnlyProperty();
+		return layerTranslation.scrollingEnabledHorizontalProperty();
 	}
 
 	/// True, iff the maximum of all layer heights (depending on Mode) is
@@ -307,7 +320,7 @@ class Viewport implements AutoCloseable
 	///
 	ReadOnlyBooleanProperty scrollingEnabledVerticalProperty()
 	{
-		return scrollingEnabledVertical.getReadOnlyProperty();
+		return layerTranslation.scrollingEnabledVerticalProperty();
 	}
 
 	BooleanProperty dividersVisibleProperty()
@@ -315,14 +328,14 @@ class Viewport implements AutoCloseable
 		return dividersVisible;
 	}
 
-	Region getRegion()
-	{
-		return pane;
-	}
-
 	ViewportBoundsGlobal getViewportBounds()
 	{
 		return viewportBounds;
+	}
+
+	Region getRegion()
+	{
+		return pane;
 	}
 
 	@Override

@@ -19,13 +19,14 @@ package de.bernd_michaely.diascope.app.image;
 import java.nio.file.Path;
 import javafx.scene.image.Image;
 
-/**
- * Object to describe an image. As a wrapper, it has a unique object identity
- * even if two instances encapsulate the same image instance, so it is suitable
- * to be used with an ObservableList.
- *
- * @author Bernd Michaely (info@bernd-michaely.de)
- */
+/// Object to describe an image.
+///
+/// As a wrapper, it has a unique object identity even if two instances
+/// encapsulate the same image instance, so it is suitable to be used with an
+/// ObservableList.
+///
+/// @author Bernd Michaely (info@bernd-michaely.de)
+///
 public record ImageDescriptor(Image image, Path path)
 {
 	public String getTitle()

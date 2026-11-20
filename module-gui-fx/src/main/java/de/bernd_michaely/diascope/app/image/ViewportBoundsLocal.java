@@ -23,7 +23,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ViewportBoundsLocal implements ViewportBounds
+final class ViewportBoundsLocal implements ScrollableViewportBounds
 {
 	private final DoubleProperty x = new SimpleDoubleProperty();
 	private final DoubleProperty y = new SimpleDoubleProperty();

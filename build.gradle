@@ -245,17 +245,12 @@ if (isReadingSvnRevision) {
 extraJavaModuleInfo {
 automaticModule('batik-all-1.17.jar', 'batik')	
 }
- */
+*/
 
 dependencies {
 	implementation project (':lib-common-cli-parser')
 	implementation project (':module-gui-fx')
 	implementation libs.jsemver
-	//implementation 'com.github.weisj:jsvg:1.5.0'
-	//implementation 'org.apache.xmlgraphics:batik-all:1.17'
-	//implementation 'xml-apis:xml-apis:1.4.01'
-	//implementation 'xml-apis:xml-apis-ext:1.3.04'
-	//implementation 'org.apache.xmlgraphics:xmlgraphics-commons:2.9'
 }
 
 task convertIcons {

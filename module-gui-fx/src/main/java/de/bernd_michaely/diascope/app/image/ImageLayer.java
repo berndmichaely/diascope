@@ -55,7 +55,7 @@ final class ImageLayer extends AbstractImageLayer
 	private final Group group;
 	private final ImageView imageView = new ImageView();
 	private final Rectangle imageRotated = new Rectangle();
-	private final DoubleProperty aspectRatio;
+	private final DoubleProperty aspectRatio = new SimpleDoubleProperty(1.0);
 	private final ReadOnlyDoubleWrapper imageWidth = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeight = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageWidthRotated = new ReadOnlyDoubleWrapper();
@@ -63,22 +63,25 @@ final class ImageLayer extends AbstractImageLayer
 	private final ReadOnlyDoubleWrapper imageWidthTransformed = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper imageHeightTransformed = new ReadOnlyDoubleWrapper();
 	private final DefaultImageTransforms imageTransforms = new DefaultImageTransforms();
-	private final DoubleProperty zoomFitWidth, zoomFitHeight, zoomFit;
-	private final DoubleProperty zoomFill;
+	private final DoubleProperty zoomFitWidth = new SimpleDoubleProperty();
+	private final DoubleProperty zoomFitHeight = new SimpleDoubleProperty();
+	private final DoubleProperty zoomFit = new SimpleDoubleProperty();
+	private final DoubleProperty zoomFill = new SimpleDoubleProperty();
 	private final ReadOnlyBooleanWrapper imageIsNull;
-	private final DoubleProperty focusPointX, focusPointY;
-	private final Scale scale;
-	private final Rotate rotate;
-	private final Translate translateScroll;
-	private final ViewportBoundsLocal viewportBoundsLocal;
+	private final DoubleProperty focusPointX = new SimpleDoubleProperty();
+	private final DoubleProperty focusPointY = new SimpleDoubleProperty();
+	private final ViewportBoundsLocal viewportBoundsLocal = new ViewportBoundsLocal();
+	private final LayerTranslation layerTranslation;
 	private final ViewportBounds viewportBounds;
 
 	ImageLayer(Viewport viewport)
 	{
 		logger.log(TRACE, () -> "CREATE ImageLayer with mode »%s«"
 			.formatted(viewport.modeProperties().getValueOrDefault()));
-		this.viewportBoundsLocal = new ViewportBoundsLocal();
-		final ObservableBooleanValue isLocal = viewport.modeProperties().isValueProperty(Mode.GRID);
+		final var isLocal = viewport.modeProperties().isValueProperty(Mode.GRID);
+		this.layerTranslation = new LayerTranslation(viewportBoundsLocal);
+		layerTranslation.layersMaxWidthProperty().bind(imageWidthTransformed);
+		layerTranslation.layersMaxHeightProperty().bind(imageHeightTransformed);
 		this.viewportBounds = new ViewportBoundsSwitch(isLocal,
 			viewport.getViewportBounds(), viewportBoundsLocal);
 		imageView.setX(0d);
@@ -86,11 +89,6 @@ final class ImageLayer extends AbstractImageLayer
 		imageView.setManaged(false);
 		this.group = new Group(imageView);
 		group.setAutoSizeChildren(false);
-		this.aspectRatio = new SimpleDoubleProperty(1.0);
-		this.zoomFitWidth = new SimpleDoubleProperty();
-		this.zoomFitHeight = new SimpleDoubleProperty();
-		this.zoomFit = new SimpleDoubleProperty();
-		this.zoomFill = new SimpleDoubleProperty();
 		this.imageIsNull = new ReadOnlyBooleanWrapper();
 		imageIsNull.bind(isNull(imageView.imageProperty()));
 		imageRotated.boundsInParentProperty().addListener(onChange(bounds ->
@@ -111,13 +109,13 @@ final class ImageLayer extends AbstractImageLayer
 						.otherwise(when(zoomModeProperties.isValueProperty(ORIGINAL)).then(1.0)
 							.otherwise(imageTransforms.zoomFixedProperty())))));
 		imageRotated.rotateProperty().bind(imageTransforms.rotateProperty());
-		this.scale = new Scale();
+		final var scale = new Scale();
 		final var zoomFactorProperty = imageTransforms.zoomFactorProperty();
 		scale.xProperty().bind(zoomFactorProperty);
 		scale.yProperty().bind(zoomFactorProperty);
 		imageWidthTransformed.bind(imageWidthRotated.multiply(zoomFactorProperty));
 		imageHeightTransformed.bind(imageHeightRotated.multiply(zoomFactorProperty));
-		this.rotate = new Rotate();
+		final var rotate = new Rotate();
 		rotate.angleProperty().bind(imageRotated.rotateProperty());
 		final var mirror = new Scale();
 		mirror.xProperty().bind(when(imageTransforms.mirrorXProperty()).then(-1.0).otherwise(1.0));
@@ -128,11 +126,13 @@ final class ImageLayer extends AbstractImageLayer
 		final var translateBack = new Translate();
 		translateBack.xProperty().bind(imageWidthRotated.divide(2.0));
 		translateBack.yProperty().bind(imageHeightRotated.divide(2.0));
-		this.focusPointX = new SimpleDoubleProperty();
-		focusPointX.bind(viewport.focusPointX());
-		this.focusPointY = new SimpleDoubleProperty();
-		focusPointY.bind(viewport.focusPointY());
-		this.translateScroll = new Translate();
+		focusPointX.bind(when(isLocal)
+			.then(layerTranslation.focusPointXProperty())
+			.otherwise(viewport.focusPointX()));
+		focusPointY.bind(when(isLocal)
+			.then(layerTranslation.focusPointYProperty())
+			.otherwise(viewport.focusPointY()));
+		final var translateScroll = new Translate();
 		final ObservableBooleanValue centerX = when(isLocal)
 			.then(imageWidthTransformed.getReadOnlyProperty().greaterThan(viewportBoundsLocal.widthProperty()))
 			.otherwise(viewport.scrollingEnabledHorizontalProperty());
@@ -204,6 +204,11 @@ final class ImageLayer extends AbstractImageLayer
 	ViewportBoundsLocal getViewportBoundsLocal()
 	{
 		return viewportBoundsLocal;
+	}
+
+	LayerTranslation getLayerTranslation()
+	{
+		return layerTranslation;
 	}
 
 	@Override

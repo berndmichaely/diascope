@@ -27,7 +27,7 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 
 import static de.bernd_michaely.common.desktop.fx.collections.selection.SelectionChangeListener.SelectionChange.SelectionChangeType.*;
-import static java.util.Collections.unmodifiableCollection;
+import static java.util.Collections.unmodifiableList;
 
 /// Class to handle a dual selection state of a SelectableList.
 /// Dual selection has a specific meaning in this context. It is true, iff:
@@ -56,7 +56,7 @@ class ListDualSelection<T>
 	private final ReadOnlyObjectWrapper<Optional<T>> dualSelectionSecondItem = new ReadOnlyObjectWrapper<>(Optional.empty());
 	private final ReadOnlyObjectWrapper<Optional<T>> oldestSelectedItem = new ReadOnlyObjectWrapper<>(Optional.empty());
 	private final LinkedList<Integer> queueSelected = new LinkedList<>();
-	private final Collection<Integer> selectedIndices = unmodifiableCollection(queueSelected);
+	private final Collection<Integer> selectedIndices = unmodifiableList(queueSelected);
 
 	@FunctionalInterface
 	interface BiIntConsumer

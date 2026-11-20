@@ -17,30 +17,29 @@
 package de.bernd_michaely.diascope.app.image;
 
 import de.bernd_michaely.diascope.app.util.beans.property.ConstDoubleProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyDoubleWrapper;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ObservableDoubleValue;
 
 /// Class to describe viewport global viewport bounds.
 ///
 /// @author Bernd Michaely (info@bernd-michaely.de)
 ///
-final class ViewportBoundsGlobal implements ViewportBounds
+final class ViewportBoundsGlobal implements ScrollableViewportBounds
 {
 	private final ReadOnlyDoubleProperty x = new ConstDoubleProperty(0d);
 	private final ReadOnlyDoubleProperty y = new ConstDoubleProperty(0d);
 	private final ReadOnlyDoubleWrapper width = new ReadOnlyDoubleWrapper();
 	private final ReadOnlyDoubleWrapper height = new ReadOnlyDoubleWrapper();
-	private final ReadOnlyDoubleWrapper scrollPosX = new ReadOnlyDoubleWrapper();
-	private final ReadOnlyDoubleWrapper scrollPosY = new ReadOnlyDoubleWrapper();
+	private final DoubleProperty scrollPosX = new SimpleDoubleProperty();
+	private final DoubleProperty scrollPosY = new SimpleDoubleProperty();
 
-	ViewportBoundsGlobal(ObservableDoubleValue width, ObservableDoubleValue height,
-		ObservableDoubleValue scrollPosX, ObservableDoubleValue scrollPosY)
+	ViewportBoundsGlobal(ObservableDoubleValue width, ObservableDoubleValue height)
 	{
 		this.width.bind(width);
 		this.height.bind(height);
-		this.scrollPosX.bind(scrollPosX);
-		this.scrollPosY.bind(scrollPosY);
 	}
 
 	@Override
@@ -68,14 +67,14 @@ final class ViewportBoundsGlobal implements ViewportBounds
 	}
 
 	@Override
-	public ReadOnlyDoubleProperty scrollPosXProperty()
+	public DoubleProperty scrollPosXProperty()
 	{
-		return scrollPosX.getReadOnlyProperty();
+		return scrollPosX;
 	}
 
 	@Override
-	public ReadOnlyDoubleProperty scrollPosYProperty()
+	public DoubleProperty scrollPosYProperty()
 	{
-		return scrollPosY.getReadOnlyProperty();
+		return scrollPosY;
 	}
 }
