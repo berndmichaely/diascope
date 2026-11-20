@@ -6,6 +6,7 @@
 
   * a multi layer image mode to overlay two or more images for comparison – split dividers can be freely moved and rotated
   * a multi layer image mode to overlay a second image over a base image in a spot – the spot is freely movable, resizable and adjustable in shape.
+  * a multi layer image mode to show several images in a grid (currently under construction)
 
 Diascope is written based on Java/JavaFX and so should run on any platform providing Java and JavaFX support. (It is currently being developed and tested on Linux.)
 
@@ -123,4 +124,8 @@ When in *ellipse/band mode*:
 
 ### Grid Mode
 
-This mode is currently UNDER CONSTRUCTION! Don't expect it to be feature complete or work properly yet!
+The Grid Mode allows to view several images in a grid.
+
+Image controls work for the selected images.
+
+This mode is currently UNDER CONSTRUCTION! Don't expect it to be feature complete.
