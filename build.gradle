@@ -380,7 +380,7 @@ application {
 	final int javaLangVer = javaLangVersion.asInt()
 	logger.lifecycle " -> Java language version is »${javaLangVer}«"
 	int javafxVer
-	final def m = javafx.version =~ /(\d+)(\.\d+(\.\d+)?)?(-.+)?(\+.+)?/
+	final def m = javafx.version =~ /^(\d+)(\.\d+)*(-.+)?(\+.+)?$/
 	if (m) {
 		javafxVer = m.group(1) as int
 		logger.lifecycle " -> JavaFX  major version is »${javafxVer}«"
@@ -392,18 +392,12 @@ application {
 		logger.warn msg
 		throw new StopExecutionException(msg)
 	}
-	
 	if (javaLangVer >= 24) {
 		applicationDefaultJvmArgs += '--enable-native-access=javafx.graphics'
 	}
 	if (javaLangVer >= 25 && javaLangVer <= 26) {
 		// optional performance improvement:
 		applicationDefaultJvmArgs += '-XX:+UseCompactObjectHeaders'
-	}
-	if (javafxVer >= 25 && javafxVer <= 26) {
-		// for HeaderBar preview feature:
-		applicationDefaultJvmArgs += '-Djavafx.enablePreview=true'
-		applicationDefaultJvmArgs += '-Djavafx.suppressPreviewWarning=true'
 	}
 	logger.lifecycle "==> applicationDefaultJvmArgs -> " + applicationDefaultJvmArgs
 }
