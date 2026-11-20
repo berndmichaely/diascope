@@ -669,13 +669,15 @@ public class ImageTransformsSwitchTest
 		assertTrue(isGlobal());
 		// add layer
 		final var layer_a = new LayerStub("A");
-		final var layer_b = new LayerStub("B");
-		layers.addAll(layer_a, layer_b);
+		layers.addAll(layer_a);
 		final var it_a = layer_a.getImageTransforms();
-		final var it_b = layer_b.getImageTransforms();
+		assertEquals(LayerStub.FACTOR_FIT, it_a.zoomFactorProperty().get());
 		zoomModeRawValueProperty.set(FIXED);
 		zoomFixedProperty.set(1.2);
 		assertEquals(1.2, it_a.zoomFactorProperty().get());
+		final var layer_b = new LayerStub("B");
+		layers.addAll(layer_b);
+		final var it_b = layer_b.getImageTransforms();
 		assertEquals(1.2, it_b.zoomFactorProperty().get());
 		final var layer_c = new LayerStub("C");
 		layers.addAll(layer_c);

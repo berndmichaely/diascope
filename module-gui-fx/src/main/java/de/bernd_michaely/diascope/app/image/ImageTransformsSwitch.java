@@ -288,6 +288,11 @@ class ImageTransformsSwitch<T extends AbstractImageLayer> implements AutoCloseab
 				throw new IllegalStateException(
 					"%s : adding the same layer twice".formatted(getClass().getName()));
 			}
+			if (!local.get() && layers.size() > 1)
+			{
+				bufferGlobalParams.readFrom(facadeImageTransforms);
+				bufferGlobalParams.writeTo(layer.getImageTransforms());
+			}
 			onCalculateZoomFactors.run();
 		};
 		final Consumer<T> removeLayer = layer ->
